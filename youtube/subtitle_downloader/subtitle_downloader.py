@@ -11,6 +11,9 @@ def download_subtitles(video_url, output_dir=".", languages=["en"], start_time=N
         video_url (str): YouTube video URL
         output_dir (str): Directory to save subtitles (default: current directory)
         languages (list): List of language codes to download (default: ['en'])
+        start_time (str): Start timestamp in format 'HH:MM:SS' or seconds (default: None)
+        end_time (str): End timestamp in format 'HH:MM:SS' or seconds (default: None)
+        include_audio (bool): Whether to also download audio (default: False)
     
     Returns:
         bool: True if successful, False otherwise
@@ -27,20 +30,28 @@ def download_subtitles(video_url, output_dir=".", languages=["en"], start_time=N
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
             'subtitlesformat': 'vtt',  # Use WebVTT format
         }
-
-        # Add postprocessor for trimming by start and end times if provided
-        if start_time or end_time:
+        
+        # Add timestamp options if provided
+        if start_time:
+            ydl_opts['external_downloader_args'] = {}
+            if 'ffmpeg' not in ydl_opts['external_downloader_args']:
+                ydl_opts['external_downloader_args']['ffmpeg'] = []
+            ydl_opts['external_downloader_args']['ffmpeg'].extend(['-ss', str(start_time)])
+            
+        if end_time:
+            if 'external_downloader_args' not in ydl_opts:
+                ydl_opts['external_downloader_args'] = {}
+            if 'ffmpeg' not in ydl_opts['external_downloader_args']:
+                ydl_opts['external_downloader_args']['ffmpeg'] = []
+            ydl_opts['external_downloader_args']['ffmpeg'].extend(['-to', str(end_time)])
+            
+        # Add audio download options if requested
+        if include_audio:
+            ydl_opts['format'] = 'bestaudio/best'
             ydl_opts['postprocessors'] = [{
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4'
-            },{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
-                'preferredquality': '192'
-            },{
-                'key': 'FFmpegDownsize',
-                "start_time": start_time,
-                "end_time": end_time
+                'preferredquality': '192',
             }]
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Get video info first to check if subtitles are available
@@ -93,9 +104,29 @@ def main():
     else:
         languages = ["en"]
     
-    print(f"\nDownloading subtitles for languages: {', '.join(languages)}")
+    # Ask for timestamp options
+    start_time = input("Enter start timestamp (HH:MM:SS or seconds, press Enter to start from beginning): ").strip()
+    if not start_time:
+        start_time = None
     
-    success = download_subtitles(video_url, output_dir, languages)
+    end_time = input("Enter end timestamp (HH:MM:SS or seconds, press Enter to use whole video): ").strip()
+    if not end_time:
+        end_time = None
+    
+    # Ask for audio download option
+    audio_input = input("Download audio as well? (y/N): ").strip().lower()
+    include_audio = audio_input in ['y', 'yes']
+    
+    print(f"\nConfiguration:")
+    print(f"  Languages: {', '.join(languages)}")
+    if start_time:
+        print(f"  Start time: {start_time}")
+    if end_time:
+        print(f"  End time: {end_time}")
+    print(f"  Include audio: {'Yes' if include_audio else 'No'}")
+    print()
+    
+    success = download_subtitles(video_url, output_dir, languages, start_time, end_time, include_audio)
     
     if success:
         print("\nSubtitle download completed successfully!")
