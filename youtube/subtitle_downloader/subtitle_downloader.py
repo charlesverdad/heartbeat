@@ -1,7 +1,9 @@
 import yt_dlp
 import os
 import sys
+import webvtt
 from pathlib import Path
+import re
 
 def download_subtitles(video_url, output_dir=".", languages=["en"], start_time=None, end_time=None, include_audio=False):
     """
@@ -31,28 +33,41 @@ def download_subtitles(video_url, output_dir=".", languages=["en"], start_time=N
             'subtitlesformat': 'vtt',  # Use WebVTT format
         }
         
-        # Add timestamp options if provided
-        if start_time:
-            ydl_opts['external_downloader_args'] = {}
-            if 'ffmpeg' not in ydl_opts['external_downloader_args']:
-                ydl_opts['external_downloader_args']['ffmpeg'] = []
-            ydl_opts['external_downloader_args']['ffmpeg'].extend(['-ss', str(start_time)])
-            
-        if end_time:
-            if 'external_downloader_args' not in ydl_opts:
-                ydl_opts['external_downloader_args'] = {}
-            if 'ffmpeg' not in ydl_opts['external_downloader_args']:
-                ydl_opts['external_downloader_args']['ffmpeg'] = []
-            ydl_opts['external_downloader_args']['ffmpeg'].extend(['-to', str(end_time)])
-            
         # Add audio download options if requested
         if include_audio:
             ydl_opts['format'] = 'bestaudio/best'
-            ydl_opts['postprocessors'] = [{
+            postprocessors = []
+            
+            # Add timestamp cutting if provided
+            if start_time or end_time:
+                start_seconds = convert_time_to_seconds(start_time) if start_time else None
+                end_seconds = convert_time_to_seconds(end_time) if end_time else None
+                
+                # Build postprocessor arguments for cutting
+                postprocessor_args = {}
+                ffmpeg_args = []
+                
+                if start_seconds is not None:
+                    ffmpeg_args.extend(['-ss', str(start_seconds)])
+                if end_seconds is not None:
+                    if start_seconds is not None:
+                        duration = end_seconds - start_seconds
+                        ffmpeg_args.extend(['-t', str(duration)])
+                    else:
+                        ffmpeg_args.extend(['-to', str(end_seconds)])
+                
+                if ffmpeg_args:
+                    postprocessor_args['ffmpeg'] = ffmpeg_args
+                    ydl_opts['postprocessor_args'] = postprocessor_args
+            
+            # Add audio extraction
+            postprocessors.append({
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
-            }]
+            })
+            
+            ydl_opts['postprocessors'] = postprocessors
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Get video info first to check if subtitles are available
             info = ydl.extract_info(video_url, download=False)
@@ -75,11 +90,80 @@ def download_subtitles(video_url, output_dir=".", languages=["en"], start_time=N
             # Download the subtitles
             ydl.download([video_url])
             print(f"Subtitles downloaded successfully to: {output_dir}")
-            return True
             
+            # Process and adjust the subtitle file
+            if start_time or end_time:
+                ts_start_seconds = convert_time_to_seconds(start_time) if start_time else 0
+                ts_end_seconds = convert_time_to_seconds(end_time) if end_time else None
+                
+                for lang in languages:
+                    subtitle_file = os.path.join(output_dir, f"{video_title}.{lang}.vtt")
+                    adjust_subtitle_timestamps(subtitle_file, ts_start_seconds, ts_end_seconds)
+                    print(f"Adjusted subtitle timestamps for {lang}.")
+            
+            print(f"Subtitles downloaded and processed successfully to: {output_dir}")
+            return True
+
     except Exception as e:
         print(f"Error downloading subtitles: {str(e)}")
         return False
+
+
+def convert_time_to_seconds(time_str):
+    """Convert time string to seconds (float for precision)"""
+    if not time_str:
+        return 0
+    if ':' in time_str:
+        parts = time_str.split(':')
+        hours = float(parts[0]) if len(parts) >= 3 else 0
+        minutes = float(parts[-2]) if len(parts) >= 2 else 0
+        seconds = float(parts[-1])
+        return hours * 3600 + minutes * 60 + seconds
+    return float(time_str)
+
+def convert_seconds_to_time(seconds):
+    """Convert seconds to WebVTT time format"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{secs:06.3f}"
+
+def adjust_subtitle_timestamps(file_path, start_seconds, end_seconds):
+    """Adjust subtitle timestamps to match the trimmed video/audio"""
+    if not os.path.exists(file_path):
+        print(f"Subtitle file not found: {file_path}")
+        return
+        
+    try:
+        vtt = webvtt.read(file_path)
+        new_captions = []
+        
+        for caption in vtt:
+            # Convert caption times to seconds
+            cap_start = convert_time_to_seconds(caption.start)
+            cap_end = convert_time_to_seconds(caption.end)
+            
+            # Check if caption falls within our time range
+            if cap_start >= start_seconds and (end_seconds is None or cap_end <= end_seconds):
+                # Adjust timestamps relative to start_seconds
+                new_start = max(0, cap_start - start_seconds)
+                new_end = max(0, cap_end - start_seconds)
+                
+                # Update the caption times
+                caption.start = convert_seconds_to_time(new_start)
+                caption.end = convert_seconds_to_time(new_end)
+                new_captions.append(caption)
+        
+        # Create new WebVTT file
+        new_vtt = webvtt.WebVTT()
+        for caption in new_captions:
+            new_vtt.captions.append(caption)
+        
+        # Save the adjusted subtitle file
+        new_vtt.save(file_path)
+        
+    except Exception as e:
+        print(f"Error adjusting subtitle timestamps: {e}")
 
 def main():
     """
