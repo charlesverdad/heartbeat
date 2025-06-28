@@ -16,6 +16,7 @@ pkgs.mkShell {
     docker
     docker-compose
     direnv
+    azure-cli
     
     # Video processing tools
     ffmpeg

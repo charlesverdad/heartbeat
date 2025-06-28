@@ -1,0 +1,33 @@
+# Project Configuration
+project_name = "ghostblog"
+environment  = "dev"
+location     = "East US 2"
+
+# Domain Configuration
+domain_name = "example.com"
+subdomain   = "blog"
+
+# Cloudflare Configuration
+cloudflare_api_token   = "your-cloudflare-api-token"
+cloudflare_zone_id     = "your-cloudflare-zone-id"
+cloudflare_account_id  = "your-cloudflare-account-id"
+
+# Admin emails for Cloudflare Access (protect /ghost admin area)
+admin_emails = ["admin@example.com"]
+
+# MySQL Configuration
+mysql_admin_username = "ghostadmin"
+
+# Container Configuration
+container_cpu    = 1.0
+container_memory = "2Gi"
+min_replicas     = 1
+max_replicas     = 3
+
+# Tags
+common_tags = {
+  Project     = "Ghost Blog"
+  Environment = "dev"
+  ManagedBy   = "Terraform"
+  Owner       = "YourName"
+}
