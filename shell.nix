@@ -16,6 +16,9 @@ pkgs.mkShell {
     docker
     docker-compose
     direnv
+    
+    # Video processing tools
+    ffmpeg
   ];
 
   shellHook = ''
