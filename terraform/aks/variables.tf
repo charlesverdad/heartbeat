@@ -34,12 +34,6 @@ variable "node_vm_size" {
   default     = "Standard_B2s" # Minimal but adequate for development
 }
 
-variable "admin_group_object_ids" {
-  description = "Azure AD group object IDs for AKS cluster admin access"
-  type        = list(string)
-  default     = []
-}
-
 variable "private_cluster_enabled" {
   description = "Enable private cluster for enhanced security"
   type        = bool

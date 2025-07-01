@@ -1,13 +1,13 @@
 # Copy this file to terraform.tfvars and customize the values
 
 # Azure region for resources
-location = "East US"
+location = "australiaeast"
 
 # Environment name
 environment = "dev"
 
 # Project name for resource naming
-project_name = "heartbeat"
+project_name = "heartbeat-k8s"
 
 # Kubernetes version (leave null for latest stable)
 kubernetes_version = null
@@ -16,20 +16,17 @@ kubernetes_version = null
 node_count   = 2
 node_vm_size = "Standard_B2s"
 
-# Azure AD group object IDs for cluster admin access
-# To get group object IDs, use: az ad group list --display-name "your-group-name"
-admin_group_object_ids = [
-  # "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-]
-
 # Private cluster for enhanced security (default: true)
 # Set to false if you need easier access for development
 private_cluster_enabled = true
 
+# Note: Azure AD group for AKS administrators is automatically created
+# The current user (you) will be added as owner and member of this group
+
 # Common tags
 tags = {
-  Project     = "heartbeat"
+  Project     = "heartbeat-k8s"
   Environment = "dev"
   ManagedBy   = "terraform"
-  Owner       = "your-email@company.com"
+  Owner       = "charles"
 }

@@ -58,14 +58,12 @@ output "log_analytics_workspace_id" {
   value       = azurerm_log_analytics_workspace.aks.id
 }
 
-output "application_insights_instrumentation_key" {
-  description = "Application Insights instrumentation key"
-  value       = azurerm_application_insights.aks.instrumentation_key
-  sensitive   = true
+output "aks_admin_group_id" {
+  description = "Object ID of the AKS administrators Azure AD group"
+  value       = azuread_group.aks_admins.object_id
 }
 
-output "application_insights_connection_string" {
-  description = "Application Insights connection string"
-  value       = azurerm_application_insights.aks.connection_string
-  sensitive   = true
+output "aks_admin_group_name" {
+  description = "Display name of the AKS administrators Azure AD group"
+  value       = azuread_group.aks_admins.display_name
 }
