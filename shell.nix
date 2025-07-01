@@ -21,6 +21,16 @@ pkgs.mkShell {
     cloudflared
     kubectl
     kubelogin
+    kubernetes-helm
+    kustomize
+    
+    # YAML/JSON processing tools
+    yq-go
+    jq
+    
+    # Python packages for K8s scripts
+    python3Packages.pyyaml
+    python3Packages.jinja2
     
     # Video processing tools
     ffmpeg
