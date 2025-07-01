@@ -1,0 +1,72 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base resources to include (reference components from base directory)
+resources:
+- ../../base/webapp
+- ../../base/redis
+
+# Production-specific configurations
+namespace: heartbeat-prod
+
+# Common labels for production environment
+commonLabels:
+  environment: prod
+  app.kubernetes.io/environment: prod
+
+# Patches for production-specific modifications
+patches:
+# Example patches:
+# - target:
+#     kind: Deployment
+#     name: my-app
+#   patch: |-
+#     - op: replace
+#       path: /spec/replicas
+#       value: 3
+#     - op: add
+#       path: /spec/template/spec/containers/0/resources
+#       value:
+#         requests:
+#           cpu: 100m
+#           memory: 128Mi
+#         limits:
+#           cpu: 500m
+#           memory: 512Mi
+# - target:
+#     kind: Service
+#     name: my-service
+#   patch: |-
+#     - op: replace
+#       path: /spec/type
+#       value: LoadBalancer
+
+# Config map generators for production-specific config
+configMapGenerator:
+- name: env-config
+  literals:
+  - ENVIRONMENT=prod
+  - LOG_LEVEL=info
+  - DEBUG=false
+
+# Secret generators (typically reference external secrets in prod)
+# secretGenerator:
+# - name: env-secrets
+#   literals:
+#   - API_KEY=placeholder  # Should be replaced with proper secret management
+
+# Images for production (specific tags, not latest)
+images: []
+# Example:
+# - name: my-app
+#   newTag: v1.2.3
+#   newName: my-registry.com/my-app
+
+# Replicas for production (higher for availability)
+replicas:
+# - name: my-app
+#   count: 3
+
+# HPA (Horizontal Pod Autoscaler) for production scaling
+# patchesStrategicMerge:
+# - hpa.yaml
