@@ -28,21 +28,54 @@ Your Azure account needs the following roles:
 
 ## Setup Instructions
 
-### 1. Configure Variables
+### 1. Create Cloudflare API Token
 
-Copy the example variables file and customize it:
+Create a Cloudflare API token with the proper scopes. You have two options:
 
+#### Option A: Using cloudflared CLI (Recommended)
 ```bash
-cp terraform.tfvars.example terraform.tfvars
+# Login to cloudflared (this will open a browser and create a cert)
+cloudflared tunnel login
 ```
 
-Edit `terraform.tfvars` with your specific values:
+#### Option B: Manual token creation
+Go to https://dash.cloudflare.com/profile/api-tokens and create a custom token with these permissions:
 
-- **cloudflare_api_token**: Create one at https://dash.cloudflare.com/profile/api-tokens
-- **cloudflare_zone_id**: Found in your domain's Cloudflare dashboard
-- **cloudflare_account_id**: Found in the right sidebar of Cloudflare dashboard
-- **domain_name**: Your domain (e.g., "example.com")
-- **admin_emails**: Email addresses that can access /ghost admin area
+**Zone permissions (for your specific domain zone):**
+- `Zone:Zone:Read`
+- `Zone:DNS:Edit` 
+- `Zone:Zone Settings:Read`
+- `Zone:Page Rules:Edit`
+
+**Account permissions:**
+- `Account:Cloudflare Tunnel:Edit`
+- `Account:Access: Organizations, Identity Providers, and Groups:Edit`
+- `Account:Access: Apps and Policies:Edit`
+
+**Zone Resources:**
+- Include: Specific zone → `your-domain.com`
+
+**Account Resources:**
+- Include: All accounts (or your specific account)
+
+**Client IP Address Filtering:**
+- Leave empty or restrict to your IP for additional security
+
+### 2. Configure Environment Variables
+
+Copy the environment template and configure your values:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your specific values:
+
+- **CLOUDFLARE_API_TOKEN**: Token created above
+- **CLOUDFLARE_ZONE_ID**: Found in your domain's Cloudflare dashboard
+- **CLOUDFLARE_ACCOUNT_ID**: Found in the right sidebar of Cloudflare dashboard
+- **DOMAIN_NAME**: Your domain (e.g., "example.com")
+- **ADMIN_EMAIL**: Email address that can access /ghost admin area
 
 ### 2. Initialize and Deploy
 
@@ -59,18 +92,37 @@ terraform apply
 
 ### 3. Post-Deployment Setup
 
-After deployment, you'll need to:
+After deployment, you'll need to set up the Cloudflare tunnel. Terraform has already created the tunnel configuration, but you need to run the tunnel daemon:
 
-1. **Install Cloudflare Tunnel**:
+1. **Get the tunnel token from Azure Key Vault**:
    ```bash
-   # Get the tunnel token from Key Vault
-   az keyvault secret show --vault-name <key-vault-name> --name cloudflare-tunnel-token --query value -o tsv
-   
-   # Install cloudflared and run the tunnel
-   cloudflared tunnel run --token <tunnel-token>
+   # Get the tunnel token that Terraform stored in Key Vault
+   az keyvault secret show --vault-name $(terraform output -raw key_vault_name) --name cloudflare-tunnel-token --query value -o tsv
    ```
 
-2. **Access Ghost Admin**:
+2. **Run the Cloudflare tunnel**:
+   ```bash
+   # Run the tunnel using the token from Key Vault
+   cloudflared tunnel run --token <tunnel-token-from-keyvault>
+   
+   # Or run as a service (recommended for production)
+   sudo cloudflared service install <tunnel-token-from-keyvault>
+   ```
+
+3. **Alternative: Manual tunnel creation (if you prefer CLI approach)**:
+   ```bash
+   # If you want to create the tunnel manually instead of using Terraform:
+   # First, comment out the Cloudflare resources in cloudflare.tf
+   # Then create tunnel manually:
+   cloudflared tunnel login
+   cloudflared tunnel create ghostblog-dev-tunnel
+   
+   # Configure the tunnel (create config.yml)
+   cloudflared tunnel route dns ghostblog-dev-tunnel blog.example.com
+   cloudflared tunnel run ghostblog-dev-tunnel
+   ```
+
+4. **Access Ghost Admin**:
    - Navigate to `https://your-subdomain.your-domain.com/ghost`
    - Complete the Ghost setup wizard
    - Create your admin account

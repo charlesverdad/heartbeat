@@ -20,16 +20,19 @@ variable "cloudflare_api_token" {
   description = "Cloudflare API token"
   type        = string
   sensitive   = true
+  default     = null
 }
 
 variable "cloudflare_zone_id" {
   description = "Cloudflare zone ID"
   type        = string
+  default     = null
 }
 
 variable "cloudflare_account_id" {
   description = "Cloudflare account ID"
   type        = string
+  default     = null
 }
 
 variable "admin_emails" {
@@ -41,6 +44,7 @@ variable "admin_emails" {
 variable "domain_name" {
   description = "Domain name for the Ghost blog"
   type        = string
+  default     = null
 }
 
 variable "subdomain" {

@@ -83,6 +83,20 @@ resource "azurerm_container_app" "ghost" {
       }
     }
 
+    container {
+      name   = "cloudflared"
+      image  = "cloudflare/cloudflared:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      args = ["tunnel", "--no-autoupdate", "run", "--token", "$(TUNNEL_TOKEN)"]
+
+      env {
+        name        = "TUNNEL_TOKEN"
+        secret_name = "cloudflare-tunnel-token"
+      }
+    }
+
     min_replicas = var.min_replicas
     max_replicas = var.max_replicas
   }
@@ -95,6 +109,11 @@ resource "azurerm_container_app" "ghost" {
   secret {
     name  = "storage-connection-string"
     value = azurerm_storage_account.ghost.primary_connection_string
+  }
+
+  secret {
+    name  = "cloudflare-tunnel-token"
+    value = cloudflare_tunnel.ghost.tunnel_token
   }
 
   ingress {

@@ -26,7 +26,7 @@ provider "azurerm" {
 }
 
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+  # api_token will be read from CLOUDFLARE_API_TOKEN environment variable
 }
 
 # Data source for current client configuration
