@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {config.allowUnfree = true; } }:
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
@@ -16,6 +16,9 @@ pkgs.mkShell {
     docker
     docker-compose
     direnv
+    azure-cli
+    terraform
+    cloudflared
     
     # Video processing tools
     ffmpeg
@@ -33,5 +36,10 @@ pkgs.mkShell {
 
     # Setup direnv hook
     eval "$(direnv hook bash)"
+    
+    echo "Development environment loaded!"
+    echo "- Python venv activated"
+    echo "- Local bin added to PATH"
+    echo "- tf command available (uses bin/tf.sh)"
   '';
 }

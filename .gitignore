@@ -76,5 +76,10 @@ htmlcov/
 .env
 .env.local
 
+# Terraform
+.terraform
+.terraform*
+.terraform/*
+
 # Project specific
 website/ghost/content/
