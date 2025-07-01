@@ -19,6 +19,8 @@ pkgs.mkShell {
     azure-cli
     terraform
     cloudflared
+    kubectl
+    kubelogin
     
     # Video processing tools
     ffmpeg
