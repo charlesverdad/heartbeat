@@ -1,5 +1,5 @@
 #!/bin/bash
-# tf - Terraform wrapper that uses tf.sh
-# This allows us to use 'tf' instead of 'tf.sh'
+# tf - Terraform wrapper that uses tf.py
+# This allows us to use 'tf' instead of 'tf.py'
 
-exec "$(dirname "$0")/tf.sh" "$@"
+exec "$(dirname "$0")/tf.py" "$@"
