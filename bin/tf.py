@@ -91,22 +91,34 @@ def parse_arguments():
     return known_args.flavor, terraform_args
 
 
-def add_var_file(flavor, terraform_args):
-    """Add -var-file argument if needed for plan/apply commands"""
+def add_flavor_args(flavor, terraform_args):
+    """Add -var-file and -state arguments based on flavor"""
     if not terraform_args:
         return terraform_args
     
     command = terraform_args[0]
+    modified_args = [command]
+    
+    # Add state file for all stateful commands
+    stateful_commands = ['plan', 'apply', 'destroy', 'import', 'refresh', 'show', 'state', 'taint', 'untaint', 'output']
+    if command in stateful_commands:
+        state_file = f"{flavor}.tfstate"
+        log_info(f"Using state file: {state_file}")
+        modified_args.extend([f"-state={state_file}"])
+    
+    # Add var-file for plan/apply commands
     if command in ['plan', 'apply']:
         tfvars_file = f"{flavor}.tfvars"
         if Path(tfvars_file).exists():
             log_info(f"Using tfvars file: {tfvars_file}")
-            # Insert -var-file after the command
-            return [command, f"-var-file={tfvars_file}"] + terraform_args[1:]
+            modified_args.extend([f"-var-file={tfvars_file}"])
         else:
             log_warn(f"Tfvars file '{tfvars_file}' not found, proceeding without it")
     
-    return terraform_args
+    # Add the remaining original arguments
+    modified_args.extend(terraform_args[1:])
+    
+    return modified_args
 
 
 def main():
@@ -116,8 +128,8 @@ def main():
     # Parse arguments
     flavor, terraform_args = parse_arguments()
     
-    # Add var-file if needed
-    terraform_args = add_var_file(flavor, terraform_args)
+    # Add flavor-specific arguments (state file and var-file)
+    terraform_args = add_flavor_args(flavor, terraform_args)
     
     # Check prerequisites
     check_azure_auth()
