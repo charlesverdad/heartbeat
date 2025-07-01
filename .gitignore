@@ -77,9 +77,18 @@ htmlcov/
 .env.local
 
 # Terraform
-.terraform
-.terraform*
-.terraform/*
+.terraform/
+.terraform.*
+*.tfstate.backup
+*.tfstate.*.backup
+crash.log
+crash.*.log
+*.tfplan
+*.tfplan.*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Project specific
 website/ghost/content/
