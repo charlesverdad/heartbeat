@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {config.allowUnfree = true; } }:
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
@@ -16,6 +16,9 @@ pkgs.mkShell {
     docker
     docker-compose
     direnv
+    azure-cli
+    terraform
+    cloudflared
     
     # Video processing tools
     ffmpeg
