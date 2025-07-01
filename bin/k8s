@@ -204,12 +204,9 @@ class K8sWorkflow:
         """Generate a filename for a Kubernetes resource."""
         kind = doc.get('kind', 'unknown').lower()
         name = doc.get('metadata', {}).get('name', 'unnamed')
-        namespace = doc.get('metadata', {}).get('namespace', '')
         
-        # Create a safe filename
+        # Create a safe filename without namespace (since we organize by directory)
         filename = f"{kind}-{name}"
-        if namespace and namespace != 'default':
-            filename = f"{namespace}-{filename}"
         
         # Replace invalid characters
         filename = filename.replace('/', '-').replace(':', '-')
@@ -218,7 +215,6 @@ class K8sWorkflow:
     def render_environment(self, env: str) -> None:
         """Render final manifests for a specific environment."""
         overlay_path = self.overlays_dir / env
-        rendered_env_dir = self.rendered_dir / env
         
         if not overlay_path.exists():
             print(f"Environment overlay {env} not found at {overlay_path}")
@@ -230,12 +226,9 @@ class K8sWorkflow:
         
         print(f"Rendering final manifests for environment: {env}")
         
-        # Create rendered environment directory
-        rendered_env_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Clear existing rendered files
-        for file in rendered_env_dir.glob("*.yaml"):
-            file.unlink()
+        # Create environment directory
+        env_dir = self.rendered_dir / env
+        env_dir.mkdir(parents=True, exist_ok=True)
         
         # Run kustomize build
         cmd = ["kustomize", "build", str(overlay_path)]
@@ -248,15 +241,34 @@ class K8sWorkflow:
             print(f"No documents rendered for environment {env}")
             return
         
-        # Write each document to a separate file
+        # Group documents by namespace
+        namespace_docs = {}
         for doc in documents:
-            filename = self.generate_filename(doc)
-            file_path = rendered_env_dir / filename
-            
-            with open(file_path, 'w') as f:
-                yaml.dump(doc, f, default_flow_style=False, sort_keys=False)
+            namespace = doc.get('metadata', {}).get('namespace', 'default')
+            if namespace not in namespace_docs:
+                namespace_docs[namespace] = []
+            namespace_docs[namespace].append(doc)
         
-        print(f"✓ Rendered {len(documents)} manifests to {rendered_env_dir}")
+        total_files = 0
+        # Write each document to a separate file organized by environment/namespace
+        for namespace, docs in namespace_docs.items():
+            namespace_dir = env_dir / namespace
+            namespace_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Clear existing rendered files in this namespace
+            for file in namespace_dir.glob("*.yaml"):
+                file.unlink()
+            
+            for doc in docs:
+                filename = self.generate_filename(doc)
+                file_path = namespace_dir / filename
+                
+                with open(file_path, 'w') as f:
+                    yaml.dump(doc, f, default_flow_style=False, sort_keys=False)
+                total_files += 1
+        
+        namespaces = list(namespace_docs.keys())
+        print(f"✓ Rendered {total_files} manifests across {len(namespaces)} namespace(s): {', '.join(namespaces)}")
 
     def render_all_environments(self) -> None:
         """Render final manifests for all environments."""

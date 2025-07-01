@@ -55,19 +55,24 @@ def main():
         for env in sorted(environments):
             print(f"  - {env}")
     
-    # List rendered manifests
+    # List rendered manifests (organized by environment/namespace)
     rendered_dir = root_dir / "k8s" / "manifests" / "rendered"
     if rendered_dir.exists():
         print(f"\n🎆 Rendered Manifests:")
         for env_dir in sorted(rendered_dir.iterdir()):
             if env_dir.is_dir():
-                manifest_files = list(env_dir.glob("*.yaml"))
-                print(f"  - {env_dir.name}: {len(manifest_files)} files")
-                if manifest_files:
-                    for manifest in sorted(manifest_files)[:3]:  # Show first 3 files
-                        print(f"    • {manifest.name}")
-                    if len(manifest_files) > 3:
-                        print(f"    • ... and {len(manifest_files) - 3} more")
+                print(f"  {env_dir.name}:")
+                for namespace_dir in sorted(env_dir.iterdir()):
+                    if namespace_dir.is_dir():
+                        manifest_files = list(namespace_dir.glob("*.yaml"))
+                        print(f"    - {namespace_dir.name}: {len(manifest_files)} files")
+                        if manifest_files and len(manifest_files) <= 3:
+                            for manifest in sorted(manifest_files):
+                                print(f"      • {manifest.name}")
+                        elif manifest_files:
+                            for manifest in sorted(manifest_files)[:2]:
+                                print(f"      • {manifest.name}")
+                            print(f"      • ... and {len(manifest_files) - 2} more")
     
     print(f"\n💡 Usage:")
     print(f"  ./bin/k8s build <component>     # Build a specific component")
