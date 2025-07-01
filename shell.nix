@@ -36,5 +36,10 @@ pkgs.mkShell {
 
     # Setup direnv hook
     eval "$(direnv hook bash)"
+    
+    echo "Development environment loaded!"
+    echo "- Python venv activated"
+    echo "- Local bin added to PATH"
+    echo "- tf command available (uses bin/tf.sh)"
   '';
 }
