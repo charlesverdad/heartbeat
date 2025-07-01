@@ -20,6 +20,7 @@ pkgs.mkShell {
     terraform
     cloudflared
     kubectl
+    kubelogin
     
     # Video processing tools
     ffmpeg
