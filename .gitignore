@@ -78,6 +78,7 @@ htmlcov/
 
 # Terraform
 .terraform
+.terraform*
 .terraform/*
 
 # Project specific
