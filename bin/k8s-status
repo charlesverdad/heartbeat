@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""
+Show the current status of the Kubernetes deployment workflow.
+"""
+
+import os
+from pathlib import Path
+
+def main():
+    root_dir = Path(__file__).parent.parent
+    
+    print("🚀 Kubernetes Deployment Workflow Status")
+    print("=" * 50)
+    
+    # Check directory structure
+    print("\n📁 Directory Structure:")
+    for dir_path in [
+        "k8s/manifests/src",
+        "k8s/manifests/base", 
+        "k8s/manifests/overlays",
+        "k8s/manifests/rendered"
+    ]:
+        full_path = root_dir / dir_path
+        status = "✓" if full_path.exists() else "✗"
+        print(f"  {status} {dir_path}")
+    
+    # List components
+    src_dir = root_dir / "k8s" / "manifests" / "src"
+    if src_dir.exists():
+        components = [item.name for item in src_dir.iterdir() if item.is_dir()]
+        print(f"\n📦 Source Components ({len(components)}):")
+        for component in sorted(components):
+            component_path = src_dir / component
+            is_helm = (component_path / "Chart.yaml").exists()
+            component_type = "Helm Chart" if is_helm else "Vanilla YAML"
+            print(f"  - {component} ({component_type})")
+    
+    # List built components
+    base_dir = root_dir / "k8s" / "manifests" / "base"
+    if base_dir.exists():
+        built_components = [item.name for item in base_dir.iterdir() if item.is_dir()]
+        print(f"\n🔨 Built Components ({len(built_components)}):")
+        for component in sorted(built_components):
+            component_path = base_dir / component
+            kustomization_exists = (component_path / "kustomization.yaml").exists()
+            status = "✓" if kustomization_exists else "✗"
+            print(f"  {status} {component}")
+    
+    # List environments
+    overlays_dir = root_dir / "k8s" / "manifests" / "overlays"
+    if overlays_dir.exists():
+        environments = [item.name for item in overlays_dir.iterdir() 
+                      if item.is_dir() and (item / "kustomization.yaml").exists()]
+        print(f"\n🌍 Available Environments ({len(environments)}):")
+        for env in sorted(environments):
+            print(f"  - {env}")
+    
+    # List rendered manifests (organized by environment/namespace)
+    rendered_dir = root_dir / "k8s" / "manifests" / "rendered"
+    if rendered_dir.exists():
+        print(f"\n🎆 Rendered Manifests:")
+        for env_dir in sorted(rendered_dir.iterdir()):
+            if env_dir.is_dir():
+                print(f"  {env_dir.name}:")
+                for namespace_dir in sorted(env_dir.iterdir()):
+                    if namespace_dir.is_dir():
+                        manifest_files = list(namespace_dir.glob("*.yaml"))
+                        print(f"    - {namespace_dir.name}: {len(manifest_files)} files")
+                        if manifest_files and len(manifest_files) <= 3:
+                            for manifest in sorted(manifest_files):
+                                print(f"      • {manifest.name}")
+                        elif manifest_files:
+                            for manifest in sorted(manifest_files)[:2]:
+                                print(f"      • {manifest.name}")
+                            print(f"      • ... and {len(manifest_files) - 2} more")
+    
+    print(f"\n💡 Usage:")
+    print(f"  ./bin/k8s build <component>     # Build a specific component")
+    print(f"  ./bin/k8s build-all             # Build all components") 
+    print(f"  ./bin/k8s deploy <env>          # Deploy to environment")
+    print(f"  ./bin/k8s list                  # List components and environments")
+    
+    print(f"\n📖 Documentation: k8s/README.md")
+
+if __name__ == "__main__":
+    main()

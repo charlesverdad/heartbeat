@@ -1,0 +1,16 @@
+# Temporary files
+*.tmp
+*-temp/
+
+# Don't ignore rendered manifests - these should be committed for GitOps
+!manifests/rendered/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
