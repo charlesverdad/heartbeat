@@ -6,8 +6,8 @@ resources:
 - ../../base/webapp
 - ../../base/redis
 
-# Dev-specific configurations
-namespace: heartbeat-dev
+# No global namespace - we'll set per-component
+# namespace: heartbeat-dev
 
 # Common labels for dev environment
 commonLabels:
@@ -16,21 +16,35 @@ commonLabels:
 
 # Patches for dev-specific modifications
 patches:
-# Example patches:
-# - target:
-#     kind: Deployment
-#     name: my-app
-#   patch: |-
-#     - op: replace
-#       path: /spec/replicas
-#       value: 1
-# - target:
-#     kind: Service
-#     name: my-service
-#   patch: |-
-#     - op: replace
-#       path: /spec/type
-#       value: NodePort
+# Set different namespaces for each app
+- target:
+    kind: Deployment
+    name: webapp
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: webapp-dev
+- target:
+    kind: Service
+    name: webapp
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: webapp-dev
+- target:
+    kind: Deployment
+    name: redis
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: redis-dev
+- target:
+    kind: Service
+    name: redis
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: redis-dev
 
 # Config map generators for dev-specific config
 configMapGenerator:

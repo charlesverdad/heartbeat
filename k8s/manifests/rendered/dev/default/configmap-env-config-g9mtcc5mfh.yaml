@@ -9,4 +9,3 @@ metadata:
     app.kubernetes.io/environment: dev
     environment: dev
   name: env-config-g9mtcc5mfh
-  namespace: heartbeat-dev
