@@ -8,11 +8,18 @@ resource "random_string" "suffix" {
   upper   = false
 }
 
+# Resource group for website infrastructure
+resource "azurerm_resource_group" "main" {
+  name     = "rg-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  location = var.location
+  tags     = var.tags
+}
+
 # Azure Key Vault for storing secrets
 resource "azurerm_key_vault" "main" {
   name                = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -30,8 +37,8 @@ resource "azurerm_key_vault" "main" {
 # User-Assigned Managed Identity for the application
 resource "azurerm_user_assigned_identity" "main" {
   name                = "id-${var.project_name}-${var.environment}-${random_string.suffix.result}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   tags                = var.tags
 }
 
