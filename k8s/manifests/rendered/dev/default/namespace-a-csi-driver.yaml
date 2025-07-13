@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    description: Namespace for Azure CSI driver components
+  labels:
+    app.kubernetes.io/environment: dev
+    environment: dev
+    name: a-csi-driver
+  name: a-csi-driver

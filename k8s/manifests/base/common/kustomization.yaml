@@ -19,3 +19,4 @@ resources:
 - charts/csi-secrets-store-provider-azure/charts/secrets-store-csi-driver/templates/serviceaccount.yaml
 - charts/csi-secrets-store-provider-azure/templates/provider-azure-installer.yaml
 - charts/csi-secrets-store-provider-azure/templates/serviceaccount.yaml
+- templates/namespace.yaml

@@ -1,0 +1,10 @@
+---
+# Source: common/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: a-csi-driver
+  labels:
+    name: a-csi-driver
+  annotations:
+    description: "Namespace for Azure CSI driver components"
