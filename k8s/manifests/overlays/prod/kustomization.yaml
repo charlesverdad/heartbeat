@@ -3,11 +3,7 @@ kind: Kustomization
 
 # Base resources to include (reference components from base directory)
 resources:
-- ../../base/webapp
-- ../../base/redis
-
-# Production-specific configurations
-namespace: heartbeat-prod
+- ../../base/common
 
 # Common labels for production environment
 commonLabels:
@@ -16,6 +12,19 @@ commonLabels:
 
 # Patches for production-specific modifications
 patches:
+# Set namespace for all CSI driver components
+- target:
+    labelSelector: "app=csi-secrets-store-provider-azure"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-csi-driver
+- target:
+    labelSelector: "app=secrets-store-csi-driver"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-csi-driver
 # Example patches:
 # - target:
 #     kind: Deployment

@@ -1,0 +1,45 @@
+# Common infrastructure components values
+
+# Azure Key Vault Provider configuration
+csi-secrets-store-provider-azure:
+  # Enable the secrets store CSI driver installation
+  secrets-store-csi-driver:
+    install: true
+    syncSecret:
+      enabled: true
+    enableSecretRotation: true
+    
+    # Resource limits for CSI driver
+    resources:
+      driver:
+        limits:
+          cpu: 200m
+          memory: 200Mi
+        requests:
+          cpu: 50m
+          memory: 100Mi
+      registrar:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 10m
+          memory: 20Mi
+      liveness:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 10m
+          memory: 20Mi
+
+  # Azure provider specific configuration
+  azure:
+    # Resource limits for the Azure provider
+    resources:
+      limits:
+        cpu: 50m
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
