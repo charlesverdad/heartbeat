@@ -24,9 +24,9 @@ spec:
       containers:
       - args:
         - tunnel
-        - --config
-        - /etc/cloudflared/config/config.yaml
         - run
+        - --token
+        - $(TUNNEL_TOKEN)
         env:
         - name: TUNNEL_TOKEN
           valueFrom:
@@ -42,11 +42,4 @@ spec:
           requests:
             cpu: 10m
             memory: 32Mi
-        volumeMounts:
-        - mountPath: /etc/cloudflared/config
-          name: config
-          readOnly: true
-      volumes:
-      - configMap:
-          name: cloudflare-tunnel-config
-        name: config
+      serviceAccountName: website-sa

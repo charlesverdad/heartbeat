@@ -15,14 +15,15 @@ spec:
       labels:
         app: cloudflare-tunnel
     spec:
+      serviceAccountName: website-sa
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
         args:
         - tunnel
-        - --config
-        - /etc/cloudflared/config/config.yaml
         - run
+        - --token
+        - $(TUNNEL_TOKEN)
         env:
         - name: TUNNEL_TOKEN
           valueFrom:
@@ -36,26 +37,3 @@ spec:
           limits:
             cpu: 50m
             memory: 128Mi
-        volumeMounts:
-        - name: config
-          mountPath: /etc/cloudflared/config
-          readOnly: true
-      volumes:
-      - name: config
-        configMap:
-          name: cloudflare-tunnel-config
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflare-tunnel-config
-  namespace: website-dev
-data:
-  config.yaml: |
-    tunnel: heartbeat-dev
-    credentials-file: /etc/cloudflared/creds/credentials.json
-    
-    ingress:
-      - hostname: dev.heartbeatchurch.com.au
-        service: http://website.website-dev.svc.cluster.local:80
-      - service: http_status:404
