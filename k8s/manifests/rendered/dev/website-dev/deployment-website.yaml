@@ -36,6 +36,23 @@ spec:
           value: https://dev.heartbeatchurch.com.au
         - name: NODE_ENV
           value: development
+        - name: mail__transport
+          value: SMTP
+        - name: mail__from
+          value: hello@heartbeatchurch.com.au
+        - name: mail__options__host
+          value: smtp.gmail.com
+        - name: mail__options__port
+          value: '465'
+        - name: mail__options__secure
+          value: 'true'
+        - name: mail__options__auth__user
+          value: hello@heartbeatchurch.com.au
+        - name: mail__options__auth__pass
+          valueFrom:
+            secretKeyRef:
+              key: gmail-app-password
+              name: website-gmail-secrets
         envFrom:
         - secretRef:
             name: website-mysql-secrets

@@ -39,6 +39,24 @@ spec:
           value: "https://dev.heartbeatchurch.com.au"
         - name: NODE_ENV
           value: "development"
+        # SMTP configuration
+        - name: mail__transport
+          value: "SMTP"
+        - name: mail__from
+          value: "hello@heartbeatchurch.com.au"
+        - name: mail__options__host
+          value: "smtp.gmail.com"
+        - name: mail__options__port
+          value: "465"
+        - name: mail__options__secure
+          value: "true"
+        - name: mail__options__auth__user
+          value: "hello@heartbeatchurch.com.au"
+        - name: mail__options__auth__pass
+          valueFrom:
+            secretKeyRef:
+              name: website-gmail-secrets
+              key: gmail-app-password
         # Load database password and host from Key Vault
         envFrom:
         - secretRef:

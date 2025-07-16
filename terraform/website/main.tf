@@ -186,4 +186,21 @@ resource "azurerm_key_vault_secret" "cloudflare_tunnel_token" {
   depends_on = [
     azurerm_role_assignment.keyvault_secrets_user
   ]
+  
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# Store Gmail app password in Key Vault
+# Generated in https://myaccount.google.com/apppasswords
+# using the hello@heartbeatchurch.com.au account
+resource "azurerm_key_vault_secret" "gmail_app_password" {
+  name         = "gmail-app-password"
+  value        = "placeholder-gmail-app-password-replace-with-actual-value"
+  key_vault_id = azurerm_key_vault.main.id
+  
+  depends_on = [
+    azurerm_role_assignment.keyvault_secrets_user
+  ]
 }
