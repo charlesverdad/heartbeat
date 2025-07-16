@@ -72,20 +72,9 @@ spec:
         - name: secrets-store
           mountPath: "/mnt/secrets"
           readOnly: true
-        livenessProbe:
-          httpGet:
-            path: /ghost/api/v4/admin/site/
-            port: 2368
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ghost/api/v4/admin/site/
-            port: 2368
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+        - name: ghost-content
+          mountPath: "/var/lib/ghost/content"
+          readOnly: false
       volumes:
       - name: secrets-store
         csi:
@@ -93,3 +82,6 @@ spec:
           readOnly: true
           volumeAttributes:
             secretProviderClass: "website-secrets"
+      - name: ghost-content
+        persistentVolumeClaim:
+          claimName: ghost-content-pvc

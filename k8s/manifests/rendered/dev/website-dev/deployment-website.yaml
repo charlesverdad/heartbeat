@@ -57,24 +57,10 @@ spec:
         - secretRef:
             name: website-mysql-secrets
         image: ghost:5.96.0-alpine
-        livenessProbe:
-          httpGet:
-            path: /ghost/api/v4/admin/site/
-            port: 2368
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 10
         name: ghost
         ports:
         - containerPort: 2368
           name: http
-        readinessProbe:
-          httpGet:
-            path: /ghost/api/v4/admin/site/
-            port: 2368
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
         resources:
           limits:
             cpu: 250m
@@ -86,6 +72,9 @@ spec:
         - mountPath: /mnt/secrets
           name: secrets-store
           readOnly: true
+        - mountPath: /var/lib/ghost/content
+          name: ghost-content
+          readOnly: false
       serviceAccountName: website-sa
       volumes:
       - csi:
@@ -94,3 +83,6 @@ spec:
           volumeAttributes:
             secretProviderClass: website-secrets
         name: secrets-store
+      - name: ghost-content
+        persistentVolumeClaim:
+          claimName: ghost-content-pvc

@@ -4,6 +4,7 @@ resources:
 - cloudflare-tunnel.yaml
 - deployment.yaml
 - namespace.yaml
+- persistent-volume-claim.yaml
 - secret-provider-class.yaml
 - service-account.yaml
 - service.yaml
