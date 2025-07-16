@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: website
+    app.kubernetes.io/environment: dev
+    environment: dev
+  name: website
+  namespace: website-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website
+      app.kubernetes.io/environment: dev
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: website
+        app.kubernetes.io/environment: dev
+        azure.workload.identity/use: 'true'
+        environment: dev
+    spec:
+      containers:
+      - env:
+        - name: database__client
+          value: mysql
+        - name: database__connection__user
+          value: ghostadmin
+        - name: database__connection__database
+          value: ghost
+        - name: database__connection__ssl__rejectUnauthorized
+          value: 'false'
+        - name: url
+          value: https://dev.heartbeatchurch.com.au
+        - name: NODE_ENV
+          value: development
+        envFrom:
+        - secretRef:
+            name: website-mysql-secrets
+        image: ghost:5.96.0-alpine
+        livenessProbe:
+          httpGet:
+            path: /ghost/api/v4/admin/site/
+            port: 2368
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        name: ghost
+        ports:
+        - containerPort: 2368
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /ghost/api/v4/admin/site/
+            port: 2368
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 250m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /mnt/secrets
+          name: secrets-store
+          readOnly: true
+      serviceAccountName: website-sa
+      volumes:
+      - csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: website-secrets
+        name: secrets-store

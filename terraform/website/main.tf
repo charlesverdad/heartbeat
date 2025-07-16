@@ -1,6 +1,14 @@
 # Data sources
 data "azurerm_client_config" "current" {}
 
+# Data source for AKS remote state
+data "terraform_remote_state" "aks" {
+  backend = "local"
+  config = {
+    path = "../aks/dev.tfstate"
+  }
+}
+
 # Random string for naming
 resource "random_string" "suffix" {
   length  = 4
@@ -64,6 +72,16 @@ resource "azurerm_role_assignment" "aks_identity_operator" {
   scope                = azurerm_user_assigned_identity.main.id
   role_definition_name = "Managed Identity Operator"
   principal_id         = var.aks_kubelet_identity_object_id
+}
+
+# Federated identity credential for Azure Workload Identity
+resource "azurerm_federated_identity_credential" "website_workload_identity" {
+  name                = "website-workload-identity"
+  resource_group_name = azurerm_resource_group.main.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = data.terraform_remote_state.aks.outputs.oidc_issuer_url
+  parent_id           = azurerm_user_assigned_identity.main.id
+  subject             = "system:serviceaccount:website-dev:website-sa"
 }
 
 # Generate random password for MySQL
@@ -152,6 +170,17 @@ resource "azurerm_key_vault_secret" "mysql_password" {
 resource "azurerm_key_vault_secret" "mysql_host" {
   name         = "mysql-host"
   value        = azurerm_mysql_flexible_server.main.fqdn
+  key_vault_id = azurerm_key_vault.main.id
+  
+  depends_on = [
+    azurerm_role_assignment.keyvault_secrets_user
+  ]
+}
+
+# Store Cloudflare tunnel token in Key Vault (placeholder for now)
+resource "azurerm_key_vault_secret" "cloudflare_tunnel_token" {
+  name         = "cloudflare-tunnel-token"
+  value        = "placeholder-token-replace-with-actual-cloudflare-tunnel-token"
   key_vault_id = azurerm_key_vault.main.id
   
   depends_on = [

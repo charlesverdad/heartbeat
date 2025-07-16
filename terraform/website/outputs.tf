@@ -42,3 +42,14 @@ output "mysql_admin_username" {
   description = "MySQL administrator username"
   value       = azurerm_mysql_flexible_server.main.administrator_login
 }
+
+# Cloudflare tunnel outputs (to be added when tunnel is created)
+# output "cloudflare_tunnel_id" {
+#   description = "Cloudflare tunnel ID"
+#   value       = cloudflare_zero_trust_tunnel_cloudflared.website_dev.id
+# }
+#
+# output "cloudflare_tunnel_cname" {
+#   description = "Cloudflare tunnel CNAME"
+#   value       = cloudflare_zero_trust_tunnel_cloudflared.website_dev.cname
+# }

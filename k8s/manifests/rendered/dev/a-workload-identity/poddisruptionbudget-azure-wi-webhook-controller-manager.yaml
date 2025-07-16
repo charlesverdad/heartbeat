@@ -1,0 +1,22 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: workload-identity-webhook
+    app.kubernetes.io/environment: dev
+    azure-workload-identity.io/system: 'true'
+    chart: workload-identity-webhook
+    environment: dev
+    release: common
+  name: azure-wi-webhook-controller-manager
+  namespace: a-workload-identity
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: workload-identity-webhook
+      app.kubernetes.io/environment: dev
+      azure-workload-identity.io/system: 'true'
+      chart: workload-identity-webhook
+      environment: dev
+      release: common

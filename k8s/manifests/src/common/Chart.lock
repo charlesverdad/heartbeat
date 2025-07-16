@@ -2,5 +2,8 @@ dependencies:
 - name: csi-secrets-store-provider-azure
   repository: https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
   version: 1.7.0
-digest: sha256:12b4dced3fe778795aebf030e32322e435290724e326c72d2984248f23f879c7
-generated: "2025-07-13T21:03:39.85586+10:00"
+- name: workload-identity-webhook
+  repository: https://azure.github.io/azure-workload-identity/charts
+  version: 1.3.0
+digest: sha256:74c39be8ede91e80c041ab4aac0c38ed9ddac6b8876b0724975b2b207787ca0d
+generated: "2025-07-16T15:33:39.687051+10:00"

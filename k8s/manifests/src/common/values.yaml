@@ -43,3 +43,37 @@ csi-secrets-store-provider-azure:
       requests:
         cpu: 10m
         memory: 20Mi
+
+# Azure Workload Identity webhook configuration
+workload-identity-webhook:
+  # Enable the workload identity webhook
+  enabled: true
+  
+  # Azure tenant ID - required for workload identity
+  azureTenantID: "42ff806a-1ba2-48f1-a4af-eadec06d2486"
+  
+  # Webhook configuration
+  webhook:
+    # Resource limits for the webhook
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+    
+    # Webhook port
+    port: 9443
+    
+    # TLS configuration
+    tls:
+      port: 9443
+      
+  # Mutating webhook configuration
+  mutatingWebhookConfiguration:
+    # Webhook timeout
+    timeoutSeconds: 30
+    
+    # Failure policy
+    failurePolicy: Fail

@@ -35,3 +35,14 @@ csi-secrets-store-provider-azure:
       requests:
         cpu: 5m
         memory: 10Mi
+
+# Azure Workload Identity webhook - dev settings
+workload-identity-webhook:
+  webhook:
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+      requests:
+        cpu: 5m
+        memory: 32Mi

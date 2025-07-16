@@ -19,4 +19,15 @@ resources:
 - charts/csi-secrets-store-provider-azure/charts/secrets-store-csi-driver/templates/serviceaccount.yaml
 - charts/csi-secrets-store-provider-azure/templates/provider-azure-installer.yaml
 - charts/csi-secrets-store-provider-azure/templates/serviceaccount.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-admin-serviceaccount.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-config-configmap.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-controller-manager-deployment.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-controller-manager-poddisruptionbudget.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-manager-role-clusterrole.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-manager-role-role.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-manager-rolebinding-clusterrolebinding.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-manager-rolebinding-rolebinding.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-mutating-webhook-configuration-mutatingwebhookconfiguration.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-server-cert-secret.yaml
+- charts/workload-identity-webhook/templates/azure-wi-webhook-webhook-service-service.yaml
 - templates/namespace.yaml

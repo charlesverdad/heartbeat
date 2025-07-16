@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: workload-identity-webhook
+    app.kubernetes.io/environment: dev
+    azure-workload-identity.io/system: 'true'
+    chart: workload-identity-webhook
+    environment: dev
+    release: common
+  name: azure-wi-webhook-manager-rolebinding
+  namespace: a-workload-identity
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: azure-wi-webhook-manager-role
+subjects:
+- kind: ServiceAccount
+  name: azure-wi-webhook-admin
+  namespace: a-workload-identity

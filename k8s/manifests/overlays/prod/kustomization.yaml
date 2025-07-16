@@ -25,6 +25,14 @@ patches:
     - op: replace
       path: /metadata/namespace
       value: a-csi-driver
+
+# Set namespace for workload identity webhook components
+- target:
+    labelSelector: "app=workload-identity-webhook"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-workload-identity
 # Example patches:
 # - target:
 #     kind: Deployment

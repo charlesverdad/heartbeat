@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: website-dev
+  labels:
+    name: website-dev
+  annotations:
+    description: "Namespace for website components"

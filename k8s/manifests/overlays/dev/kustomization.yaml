@@ -4,6 +4,7 @@ kind: Kustomization
 # Base resources to include (reference components from base directory)
 resources:
 - ../../base/common
+- ../../base/website
 
 # Common labels for dev environment
 commonLabels:
@@ -25,6 +26,14 @@ patches:
     - op: replace
       path: /metadata/namespace
       value: a-csi-driver
+
+# Set namespace for workload identity webhook components
+- target:
+    labelSelector: "app=workload-identity-webhook"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-workload-identity
 
 # Config map generators for dev-specific config
 configMapGenerator:

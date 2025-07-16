@@ -20,6 +20,12 @@ variable "aks_kubelet_identity_object_id" {
   type        = string
 }
 
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID for tunnel management"
+  type        = string
+}
+
 variable "tags" {
   description = "Common tags for all resources"
   type        = map(string)

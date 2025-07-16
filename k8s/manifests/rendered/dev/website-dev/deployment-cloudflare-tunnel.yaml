@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cloudflare-tunnel
+    app.kubernetes.io/environment: dev
+    environment: dev
+  name: cloudflare-tunnel
+  namespace: website-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-tunnel
+      app.kubernetes.io/environment: dev
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: cloudflare-tunnel
+        app.kubernetes.io/environment: dev
+        environment: dev
+    spec:
+      containers:
+      - args:
+        - tunnel
+        - --config
+        - /etc/cloudflared/config/config.yaml
+        - run
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: tunnel-token
+              name: website-cloudflare-secrets
+        image: cloudflare/cloudflared:latest
+        name: cloudflared
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        volumeMounts:
+        - mountPath: /etc/cloudflared/config
+          name: config
+          readOnly: true
+      volumes:
+      - configMap:
+          name: cloudflare-tunnel-config
+        name: config

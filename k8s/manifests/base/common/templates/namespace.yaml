@@ -8,3 +8,13 @@ metadata:
     name: a-csi-driver
   annotations:
     description: "Namespace for Azure CSI driver components"
+---
+# Source: common/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: a-workload-identity
+  labels:
+    name: a-workload-identity
+  annotations:
+    description: "Namespace for Azure Workload Identity webhook components"

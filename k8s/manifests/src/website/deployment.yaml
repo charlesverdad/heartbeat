@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website
+  namespace: website-dev
+  labels:
+    app: website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website
+  template:
+    metadata:
+      labels:
+        app: website
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: website-sa
+      containers:
+      - name: ghost
+        image: ghost:5.96.0-alpine
+        ports:
+        - containerPort: 2368
+          name: http
+        env:
+        # Database configuration
+        - name: database__client
+          value: "mysql"
+        - name: database__connection__user
+          value: "ghostadmin"
+        - name: database__connection__database
+          value: "ghost"
+        # SSL configuration for Azure MySQL Flexible Server
+        - name: database__connection__ssl__rejectUnauthorized
+          value: "false"
+        # Ghost configuration
+        - name: url
+          value: "https://dev.heartbeatchurch.com.au"
+        - name: NODE_ENV
+          value: "development"
+        # Load database password and host from Key Vault
+        envFrom:
+        - secretRef:
+            name: website-mysql-secrets
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 512Mi
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /ghost/api/v4/admin/site/
+            port: 2368
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ghost/api/v4/admin/site/
+            port: 2368
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "website-secrets"
