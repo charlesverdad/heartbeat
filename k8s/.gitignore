@@ -2,6 +2,9 @@
 *.tmp
 *-temp/
 
+# Intermediate build artifacts - these are generated from src/
+manifests/base/
+
 # Don't ignore rendered manifests - these should be committed for GitOps
 !manifests/rendered/
 
