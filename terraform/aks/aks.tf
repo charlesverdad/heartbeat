@@ -16,14 +16,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
     load_balancer_sku = "standard"
   }
 
-  # Default node pool
+  # Default node pool - fixed single node for minimal cost
   default_node_pool {
     name               = "default"
     node_count         = var.node_count
     vm_size            = var.node_vm_size
-    enable_auto_scaling = true
-    min_count          = 1
-    max_count          = 5
+    enable_auto_scaling = false
     max_pods           = 30
     os_disk_size_gb    = 30
     vnet_subnet_id     = azurerm_subnet.aks_nodes.id
@@ -59,11 +57,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   # Add-ons
   azure_policy_enabled = true
-
-  # Monitoring
-  oms_agent {
-    log_analytics_workspace_id = azurerm_log_analytics_workspace.aks.id
-  }
 
 
   tags = var.tags
