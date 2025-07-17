@@ -85,6 +85,92 @@ resource "azurerm_container_app_environment" "main" {
   tags                = var.tags
 }
 
+# Generate random password for MySQL
+resource "random_password" "mysql_admin" {
+  length  = 16
+  special = true
+}
+
+# Azure Database for MySQL - Flexible Server (cost-effective)
+resource "azurerm_mysql_flexible_server" "main" {
+  name                   = "mysql-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  resource_group_name    = azurerm_resource_group.main.name
+  location               = azurerm_resource_group.main.location
+  
+  # Minimal configuration for cost savings
+  administrator_login    = var.mysql_admin_username
+  administrator_password = random_password.mysql_admin.result
+  
+  # Cheapest tier available
+  sku_name = "B_Standard_B1ms"  # Burstable, 1 vCore, 2GB RAM
+  
+  # Minimal storage (20GB minimum)
+  storage {
+    size_gb = 20
+    iops    = 360  # Minimum for this tier
+  }
+  
+  # MySQL version
+  version = var.mysql_version
+  
+  # Availability zone
+  zone = var.mysql_availability_zone
+  
+  # Backup configuration - weekly to save costs
+  backup_retention_days = 7
+  
+  tags = var.tags
+}
+
+# Firewall rule to allow Azure services
+resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure_services" {
+  name                = "AllowAzureServices"
+  resource_group_name = azurerm_resource_group.main.name
+  server_name         = azurerm_mysql_flexible_server.main.name
+  start_ip_address    = "0.0.0.0"
+  end_ip_address      = "0.0.0.0"
+}
+
+# Create Ghost database
+resource "azurerm_mysql_flexible_database" "ghost" {
+  name                = "ghost"
+  resource_group_name = azurerm_resource_group.main.name
+  server_name         = azurerm_mysql_flexible_server.main.name
+  charset             = "utf8mb4"
+  collation           = "utf8mb4_unicode_ci"
+}
+
+# Store MySQL connection details in Key Vault
+resource "azurerm_key_vault_secret" "mysql_connection_string" {
+  name         = "mysql-connection-string"
+  value        = "mysql://${azurerm_mysql_flexible_server.main.administrator_login}:${random_password.mysql_admin.result}@${azurerm_mysql_flexible_server.main.fqdn}:3306/${azurerm_mysql_flexible_database.ghost.name}?ssl=true"
+  key_vault_id = azurerm_key_vault.main.id
+  
+  depends_on = [
+    azurerm_role_assignment.current_user_keyvault_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "mysql_password" {
+  name         = "mysql-password"
+  value        = random_password.mysql_admin.result
+  key_vault_id = azurerm_key_vault.main.id
+  
+  depends_on = [
+    azurerm_role_assignment.current_user_keyvault_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "mysql_host" {
+  name         = "mysql-host"
+  value        = azurerm_mysql_flexible_server.main.fqdn
+  key_vault_id = azurerm_key_vault.main.id
+  
+  depends_on = [
+    azurerm_role_assignment.current_user_keyvault_admin
+  ]
+}
+
 # Store Gmail app password in Key Vault
 resource "azurerm_key_vault_secret" "gmail_app_password" {
   name         = "gmail-app-password"
@@ -170,110 +256,143 @@ resource "azurerm_container_app" "ghost" {
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
-  
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.main.id]
   }
-  
+
   template {
     min_replicas = 1
-    max_replicas = 2
-    
+    max_replicas = 1
+
     volume {
       name         = "ghost-content"
       storage_type = "AzureFile"
       storage_name = azurerm_container_app_environment_storage.ghost_content.name
     }
-    
+
     container {
       name   = "ghost"
       image  = "ghost:5.96.0-alpine"
       cpu    = 0.5
       memory = "1Gi"
-      
+
       env {
         name  = "NODE_ENV"
         value = "production"
       }
-      
+
       env {
         name  = "url"
         value = "https://${var.domain_name}"
       }
-      
+
       env {
         name  = "database__client"
-        value = "sqlite3"
+        value = "mysql"
       }
-      
+
       env {
-        name  = "database__connection__filename"
-        value = "/var/lib/ghost/content/data/ghost.db"
+        name  = "database__connection__user"
+        value = var.mysql_admin_username
       }
-      
+
+      env {
+        name  = "database__connection__database"
+        value = "ghost"
+      }
+
+      env {
+        name        = "database__connection__password"
+        secret_name = "mysql-password"
+      }
+
+      env {
+        name        = "database__connection__host"
+        secret_name = "mysql-host"
+      }
+
+      env {
+        name  = "database__connection__ssl__rejectUnauthorized"
+        value = "false"
+      }
+
       env {
         name  = "mail__transport"
         value = "SMTP"
       }
-      
+
       env {
         name  = "mail__from"
         value = "hello@heartbeatchurch.com.au"
       }
-      
+
       env {
         name  = "mail__options__host"
         value = "smtp.gmail.com"
       }
-      
+
       env {
         name  = "mail__options__port"
         value = "465"
       }
-      
+
       env {
         name  = "mail__options__secure"
         value = "true"
       }
-      
+
       env {
         name  = "mail__options__auth__user"
         value = "hello@heartbeatchurch.com.au"
       }
-      
+
       env {
         name        = "mail__options__auth__pass"
         secret_name = "gmail-app-password"
       }
-      
+
       volume_mounts {
         name = "ghost-content"
         path = "/var/lib/ghost/content"
       }
     }
   }
-  
+
   secret {
     name                = "gmail-app-password"
     key_vault_secret_id = azurerm_key_vault_secret.gmail_app_password.id
     identity            = azurerm_user_assigned_identity.main.id
   }
-  
+
+  secret {
+    name                = "mysql-password"
+    key_vault_secret_id = azurerm_key_vault_secret.mysql_password.id
+    identity            = azurerm_user_assigned_identity.main.id
+  }
+
+  secret {
+    name                = "mysql-host"
+    key_vault_secret_id = azurerm_key_vault_secret.mysql_host.id
+    identity            = azurerm_user_assigned_identity.main.id
+  }
+
   ingress {
     external_enabled = false  # Only accessible within the container app environment
     target_port      = 2368
-    
+
     traffic_weight {
       percentage      = 100
       latest_revision = true
     }
   }
-  
+
   depends_on = [
-    azurerm_role_assignment.keyvault_secrets_user
+    azurerm_role_assignment.keyvault_secrets_user,
+    azurerm_container_app_environment_storage.ghost_content
   ]
-  
+
   tags = var.tags
 }
 

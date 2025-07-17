@@ -84,3 +84,24 @@ output "website_url" {
   description = "URL of the website"
   value       = "https://${var.domain_name}"
 }
+
+# MySQL outputs
+output "mysql_server_name" {
+  description = "Name of the MySQL server"
+  value       = azurerm_mysql_flexible_server.main.name
+}
+
+output "mysql_server_fqdn" {
+  description = "FQDN of the MySQL server"
+  value       = azurerm_mysql_flexible_server.main.fqdn
+}
+
+output "mysql_database_name" {
+  description = "Name of the MySQL database"
+  value       = azurerm_mysql_flexible_database.ghost.name
+}
+
+output "mysql_admin_username" {
+  description = "MySQL administrator username"
+  value       = var.mysql_admin_username
+}
