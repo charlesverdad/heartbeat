@@ -230,16 +230,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "website" {
   config {
     ingress_rule {
       hostname = var.domain_name
-      service  = "http://${azurerm_container_app.ghost.ingress[0].fqdn}"
+      service  = "https://${azurerm_container_app.ghost.ingress[0].fqdn}"
       
       origin_request {
-        connect_timeout          = "30s"
-        tls_timeout             = "10s"
-        tcp_keep_alive          = "30s"
-        no_happy_eyeballs       = false
-        keep_alive_connections  = 1024
-        keep_alive_timeout      = "1m30s"
-        http_host_header        = var.domain_name
+        no_tls_verify    = true
+        http_host_header = azurerm_container_app.ghost.ingress[0].fqdn
       }
     }
     
@@ -379,7 +374,7 @@ resource "azurerm_container_app" "ghost" {
   }
 
   ingress {
-    external_enabled = false  # Only accessible within the container app environment
+    external_enabled = true   # Enable external access for Cloudflare tunnel
     target_port      = 2368
 
     traffic_weight {
