@@ -58,10 +58,7 @@ output "kubelet_identity_object_id" {
   value       = azurerm_user_assigned_identity.kubelet.principal_id
 }
 
-output "log_analytics_workspace_id" {
-  description = "ID of the Log Analytics workspace"
-  value       = azurerm_log_analytics_workspace.aks.id
-}
+# Log Analytics workspace output removed for cost optimization
 
 output "aks_admin_group_id" {
   description = "Object ID of the AKS administrators Azure AD group"

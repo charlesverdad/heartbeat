@@ -5,7 +5,7 @@ data "azurerm_client_config" "current" {}
 data "terraform_remote_state" "aks" {
   backend = "local"
   config = {
-    path = "../aks/dev.tfstate"
+    path = "../aks/${var.environment}.tfstate"
   }
 }
 
@@ -81,7 +81,7 @@ resource "azurerm_federated_identity_credential" "website_workload_identity" {
   audience            = ["api://AzureADTokenExchange"]
   issuer              = data.terraform_remote_state.aks.outputs.oidc_issuer_url
   parent_id           = azurerm_user_assigned_identity.main.id
-  subject             = "system:serviceaccount:website-dev:website-sa"
+  subject             = "system:serviceaccount:website-${var.environment}:website-sa"
 }
 
 # Generate random password for MySQL
@@ -97,7 +97,7 @@ resource "azurerm_mysql_flexible_server" "main" {
   location               = azurerm_resource_group.main.location
   
   # Minimal configuration for cost savings
-  administrator_login    = "ghostadmin"
+  administrator_login    = var.mysql_admin_username
   administrator_password = random_password.mysql_admin.result
   
   # Cheapest tier available
@@ -110,10 +110,10 @@ resource "azurerm_mysql_flexible_server" "main" {
   }
   
   # MySQL version
-  version = "8.0.21"
+  version = var.mysql_version
   
   # Availability zone (set to match existing)
-  zone = "1"
+  zone = var.mysql_availability_zone
   
   # Backup configuration - weekly to save costs
   backup_retention_days = 7

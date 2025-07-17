@@ -1,10 +1,11 @@
-# Copy this file to terraform.tfvars and customize the values
+# Production configuration for AKS deployment
+# Based on dev.tfvars with minimal resources for low traffic
 
 # Azure region for resources
 location = "australiaeast"
 
 # Environment name
-environment = "dev"
+environment = "prod"
 
 # Project name for resource naming
 project_name = "heartbeat-k8s"
@@ -16,9 +17,8 @@ kubernetes_version = null
 node_count   = 1
 node_vm_size = "Standard_B2s"
 
-# Private cluster for enhanced security (default: true)
-# Set to false for easier access for development
-private_cluster_enabled = false
+# Private cluster for enhanced security (enabled for production)
+private_cluster_enabled = true
 
 # Note: Azure AD group for AKS administrators is automatically created
 # The current user (you) will be added as owner and member of this group
@@ -26,7 +26,7 @@ private_cluster_enabled = false
 # Common tags
 tags = {
   Project     = "heartbeat-k8s"
-  Environment = "dev"
+  Environment = "prod"
   ManagedBy   = "terraform"
   Owner       = "charles"
 }
