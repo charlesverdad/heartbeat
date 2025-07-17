@@ -230,11 +230,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "website" {
   config {
     ingress_rule {
       hostname = var.domain_name
-      service  = "https://${azurerm_container_app.ghost.ingress[0].fqdn}"
+      service  = "http://localhost:2368"
       
       origin_request {
-        no_tls_verify    = true
-        http_host_header = azurerm_container_app.ghost.ingress[0].fqdn
+        http_host_header = var.domain_name
       }
     }
     
@@ -245,7 +244,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "website" {
   }
 }
 
-# Container App for Ghost
+# Container App with Ghost and Cloudflare tunnel co-located
 resource "azurerm_container_app" "ghost" {
   name                         = "ca-ghost-${var.environment}-${random_string.suffix.result}"
   container_app_environment_id = azurerm_container_app_environment.main.id
@@ -267,6 +266,7 @@ resource "azurerm_container_app" "ghost" {
       storage_name = azurerm_container_app_environment_storage.ghost_content.name
     }
 
+    # Ghost container
     container {
       name   = "ghost"
       image  = "ghost:5.96.0-alpine"
@@ -353,6 +353,26 @@ resource "azurerm_container_app" "ghost" {
         path = "/var/lib/ghost/content"
       }
     }
+
+    # Cloudflare tunnel container
+    container {
+      name   = "cloudflared"
+      image  = "cloudflare/cloudflared:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
+      
+      args = [
+        "tunnel",
+        "run",
+        "--token",
+        "$(TUNNEL_TOKEN)"
+      ]
+      
+      env {
+        name        = "TUNNEL_TOKEN"
+        secret_name = "cloudflare-tunnel-token"
+      }
+    }
   }
 
   secret {
@@ -373,19 +393,18 @@ resource "azurerm_container_app" "ghost" {
     identity            = azurerm_user_assigned_identity.main.id
   }
 
-  ingress {
-    external_enabled = true   # Enable external access for Cloudflare tunnel
-    target_port      = 2368
-
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
-    }
+  secret {
+    name                = "cloudflare-tunnel-token"
+    key_vault_secret_id = azurerm_key_vault_secret.cloudflare_tunnel_token.id
+    identity            = azurerm_user_assigned_identity.main.id
   }
+
+  # No ingress needed - tunnel provides external access
 
   depends_on = [
     azurerm_role_assignment.keyvault_secrets_user,
-    azurerm_container_app_environment_storage.ghost_content
+    azurerm_container_app_environment_storage.ghost_content,
+    cloudflare_zero_trust_tunnel_cloudflared_config.website
   ]
 
   tags = var.tags
@@ -401,54 +420,3 @@ resource "azurerm_container_app_environment_storage" "ghost_content" {
   access_mode                  = "ReadWrite"
 }
 
-# Container App for Cloudflare Tunnel
-resource "azurerm_container_app" "cloudflare_tunnel" {
-  name                         = "ca-tunnel-${var.environment}-${random_string.suffix.result}"
-  container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = azurerm_resource_group.main.name
-  revision_mode                = "Single"
-  
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.main.id]
-  }
-  
-  template {
-    min_replicas = 1
-    max_replicas = 1
-    
-    container {
-      name   = "cloudflared"
-      image  = "cloudflare/cloudflared:latest"
-      cpu    = 0.25
-      memory = "0.5Gi"
-      
-      args = [
-        "tunnel",
-        "run",
-        "--token",
-        "$(TUNNEL_TOKEN)"
-      ]
-      
-      env {
-        name        = "TUNNEL_TOKEN"
-        secret_name = "cloudflare-tunnel-token"
-      }
-    }
-  }
-  
-  secret {
-    name                = "cloudflare-tunnel-token"
-    key_vault_secret_id = azurerm_key_vault_secret.cloudflare_tunnel_token.id
-    identity            = azurerm_user_assigned_identity.main.id
-  }
-  
-  # No ingress needed - this is an outbound tunnel connector
-  
-  depends_on = [
-    azurerm_role_assignment.keyvault_secrets_user,
-    cloudflare_zero_trust_tunnel_cloudflared_config.website
-  ]
-  
-  tags = var.tags
-}

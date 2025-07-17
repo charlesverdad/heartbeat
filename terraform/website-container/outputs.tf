@@ -39,13 +39,13 @@ output "ghost_container_app_name" {
 }
 
 output "ghost_container_app_fqdn" {
-  description = "FQDN of the Ghost Container App"
-  value       = azurerm_container_app.ghost.ingress[0].fqdn
+  description = "FQDN of the Ghost Container App (no ingress - using tunnel)"
+  value       = "N/A - using Cloudflare tunnel"
 }
 
 output "cloudflare_tunnel_container_app_name" {
-  description = "Name of the Cloudflare Tunnel Container App"
-  value       = azurerm_container_app.cloudflare_tunnel.name
+  description = "Name of the Container App (both Ghost and Cloudflare tunnel)"
+  value       = azurerm_container_app.ghost.name
 }
 
 # Cloudflare outputs
