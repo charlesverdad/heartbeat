@@ -136,7 +136,7 @@ def main():
     
     # Configuration
     environment = os.environ.get('ENVIRONMENT', 'dev')
-    keyvault_name = f"kv-terraform-{environment}"
+    keyvault_name = f"kv-terraform-terraform"  # Use terraform Key Vault for API tokens
     secret_name = "tf-cloudflare-api-token"
     
     # Fetch and export Cloudflare API token
@@ -144,10 +144,13 @@ def main():
         cloudflare_token = get_cloudflare_token(keyvault_name, secret_name)
         os.environ['CLOUDFLARE_API_TOKEN'] = cloudflare_token
         log_info("✓ Cloudflare API token loaded from Key Vault")
-    except:
+    except SystemExit:
+        # Token fetch failed critically, let it exit
+        raise
+    except Exception as e:
         # Token fetch failed, but continue anyway (some terraform commands don't need it)
-        log_info("✓ Cloudflare API token loaded from Key Vault")
-        pass
+        log_warn(f"Failed to fetch Cloudflare API token: {e}")
+        log_warn("Continuing without Cloudflare API token - some operations may fail")
     
     # Set other common Terraform variables
     os.environ['TF_VAR_environment'] = environment
@@ -157,8 +160,9 @@ def main():
     log_info(f"Executing: {' '.join(terraform_cmd)}")
     
     try:
-        # Use exec-like behavior by replacing current process
-        os.execvp('terraform', terraform_cmd)
+        # Use subprocess.run to properly pass environment variables
+        result = subprocess.run(terraform_cmd, env=os.environ.copy())
+        sys.exit(result.returncode)
     except FileNotFoundError:
         log_error("Terraform is not installed or not in PATH")
         sys.exit(1)
