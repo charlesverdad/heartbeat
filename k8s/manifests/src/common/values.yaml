@@ -1,0 +1,79 @@
+# Common infrastructure components values
+
+# Azure Key Vault Provider configuration
+csi-secrets-store-provider-azure:
+  # Enable the secrets store CSI driver installation
+  secrets-store-csi-driver:
+    install: true
+    syncSecret:
+      enabled: true
+    enableSecretRotation: true
+    
+    # Resource limits for CSI driver
+    resources:
+      driver:
+        limits:
+          cpu: 200m
+          memory: 200Mi
+        requests:
+          cpu: 50m
+          memory: 100Mi
+      registrar:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 10m
+          memory: 20Mi
+      liveness:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 10m
+          memory: 20Mi
+
+  # Azure provider specific configuration
+  azure:
+    # Resource limits for the Azure provider
+    resources:
+      limits:
+        cpu: 50m
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+
+# Azure Workload Identity webhook configuration
+workload-identity-webhook:
+  # Enable the workload identity webhook
+  enabled: true
+  
+  # Azure tenant ID - required for workload identity
+  azureTenantID: "42ff806a-1ba2-48f1-a4af-eadec06d2486"
+  
+  # Webhook configuration
+  webhook:
+    # Resource limits for the webhook
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+    
+    # Webhook port
+    port: 9443
+    
+    # TLS configuration
+    tls:
+      port: 9443
+      
+  # Mutating webhook configuration
+  mutatingWebhookConfiguration:
+    # Webhook timeout
+    timeoutSeconds: 30
+    
+    # Failure policy
+    failurePolicy: Fail

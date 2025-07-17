@@ -52,6 +52,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
   # Security features
   role_based_access_control_enabled = true
+  
+  # OIDC Issuer for Workload Identity
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
 
   # Add-ons
   azure_policy_enabled = true

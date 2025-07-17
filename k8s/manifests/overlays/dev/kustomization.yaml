@@ -3,11 +3,8 @@ kind: Kustomization
 
 # Base resources to include (reference components from base directory)
 resources:
-- ../../base/webapp
-- ../../base/redis
-
-# Dev-specific configurations
-namespace: heartbeat-dev
+- ../../base/common
+- ../../base/website
 
 # Common labels for dev environment
 commonLabels:
@@ -16,21 +13,27 @@ commonLabels:
 
 # Patches for dev-specific modifications
 patches:
-# Example patches:
-# - target:
-#     kind: Deployment
-#     name: my-app
-#   patch: |-
-#     - op: replace
-#       path: /spec/replicas
-#       value: 1
-# - target:
-#     kind: Service
-#     name: my-service
-#   patch: |-
-#     - op: replace
-#       path: /spec/type
-#       value: NodePort
+# Set namespace for all CSI driver components
+- target:
+    labelSelector: "app=csi-secrets-store-provider-azure"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-csi-driver
+- target:
+    labelSelector: "app=secrets-store-csi-driver"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-csi-driver
+
+# Set namespace for workload identity webhook components
+- target:
+    labelSelector: "app=workload-identity-webhook"
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: a-workload-identity
 
 # Config map generators for dev-specific config
 configMapGenerator:

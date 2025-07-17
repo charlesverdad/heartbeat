@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: website
+    app.kubernetes.io/environment: dev
+    environment: dev
+  name: ghost-content-pvc
+  namespace: website-dev
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: default

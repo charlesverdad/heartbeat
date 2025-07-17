@@ -1,0 +1,48 @@
+# Development environment overrides
+
+csi-secrets-store-provider-azure:
+  # Lower resource limits for development
+  secrets-store-csi-driver:
+    resources:
+      driver:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 25m
+          memory: 50Mi
+      registrar:
+        limits:
+          cpu: 50m
+          memory: 50Mi
+        requests:
+          cpu: 5m
+          memory: 10Mi
+      liveness:
+        limits:
+          cpu: 50m
+          memory: 50Mi
+        requests:
+          cpu: 5m
+          memory: 10Mi
+
+  # Azure provider - dev settings
+  azure:
+    resources:
+      limits:
+        cpu: 25m
+        memory: 50Mi
+      requests:
+        cpu: 5m
+        memory: 10Mi
+
+# Azure Workload Identity webhook - dev settings
+workload-identity-webhook:
+  webhook:
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+      requests:
+        cpu: 5m
+        memory: 32Mi

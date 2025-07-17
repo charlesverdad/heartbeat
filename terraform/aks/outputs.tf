@@ -1,3 +1,8 @@
+output "oidc_issuer_url" {
+  description = "OIDC issuer URL for the AKS cluster"
+  value       = azurerm_kubernetes_cluster.aks.oidc_issuer_url
+}
+
 output "resource_group_name" {
   description = "Name of the resource group"
   value       = azurerm_resource_group.aks.name

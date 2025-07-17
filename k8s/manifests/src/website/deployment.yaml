@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website
+  namespace: website-dev
+  labels:
+    app: website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website
+  template:
+    metadata:
+      labels:
+        app: website
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: website-sa
+      containers:
+      - name: ghost
+        image: ghost:5.96.0-alpine
+        ports:
+        - containerPort: 2368
+          name: http
+        env:
+        # Database configuration
+        - name: database__client
+          value: "mysql"
+        - name: database__connection__user
+          value: "ghostadmin"
+        - name: database__connection__database
+          value: "ghost"
+        # SSL configuration for Azure MySQL Flexible Server
+        - name: database__connection__ssl__rejectUnauthorized
+          value: "false"
+        # Ghost configuration
+        - name: url
+          value: "https://dev.heartbeatchurch.com.au"
+        - name: NODE_ENV
+          value: "development"
+        # SMTP configuration
+        - name: mail__transport
+          value: "SMTP"
+        - name: mail__from
+          value: "hello@heartbeatchurch.com.au"
+        - name: mail__options__host
+          value: "smtp.gmail.com"
+        - name: mail__options__port
+          value: "465"
+        - name: mail__options__secure
+          value: "true"
+        - name: mail__options__auth__user
+          value: "hello@heartbeatchurch.com.au"
+        - name: mail__options__auth__pass
+          valueFrom:
+            secretKeyRef:
+              name: website-gmail-secrets
+              key: gmail-app-password
+        # Load database password and host from Key Vault
+        envFrom:
+        - secretRef:
+            name: website-mysql-secrets
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 512Mi
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        - name: ghost-content
+          mountPath: "/var/lib/ghost/content"
+          readOnly: false
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "website-secrets"
+      - name: ghost-content
+        persistentVolumeClaim:
+          claimName: ghost-content-pvc

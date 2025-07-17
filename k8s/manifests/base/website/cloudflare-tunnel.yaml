@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-tunnel
+  namespace: website-dev
+  labels:
+    app: cloudflare-tunnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-tunnel
+  template:
+    metadata:
+      labels:
+        app: cloudflare-tunnel
+    spec:
+      serviceAccountName: website-sa
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:latest
+        args:
+        - tunnel
+        - run
+        - --token
+        - $(TUNNEL_TOKEN)
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: website-cloudflare-secrets
+              key: tunnel-token
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 128Mi

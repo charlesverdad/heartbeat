@@ -270,6 +270,13 @@ class K8sWorkflow:
         namespaces = list(namespace_docs.keys())
         print(f"✓ Rendered {total_files} manifests across {len(namespaces)} namespace(s): {', '.join(namespaces)}")
 
+    def clear_rendered_directory(self) -> None:
+        """Clear the entire rendered directory before building."""
+        if self.rendered_dir.exists():
+            print("Clearing rendered directory...")
+            shutil.rmtree(self.rendered_dir)
+            print("✓ Rendered directory cleared")
+
     def render_all_environments(self) -> None:
         """Render final manifests for all environments."""
         environments = self.list_environments()
@@ -310,6 +317,9 @@ class K8sWorkflow:
         if not components:
             print("No components found in src directory")
             return
+        
+        # Clear rendered directory before building
+        self.clear_rendered_directory()
         
         print(f"Building {len(components)} components...")
         

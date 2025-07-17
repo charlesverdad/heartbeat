@@ -1,13 +1,14 @@
 # Kubernetes Deployment Workflow
 
-This repository implements a Kubernetes deployment workflow that separates rendering logic from environment customization using Helm templates and Kustomize overlays.
+This repository implements a sophisticated Kubernetes deployment workflow that separates concerns between component definition, environment-specific configuration, and final deployment manifests. The workflow uses Helm for templating and Kustomize for environment customization.
 
-## Architecture
+## 🏗️ Architecture Overview
 
 ```
 k8s/
+├── bin/k8s                     # Main workflow automation script
 ├── manifests/
-│   ├── src/                    # Source Helm charts and vanilla YAML
+│   ├── src/                    # Source definitions (Helm charts + vanilla YAML)
 │   │   ├── webapp/            # Helm chart component
 │   │   │   ├── Chart.yaml
 │   │   │   ├── values.yaml
@@ -31,15 +32,34 @@ k8s/
 │   │       └── kustomization.yaml
 │   └── rendered/              # Final manifests ready for deployment
 │       ├── dev/
-│       │   ├── heartbeat-dev-deployment-webapp.yaml
-│       │   ├── heartbeat-dev-service-webapp.yaml
-│       │   └── ...
+│       │   ├── webapp-dev/    # Organized by namespace
+│       │   └── redis-dev/
 │       └── prod/
-│           ├── heartbeat-prod-deployment-webapp.yaml
-│           ├── heartbeat-prod-service-webapp.yaml
-│           └── ...
+│           └── heartbeat-prod/
 └── README.md
 ```
+
+## 🔄 Workflow Process
+
+### 1. **Source Definition** (`manifests/src/`)
+- **Helm Charts**: Complex applications with templates, values, and conditional logic
+- **Vanilla YAML**: Simple, static Kubernetes manifests
+- Components are organized in individual directories
+
+### 2. **Base Rendering** (`manifests/base/`)
+- Helm charts are rendered to plain YAML using `helm template`
+- Vanilla YAML files are copied as-is
+- Each component gets a `kustomization.yaml` for Kustomize integration
+
+### 3. **Environment Overlays** (`manifests/overlays/`)
+- Environment-specific patches, configurations, and customizations
+- Support for different namespaces, resource limits, replicas, etc.
+- ConfigMap and Secret generators for environment-specific values
+
+### 4. **Final Rendering** (`manifests/rendered/`)
+- Complete, ready-to-deploy manifests with all overlays applied
+- Organized by environment and namespace
+- Each Kubernetes resource in a separate file for GitOps compatibility
 
 ## Workflow Overview
 

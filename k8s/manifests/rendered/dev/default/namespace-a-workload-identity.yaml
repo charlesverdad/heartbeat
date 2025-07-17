@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    description: Namespace for Azure Workload Identity webhook components
+  labels:
+    app.kubernetes.io/environment: dev
+    environment: dev
+    name: a-workload-identity
+  name: a-workload-identity
