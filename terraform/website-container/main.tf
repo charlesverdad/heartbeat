@@ -377,7 +377,7 @@ resource "azurerm_container_app" "ghost" {
 
   secret {
     name                = "gmail-app-password"
-    key_vault_secret_id = azurerm_key_vault_secret.gmail_app_password.id
+    key_vault_secret_id = azurerm_key_vault_secret.gmail_app_password.versionless_id
     identity            = azurerm_user_assigned_identity.main.id
   }
 
