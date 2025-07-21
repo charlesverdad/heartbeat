@@ -7,18 +7,20 @@ location = "australiaeast"
 environment = "dev"
 
 # Project name for resource naming
-project_name = "website"
+project_name = "site"
 
-# AKS kubelet identity object ID from AKS deployment
-aks_kubelet_identity_object_id = "c6d13428-15a4-40e1-9abc-a61f571f6295"
-
-# Cloudflare account ID (this is the same for all environments)
-# TODO: move this to a global variable. maybe in bin/tf script
+# Cloudflare account ID (same as original)
 cloudflare_account_id = "d26a8771162442a563371ea8097acc89"
+
+# Cloudflare zone ID for heartbeatchurch.com.au
+cloudflare_zone_id = "80440a32523d928c9d7e015168a67758"
+
+# Domain name for the website
+domain_name = "dev2.heartbeatchurch.com.au"
 
 # Common tags
 tags = {
-  Project     = "website"
+  Project     = "website-container"
   Environment = "dev"
   ManagedBy   = "terraform"
   Owner       = "charles"
