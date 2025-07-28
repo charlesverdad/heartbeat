@@ -1,7 +1,6 @@
 import argparse
 import os
 from video_downloader import VideoDownloader
-from audio_extractor import AudioExtractor
 from transcriber import Transcriber
 
 
@@ -17,20 +16,6 @@ def main():
     download_parser.add_argument('--end-time', help='End time (HH:MM:SS or seconds)')
     download_parser.add_argument('--no-audio', action='store_true', help='Download video only, no audio extraction')
 
-    # Trim/process audio
-    trim_parser = subparsers.add_parser('trim', help='Trim or convert existing audio files')
-    trim_parser.add_argument('input', help='Input audio file path')
-    trim_parser.add_argument('--output-dir', default='.', help='Output directory')
-    trim_parser.add_argument('--output-format', default='mp3', help='Output audio format')
-    trim_parser.add_argument('--start-time', help='Start time (HH:MM:SS or seconds)')
-    trim_parser.add_argument('--end-time', help='End time (HH:MM:SS or seconds)')
-    
-    # Convert audio format
-    convert_parser = subparsers.add_parser('convert', help='Convert audio file format')
-    convert_parser.add_argument('input', help='Input audio file path')
-    convert_parser.add_argument('--output-dir', default='.', help='Output directory')
-    convert_parser.add_argument('--output-format', default='mp3', help='Output audio format')
-    convert_parser.add_argument('--quality', default='192k', help='Audio quality (e.g., 128k, 192k, 320k)')
 
     # Transcribe
     transcribe_parser = subparsers.add_parser('transcribe', help='Transcribe audio to text')
@@ -57,21 +42,6 @@ def main():
         else:
             print(f"Download failed: {result.error_message}")
 
-    elif args.command == 'trim':
-        extractor = AudioExtractor(output_dir=args.output_dir)
-        result = extractor.trim_audio(args.input, start_time=args.start_time, end_time=args.end_time, output_format=args.output_format)
-        if result.success:
-            print(f"Audio trimming successful: {result.output_path}")
-        else:
-            print(f"Audio trimming failed: {result.error_message}")
-
-    elif args.command == 'convert':
-        extractor = AudioExtractor(output_dir=args.output_dir)
-        result = extractor.convert_format(args.input, output_format=args.output_format, quality=args.quality)
-        if result.success:
-            print(f"Audio conversion successful: {result.output_path}")
-        else:
-            print(f"Audio conversion failed: {result.error_message}")
 
     elif args.command == 'transcribe':
         transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir)

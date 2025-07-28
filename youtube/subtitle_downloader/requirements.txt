@@ -1,2 +1,4 @@
 yt-dlp>=2023.12.30
 webvtt-py>=0.4.6
+openai-whisper
+streamlit>=1.28.0

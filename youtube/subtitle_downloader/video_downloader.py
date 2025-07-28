@@ -1,5 +1,6 @@
 import yt_dlp
 import os
+import re
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
@@ -32,6 +33,21 @@ class VideoDownloader:
             seconds = float(parts[-1])
             return hours * 3600 + minutes * 60 + seconds
         return float(time_str)
+    
+    def sanitize_filename(self, filename: str) -> str:
+        """Sanitize filename by removing/replacing invalid characters"""
+        # Replace forward and back slashes with dashes
+        filename = filename.replace('/', '-').replace('\\', '-')
+        # Remove other invalid characters for most filesystems
+        filename = re.sub(r'[<>:"|?*]', '', filename)
+        # Replace multiple spaces/dashes with single dash
+        filename = re.sub(r'[-\s]+', '-', filename)
+        # Remove leading/trailing spaces and dashes
+        filename = filename.strip(' -')
+        # Ensure it's not empty
+        if not filename:
+            filename = 'unknown'
+        return filename
     
     def download_video(self, 
                       video_url: str, 
@@ -91,23 +107,48 @@ class VideoDownloader:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 # Get video info first
                 info = ydl.extract_info(video_url, download=False)
-                title = info.get('title', 'unknown')
+                original_title = info.get('title', 'unknown')
+                sanitized_title = self.sanitize_filename(original_title)
                 
-                # Download the video/audio
-                ydl.download([video_url])
+                # Update output template with sanitized filename
+                ydl_opts['outtmpl'] = str(self.output_dir / f"{sanitized_title}.%(ext)s")
                 
-                # Determine output file path
+                # Re-create YoutubeDL with updated options
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl_final:
+                    # Download the video/audio
+                    ydl_final.download([video_url])
+                
+                # Determine expected output file path
                 if extract_audio:
-                    output_path = str(self.output_dir / f"{title}.mp3")
+                    expected_path = self.output_dir / f"{sanitized_title}.mp3"
                 else:
                     ext = info.get('ext', 'mp4')
-                    output_path = str(self.output_dir / f"{title}.{ext}")
+                    expected_path = self.output_dir / f"{sanitized_title}.{ext}"
+                
+                # Check if the expected file exists, if not try to find similar files
+                if expected_path.exists():
+                    output_path = str(expected_path)
+                else:
+                    # Look for files with similar names in the output directory
+                    pattern = f"{sanitized_title}.*"
+                    matching_files = list(self.output_dir.glob(pattern))
+                    if matching_files:
+                        output_path = str(matching_files[0])
+                    else:
+                        # Fallback: look for any recently created audio files
+                        audio_files = list(self.output_dir.glob("*.mp3")) if extract_audio else list(self.output_dir.glob(f"*.{info.get('ext', 'mp4')}"))
+                        if audio_files:
+                            # Get the most recently modified file
+                            output_path = str(max(audio_files, key=lambda p: p.stat().st_mtime))
+                        else:
+                            raise FileNotFoundError(f"Downloaded file not found. Expected: {expected_path}")
                 
                 return VideoDownloadResult(
                     success=True,
                     output_path=output_path,
                     metadata={
-                        'title': title,
+                        'title': original_title,
+                        'sanitized_title': sanitized_title,
                         'duration': info.get('duration'),
                         'url': video_url
                     }

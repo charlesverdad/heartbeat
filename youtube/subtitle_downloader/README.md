@@ -1,19 +1,17 @@
-## YouTube Subtitle Downloader
+# YouTube Audio Processing Pipeline
 
-This script downloads subtitles for YouTube videos using the modern `yt-dlp` library. It supports both manual and automatic subtitle downloads in multiple languages.
+A modular Python toolkit for downloading YouTube videos, extracting audio, and generating transcripts using OpenAI's Whisper.
 
-### Features
+## Structure
 
-- Downloads subtitles in WebVTT format
-- Supports multiple languages
-- Downloads both manual and auto-generated subtitles
-- Timestamp-based trimming (start and end times)
-- Audio download with MP3 extraction
-- Automatic subtitle timestamp adjustment for trimmed content
-- Customizable output directory
-- Error handling and informative feedback
+The project is organized into separate, reusable libraries:
 
-### Installation
+- **`video_downloader.py`** - Downloads YouTube videos and extracts audio
+- **`audio_extractor.py`** - Processes audio files (format conversion, segmentation)  
+- **`transcriber.py`** - Transcribes audio to text using Whisper
+- **`cli.py`** - Command-line interface for all operations
+
+## Installation
 
 1. Make sure you're in the root directory and enter the nix-shell:
    ```bash
@@ -22,91 +20,90 @@ This script downloads subtitles for YouTube videos using the modern `yt-dlp` lib
 
 2. Install the Python dependencies:
    ```bash
-   pip install -r youtube/subtitle_downloader/requirements.txt
+   pip install -r requirements.txt
    ```
 
-**Note**: This project requires `ffmpeg` for audio processing and trimming, which is automatically available in the nix-shell environment.
+**Note**: This project requires `ffmpeg` for audio processing, which is automatically available in the nix-shell environment.
 
-### Usage
+## Usage
 
-#### Interactive Mode
+### Streamlit Web UI
 
-Run the script interactively:
+For an intuitive graphical interface, use the Streamlit web app:
 
 ```bash
-python youtube/subtitle_downloader/subtitle_downloader.py
+python run_ui.py
 ```
 
-The script will prompt you for:
-- YouTube video URL
-- Output directory (optional, defaults to current directory)
-- Language codes (optional, defaults to English)
-- Start timestamp (optional, format: HH:MM:SS or seconds)
-- End timestamp (optional, format: HH:MM:SS or seconds)
-- Audio download option (y/N)
+This will start the web interface at `http://localhost:8501` with the following features:
 
-#### Programmatic Usage
+- **🔽 Download Tab**: Download YouTube videos with audio extraction
+- **📝 Transcription Tab**: Generate transcripts from audio files
+- **🔄 Full Workflow Tab**: Complete pipeline from URL to transcript
+- **📁 File Browser**: View and manage generated files
 
-You can also import and use the function directly:
+The UI automatically saves intermediate results and allows you to chain operations together seamlessly.
+
+### Command Line Interface
+
+The CLI provides several commands:
+
+#### Download Video and Extract Audio
+```bash
+python cli.py download "https://youtube.com/watch?v=VIDEO_ID" --output-dir ./downloads
+```
+
+#### Download with Time Range
+```bash
+python cli.py download "https://youtube.com/watch?v=VIDEO_ID" --start-time "1:30" --end-time "5:45"
+```
+
+#### Transcribe Audio File
+```bash
+python cli.py transcribe audio_file.mp3 --model-size base
+```
+
+#### Complete Workflow (Download → Transcribe)
+```bash
+python cli.py workflow "https://youtube.com/watch?v=VIDEO_ID" --output-dir ./output
+```
+
+### Available Commands
+
+- `download` - Download video from YouTube (with optional audio extraction)
+- `transcribe` - Generate transcript from audio file  
+- `workflow` - Run the complete pipeline (download → transcribe)
+
+### Library Usage
+
+You can also use the libraries directly in your Python code:
 
 ```python
-from subtitle_downloader import download_subtitles
+from video_downloader import VideoDownloader
+from transcriber import Transcriber
 
-# Download English subtitles to current directory
-success = download_subtitles("https://www.youtube.com/watch?v=VIDEO_ID")
+# Download video
+downloader = VideoDownloader(output_dir="./downloads")
+result = downloader.download_video("https://youtube.com/watch?v=VIDEO_ID")
 
-# Download multiple languages to a specific directory
-success = download_subtitles(
-    "https://www.youtube.com/watch?v=VIDEO_ID",
-    output_dir="./subtitles",
-    languages=["en", "es", "fr"]
-)
-
-# Download with timestamp trimming (5 minutes starting from 1:30:00)
-success = download_subtitles(
-    "https://www.youtube.com/watch?v=VIDEO_ID",
-    output_dir="./trimmed",
-    languages=["en"],
-    start_time="1:30:00",  # or "5400" (seconds)
-    end_time="1:35:00",    # or "5700" (seconds)
-    include_audio=True     # Also download trimmed audio as MP3
-)
-
-# Download only audio for a specific time range
-success = download_subtitles(
-    "https://www.youtube.com/watch?v=VIDEO_ID",
-    start_time="10:00",
-    end_time="15:30",
-    include_audio=True,
-    languages=[]  # Skip subtitles, audio only
-)
+if result.success:
+    # Transcribe the audio
+    transcriber = Transcriber(model_size="base")
+    transcript_result = transcriber.transcribe_audio(result.output_path)
+    
+    if transcript_result.success:
+        print(transcript_result.transcript)
 ```
 
-### Language Codes
+## Standardized Result Objects
 
-Common language codes include:
-- `en` - English
-- `es` - Spanish
-- `fr` - French
-- `de` - German
-- `it` - Italian
-- `pt` - Portuguese
-- `ja` - Japanese
-- `ko` - Korean
-- `zh` - Chinese
+All libraries return standardized result objects that make it easy to chain operations:
 
-### Output Format
+- `VideoDownloadResult` - Contains download status, file path, and metadata
+- `AudioExtractionResult` - Contains extraction status and output path
+- `TranscriptionResult` - Contains transcript text, file path, and metadata
 
-**Subtitles**: Saved in WebVTT (.vtt) format with filenames like:
-`Video Title.en.vtt`
-
-**Audio**: Saved in MP3 format with filenames like:
-`Video Title.mp3`
-
-**Timestamp Handling**: When start/end times are specified:
-- Audio files are trimmed to the exact duration
-- Subtitle timestamps are automatically adjusted to start from 00:00:00
-- Only subtitles within the specified time range are included
+This design makes it simple to pass outputs from one step as inputs to the next, perfect for building automated workflows or UI applications.
 
 ### Time Format
 
@@ -116,8 +113,14 @@ Timestamps can be specified in two formats:
 
 ### Troubleshooting
 
-- If no subtitles are available, the script will inform you and exit gracefully
-- The script shows available languages before attempting to download
 - Error messages provide helpful information for debugging issues
 - **FFmpeg errors**: Ensure you're running the script within the nix-shell environment
 - **Timestamp issues**: Verify timestamps are within the video duration
+
+## Future Extensions
+
+The modular design makes it easy to add new features:
+- Translation services
+- Text-to-speech conversion
+- Web UI using Streamlit
+- Batch processing capabilities
