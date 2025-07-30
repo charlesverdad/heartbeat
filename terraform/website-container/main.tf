@@ -269,7 +269,7 @@ resource "azurerm_container_app" "ghost" {
     # Ghost container
     container {
       name   = "ghost"
-      image  = "ghost:5.96.0-alpine"
+      image  = "ghost:5.130.2-alpine"
       cpu    = 0.5
       memory = "1Gi"
 
@@ -330,12 +330,12 @@ resource "azurerm_container_app" "ghost" {
 
       env {
         name  = "mail__options__port"
-        value = "465"
+        value = "587"
       }
 
       env {
         name  = "mail__options__secure"
-        value = "true"
+        value = "false"
       }
 
       env {
