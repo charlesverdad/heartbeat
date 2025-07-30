@@ -8,7 +8,7 @@ import time
 
 # Configure Streamlit page
 st.set_page_config(
-    page_title="YouTube Audio Processing Pipeline",
+    page_title="Youtube Transcript Processing Pipeline",
     page_icon="🎥",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -26,8 +26,8 @@ if 'output_dir' not in st.session_state:
 
 
 def main():
-    st.title("🎥 YouTube Audio Processing Pipeline")
-    st.markdown("Download YouTube videos, extract audio, and generate transcripts with ease!")
+    st.title("🎥 Heartbeat Church Sermon Processing Pipeline")
+    st.markdown("Generate transcripts from sermon for easy translation and publishing")
     
     # Sidebar for configuration
     with st.sidebar:
@@ -89,14 +89,14 @@ def download_tab(output_dir):
     with col1:
         start_time = st.text_input(
             "Start Time",
-            placeholder="0:00 or 30",
+            placeholder="00:00:00",
             help="Format: HH:MM:SS or seconds"
         )
     
     with col2:
         end_time = st.text_input(
             "End Time", 
-            placeholder="5:30 or 330",
+            placeholder="00:05:30",
             help="Format: HH:MM:SS or seconds"
         )
     
@@ -191,6 +191,10 @@ def transcription_tab(output_dir, model_size):
                     st.subheader("📄 Transcript")
                     st.text_area("Transcript Text", result.transcript, height=300)
                     
+                    # Add copy functionality using st.code which has built-in copy button
+                    with st.expander("📋 Copy Transcript (click the copy icon in the code block)"):
+                        st.code(result.transcript, language="text")
+                    
                     # Download button
                     if result.output_path and os.path.exists(result.output_path):
                         with open(result.output_path, 'r') as f:
@@ -231,10 +235,10 @@ def workflow_tab(output_dir, model_size):
     col1, col2 = st.columns(2)
     
     with col1:
-        workflow_start = st.text_input("Start Time", placeholder="0:00", key="workflow_start")
+        workflow_start = st.text_input("Start Time", placeholder="00:00:00", key="workflow_start")
     
     with col2:
-        workflow_end = st.text_input("End Time", placeholder="5:00", key="workflow_end")
+        workflow_end = st.text_input("End Time", placeholder="00:05:00", key="workflow_end")
     
     if st.button("🚀 Run Complete Workflow", type="primary"):
         if not workflow_url:
@@ -308,6 +312,10 @@ def workflow_tab(output_dir, model_size):
             # Show transcript content
             st.subheader("📝 Transcript Content")
             st.text_area("Full Transcript", transcript_result.transcript, height=200, key="workflow_transcript")
+            
+            # Add copy functionality using st.code which has built-in copy button
+            with st.expander("📋 Copy Transcript (click the copy icon in the code block)"):
+                st.code(transcript_result.transcript, language="text")
             
         except Exception as e:
             st.error(f"❌ Workflow failed: {str(e)}")
