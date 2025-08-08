@@ -43,6 +43,14 @@ services:
       - DB_DATABASE=bookstack
       - DB_USERNAME=bookstack
       - DB_PASSWORD=bookstack8432
+
+      # S3/MinIO configuration for file uploads
+      - STORAGE_TYPE=s3
+      - STORAGE_S3_KEY=bookstack
+      - STORAGE_S3_SECRET=bookstack123
+      - STORAGE_S3_BUCKET=bookstack
+      - STORAGE_S3_ENDPOINT=http://minio:9000
+      - STORAGE_URL=http://localhost:9000/bookstack
     volumes:
       # You generally only ever need to map this one volume.
       # This maps it to a "bookstack_app_data" folder in the same
@@ -53,6 +61,9 @@ services:
       # Commonly you'd have a reverse proxy in front of this,
       # redirecting incoming requests to this port.
       - 6875:80
+    depends_on:
+      - mariadb
+      - minio
     restart: unless-stopped
 
   # The container for the database which BookStack will use to store
@@ -86,4 +97,24 @@ services:
     # database when not needed.
     # ports:
     #   - 3306:3306
+    restart: unless-stopped
+
+  # MinIO for S3-compatible object storage (file uploads)
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=bookstack
+      - MINIO_ROOT_PASSWORD=bookstack123
+    entrypoint: sh
+    command: -c 'mkdir -p /data/bookstack && /usr/bin/minio server /data --console-address ":9001"'
+    volumes:
+      # This maps MinIO data to a "minio_data" folder in the same
+      # directory as this compose config file.
+      - ./minio_data:/data
+    ports:
+      # MinIO API port (S3 compatible)
+      - 9000:9000
+      # MinIO Console (web UI)
+      - 9001:9001
     restart: unless-stopped
