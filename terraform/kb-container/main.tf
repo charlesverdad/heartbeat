@@ -81,14 +81,14 @@ resource "azurerm_storage_share" "bookstack_data" {
 resource "azurerm_storage_share" "mariadb_data" {
   name                 = "mariadb-data"
   storage_account_name = azurerm_storage_account.main.name
-  quota                = 10
+  quota                = 5
 }
 
 # Azure Files share for MinIO data
 resource "azurerm_storage_share" "minio_data" {
   name                 = "minio-data"
   storage_account_name = azurerm_storage_account.main.name
-  quota                = 20
+  quota                = 10
 }
 
 # Container Apps Environment
@@ -266,18 +266,40 @@ resource "cloudflare_record" "bookstack" {
   comment = "Managed by Terraform - points to Cloudflare tunnel for ${var.project_name}-${var.environment}"
 }
 
-# Tunnel configuration to route traffic to BookStack app
+# DNS record for assets subdomain (MinIO)
+resource "cloudflare_record" "assets" {
+  zone_id = var.cloudflare_zone_id
+  name    = "assets.${replace(var.domain_name, ".heartbeatchurch.com.au", "")}"
+  value   = cloudflare_zero_trust_tunnel_cloudflared.bookstack.cname
+  type    = "CNAME"
+  proxied = true
+  ttl     = 1
+  comment = "Managed by Terraform - points to Cloudflare tunnel for ${var.project_name}-${var.environment} assets"
+}
+
+# Tunnel configuration to route traffic to BookStack app and MinIO assets
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "bookstack" {
   account_id = var.cloudflare_account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.bookstack.id
 
   config {
+    # Route main BookStack domain to port 80
     ingress_rule {
       hostname = var.domain_name
       service  = "http://localhost:80"
       
       origin_request {
         http_host_header = var.domain_name
+      }
+    }
+    
+    # Route assets domain to MinIO on port 9080
+    ingress_rule {
+      hostname = "assets.${replace(var.domain_name, ".heartbeatchurch.com.au", "")}.heartbeatchurch.com.au"
+      service  = "http://localhost:9080"
+      
+      origin_request {
+        http_host_header = "assets.${replace(var.domain_name, ".heartbeatchurch.com.au", "")}.heartbeatchurch.com.au"
       }
     }
     
@@ -340,6 +362,7 @@ resource "azurerm_container_app" "bookstack" {
         path = "/config"
       }
     }
+
 
 
     # BookStack container
@@ -440,7 +463,7 @@ resource "azurerm_container_app" "bookstack" {
 
       env {
         name  = "STORAGE_URL"
-        value = "http://127.0.0.1:9080/bookstack-uploads"
+        value = "https://assets.${replace(var.domain_name, ".heartbeatchurch.com.au", "")}.heartbeatchurch.com.au/bookstack-uploads"
       }
 
 
@@ -616,6 +639,30 @@ resource "azurerm_container_app" "bookstack" {
       volume_mounts {
         name = "minio-data"
         path = "/data"
+      }
+    }
+
+    # MinIO setup sidecar container to create bucket with public access
+    container {
+      name   = "minio-setup"
+      image  = "minio/mc:latest"
+      cpu    = 0.1
+      memory = "0.1Gi"
+      
+      command = ["/bin/sh"]
+      args = [
+        "-c",
+        "while ! /usr/bin/mc alias set myminio http://127.0.0.1:9080 $(MINIO_ROOT_USER) $(MINIO_ROOT_PASSWORD) 2>/dev/null; do echo 'Waiting for MinIO...'; sleep 5; done && /usr/bin/mc mb myminio/bookstack-uploads --ignore-existing && /usr/bin/mc anonymous set public myminio/bookstack-uploads && echo 'MinIO bucket setup complete'"
+      ]
+      
+      env {
+        name        = "MINIO_ROOT_USER"
+        secret_name = "minio-root-user"
+      }
+      
+      env {
+        name        = "MINIO_ROOT_PASSWORD"
+        secret_name = "minio-root-password"
       }
     }
 
