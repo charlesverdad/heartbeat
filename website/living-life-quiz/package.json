@@ -1,0 +1,30 @@
+{
+  "name": "living-life-quiz",
+  "version": "1.0.0",
+  "description": "Living Life Bible Study quiz platform",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 3000"
+  },
+  "keywords": [
+    "quiz",
+    "education",
+    "student",
+    "assessment",
+    "web-app"
+  ],
+  "author": "Charles",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "@vitejs/plugin-legacy": "^7.2.1",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12",
+    "vite": "^7.1.3"
+  }
+}

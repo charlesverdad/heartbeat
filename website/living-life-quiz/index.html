@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Living Life Quiz - Student Portal</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="description" content="Interactive quiz platform for students to test their knowledge on Christian living">
+</head>
+<body>
+    <div id="app" class="min-h-screen">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="fixed inset-0 bg-gradient-to-br from-sky-600 to-sky-800 flex items-center justify-center z-50">
+            <div class="text-center text-white">
+                <div class="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+                <h2 class="text-2xl font-semibold">Loading Quiz...</h2>
+            </div>
+        </div>
+
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+            <div class="max-w-md w-full">
+                <div class="card text-center animate-fade-in">
+                    <div class="mb-6">
+                        <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-sky-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Living Life Quiz</h1>
+                        <p class="text-gray-600">Welcome to your knowledge assessment</p>
+                    </div>
+
+                    <!-- Saved Progress Notification -->
+                    <div id="saved-progress-notice" class="hidden mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-amber-800">Test in Progress Found</h3>
+                                <div class="mt-2 text-sm text-amber-700">
+                                    <p>We found a saved test for <strong id="saved-student-name"></strong>.</p>
+                                    <p>You were on question <strong id="saved-question-number"></strong> of <strong id="total-questions"></strong>.</p>
+                                </div>
+                                <div class="mt-4 flex space-x-3">
+                                    <button id="resume-test-btn" class="bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-700 transition-colors">
+                                        📚 Resume Test
+                                    </button>
+                                    <button id="start-fresh-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors">
+                                        🔄 Start Fresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="student-form" class="space-y-4">
+                        <div class="text-left">
+                            <label for="student-name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Your Name <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="student-name" 
+                                name="studentName"
+                                class="input-field" 
+                                placeholder="Enter your full name"
+                                autocomplete="off"
+                                required
+                            >
+                        </div>
+
+                        <div class="text-left">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Quiz Mode</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="mode" value="practice" class="w-4 h-4 text-sky-600 border-gray-300 focus:ring-sky-100" checked>
+                                    <span class="ml-3">
+                                        <span class="font-medium text-gray-900">Practice Mode</span>
+                                        <span class="block text-sm text-gray-500">All questions with immediate feedback</span>
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="mode" value="random" class="w-4 h-4 text-sky-600 border-gray-300 focus:ring-sky-100">
+                                    <span class="ml-3">
+                                        <span class="font-medium text-gray-900">Random Practice</span>
+                                        <span class="block text-sm text-gray-500">25 random questions with feedback</span>
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="mode" value="test" class="w-4 h-4 text-sky-600 border-gray-300 focus:ring-sky-100">
+                                    <span class="ml-3">
+                                        <span class="font-medium text-gray-900">Test Mode</span>
+                                        <span class="block text-sm text-gray-500">All questions, results at the end</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full">
+                            Start Quiz
+                            <svg class="w-5 h-5 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden min-h-screen">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
+                <div class="max-w-4xl mx-auto px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <h1 class="text-xl font-semibold text-gray-900">Living Life Quiz</h1>
+                            <span id="student-name-display" class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full"></span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span id="mode-indicator" class="text-sm font-medium px-3 py-1 rounded-full"></span>
+                            <div id="question-counter" class="text-sm text-gray-600"></div>
+                            <button id="start-over-btn" class="hidden text-sm text-red-600 hover:text-red-800 font-medium">
+                                🔄 Start Over
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="progress-bar mt-4">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Quiz Content -->
+            <main class="max-w-4xl mx-auto p-4 py-8">
+                <div id="question-container" class="card max-w-2xl mx-auto animate-slide-in">
+                    <!-- Question content will be dynamically inserted here -->
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex justify-between items-center max-w-2xl mx-auto mt-8">
+                    <button id="prev-btn" class="btn-secondary flex items-center" disabled>
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Previous
+                    </button>
+
+                    <div class="flex space-x-2">
+                        <button id="skip-btn" class="btn-secondary">Skip</button>
+                        <button id="next-btn" class="btn-primary">
+                            Next
+                            <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+            <div class="max-w-2xl w-full">
+                <div class="card text-center animate-fade-in">
+                    <div id="results-content">
+                        <!-- Results content will be dynamically inserted here -->
+                    </div>
+                    <div class="mt-8 flex justify-center space-x-4">
+                        <button id="restart-btn" class="btn-primary">
+                            Take Quiz Again
+                        </button>
+                        <button id="review-btn" class="btn-secondary">
+                            Review Answers
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions data will be loaded by the main application -->
+    
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
