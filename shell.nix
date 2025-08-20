@@ -23,6 +23,7 @@ pkgs.mkShell {
     kubelogin
     kubernetes-helm
     kustomize
+    google-cloud-sdk
     
     # YAML/JSON processing tools
     yq-go
