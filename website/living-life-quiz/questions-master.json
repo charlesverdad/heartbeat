@@ -1029,5 +1029,158 @@
     "points": 1,
     "correct_answer": false,
     "citation": "Matthew 25: 14-30"
+  },
+  {
+    "id": "v1_romans_3_10_11",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Romans 3:10-11 — “There is no one ___(1)___, not even one; there is no one who ___(2)___, no one who ___(3)___ God.”",
+    "points": 3,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "righteous" },
+      { "prompt": "Blank (2)", "correct_answer": "understands" },
+      { "prompt": "Blank (3)", "correct_answer": "seeks" }
+    ]
+  },
+  {
+    "id": "v2_isaiah_59_2",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Isaiah 59:2 — “But your ___(1)___ have ___(2)___ you from your God; your ___(3)___ have hidden his ___(4)___ from you, so that he will not ___(5)___.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "iniquities" },
+      { "prompt": "Blank (2)", "correct_answer": "separated" },
+      { "prompt": "Blank (3)", "correct_answer": "sins" },
+      { "prompt": "Blank (4)", "correct_answer": "face" },
+      { "prompt": "Blank (5)", "correct_answer": "hear" }
+    ]
+  },
+  {
+    "id": "v3_isaiah_53_6",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Isaiah 53:6 — “We all, ___(1)___, ___(2)___, and the Lord has laid on him the ___(3)___ of us all.”",
+    "points": 3,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "like sheep, have gone astray" },
+      { "prompt": "Blank (2)", "correct_answer": "each of us has turned to his own way" },
+      { "prompt": "Blank (3)", "correct_answer": "iniquity" }
+    ]
+  },
+  {
+    "id": "v4_hebrews_9_27",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Hebrews 9:27 — “Just as man is ___(1)___ to ___(2)___ once, and after that to ___(3)___ judgment.”",
+    "points": 3,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "destined" },
+      { "prompt": "Blank (2)", "correct_answer": "die" },
+      { "prompt": "Blank (3)", "correct_answer": "face" }
+    ]
+  },
+  {
+    "id": "v5_1peter_2_24",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "1 Peter 2:24 — “He himself ___(1)___ our sins in his ___(2)___ on the ___(3)___, so that we might die to ___(4)___ and live for ___(5)___; by his ___(6)___ you have been healed.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "bore" },
+      { "prompt": "Blank (2)", "correct_answer": "body" },
+      { "prompt": "Blank (3)", "correct_answer": "tree" },
+      { "prompt": "Blank (4)", "correct_answer": "sins" },
+      { "prompt": "Blank (5)", "correct_answer": "righteousness" },
+      { "prompt": "Blank (6)", "correct_answer": "wounds" }
+    ]
+  },
+  {
+    "id": "v6_john_3_16",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 3:16 — “For God so ___(1)___ the ___(2)___ that he gave his one and only ___(3)___, that whoever ___(4)___ in him shall not ___(5)___ but have ___(6)___ life.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "loved" },
+      { "prompt": "Blank (2)", "correct_answer": "world" },
+      { "prompt": "Blank (3)", "correct_answer": "Son" },
+      { "prompt": "Blank (4)", "correct_answer": "believes" },
+      { "prompt": "Blank (5)", "correct_answer": "perish" },
+      { "prompt": "Blank (6)", "correct_answer": "eternal" }
+    ]
+  },
+  {
+    "id": "v7_john_1_12",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 1:12 — “Yet to all who ___(1)___ him, to those who ___(2)___ in his ___(3)___, he gave the ___(4)___ to become children of God.”",
+    "points": 4,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "received" },
+      { "prompt": "Blank (2)", "correct_answer": "believed" },
+      { "prompt": "Blank (3)", "correct_answer": "name" },
+      { "prompt": "Blank (4)", "correct_answer": "right" }
+    ]
+  },
+  {
+    "id": "v8_revelation_3_20",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Revelation 3:20 — “Here I am! I ___(1)___ at the ___(2)___ and ___(3)___. If anyone ___(4)___ my ___(5)___ and opens the ___(6)___, I will come in and eat with him, and he with me.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "stand" },
+      { "prompt": "Blank (2)", "correct_answer": "door" },
+      { "prompt": "Blank (3)", "correct_answer": "knock" },
+      { "prompt": "Blank (4)", "correct_answer": "hears" },
+      { "prompt": "Blank (5)", "correct_answer": "voice" },
+      { "prompt": "Blank (6)", "correct_answer": "door" }
+    ]
+  },
+  {
+    "id": "v9_1john_5_11_12",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "1 John 5:11-12 — “And this is the ___(1)___: God has given us ___(2)___ life, and this life is in his Son. He who has the ___(3)___ has life; he who does not have the ___(4)___ of ___(5)___ does not have life.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "testimony" },
+      { "prompt": "Blank (2)", "correct_answer": "eternal" },
+      { "prompt": "Blank (3)", "correct_answer": "Son" },
+      { "prompt": "Blank (4)", "correct_answer": "Son" },
+      { "prompt": "Blank (5)", "correct_answer": "God" }
+    ]
+  },
+  {
+    "id": "v10_john_5_24",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 5:24 — “I tell you the truth, whoever ___(1)___ my word and believes him who sent ___(2)___ has eternal life and will not be ___(3)___; he has ___(4)___ ___(5)___ from death to life.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "hears" },
+      { "prompt": "Blank (2)", "correct_answer": "me" },
+      { "prompt": "Blank (3)", "correct_answer": "condemned" },
+      { "prompt": "Blank (4)", "correct_answer": "crossed" },
+      { "prompt": "Blank (5)", "correct_answer": "over" }
+    ]
+  },
+  {
+    "id": "v11_ephesians_2_8_9",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Ephesians 2:8-9 — “For it is by ___(1)___ you have been ___(2)___, through ___(3)___—and this not from yourselves, it is the ___(4)___ of God— not by ___(5)___, so that no one can ___(6)___.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "grace" },
+      { "prompt": "Blank (2)", "correct_answer": "saved" },
+      { "prompt": "Blank (3)", "correct_answer": "faith" },
+      { "prompt": "Blank (4)", "correct_answer": "gift" },
+      { "prompt": "Blank (5)", "correct_answer": "works" },
+      { "prompt": "Blank (6)", "correct_answer": "boast" }
+    ]
+  },
+  {
+    "id": "v12_2corinthians_5_17",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "2 Corinthians 5:17 — “Therefore, if anyone is in ___(1)___, he is a ___(2)___ ___(3)___; the ___(4)___ has gone, the ___(5)___ has come!”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "Christ" },
+      { "prompt": "Blank (2)", "correct_answer": "new" },
+      { "prompt": "Blank (3)", "correct_answer": "creation" },
+      { "prompt": "Blank (4)", "correct_answer": "old" },
+      { "prompt": "Blank (5)", "correct_answer": "new" }
+    ]
   }
 ]

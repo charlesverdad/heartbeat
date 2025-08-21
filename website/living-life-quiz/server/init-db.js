@@ -93,6 +93,35 @@ const createTables = () => {
       console.log('✓ Created grading_log table')
     }
   })
+
+  // Settings table - stores application settings
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Error creating settings table:', err.message)
+    } else {
+      console.log('✓ Created settings table')
+      
+      // Insert default settings
+      db.run(`
+        INSERT OR IGNORE INTO settings (key, value, description)
+        VALUES ('test_mode_enabled', 'false', 'Whether test mode is available to students')
+      `, (err) => {
+        if (err) {
+          console.error('Error inserting default settings:', err.message)
+        } else {
+          console.log('✓ Inserted default settings')
+        }
+      })
+    }
+  })
 }
 
 // Create indexes for better performance

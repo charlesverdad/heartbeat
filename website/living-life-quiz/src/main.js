@@ -1,6 +1,4 @@
 import './style.css'
-import questionsData from '../questions-master.json'
-import testQuestionsData from '../questions-test.json'
 
 // Quiz State Management
 class QuizState {
@@ -21,13 +19,24 @@ class QuizState {
     this.studentName = studentName
     this.mode = mode
     
-    // Select questions based on mode
-    if (mode === 'test') {
-      this.questions = [...testQuestionsData]
-    } else if (mode === 'random') {
-      this.questions = this.getRandomQuestions(questionsData, 25)
-    } else {
-      this.questions = [...questionsData]
+    try {
+      // Fetch questions from API based on mode
+      const response = await fetch(`/api/questions/${mode}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions: ${response.status} ${response.statusText}`)
+      }
+      
+      const questionsData = await response.json()
+      this.questions = questionsData.questions || []
+      
+      if (this.questions.length === 0) {
+        throw new Error('No questions received from server')
+      }
+      
+      console.log(`Loaded ${this.questions.length} questions for ${mode} mode`)
+    } catch (error) {
+      console.error('Failed to load questions:', error)
+      throw new Error(`Could not load quiz questions: ${error.message}`)
     }
     
     this.currentQuestionIndex = 0
@@ -39,20 +48,6 @@ class QuizState {
     if (mode === 'test') {
       this.loadFromStorage()
     }
-  }
-  
-  // Fisher-Yates shuffle algorithm to get random questions
-  getRandomQuestions(allQuestions, count) {
-    const shuffled = [...allQuestions]
-    
-    // Fisher-Yates shuffle
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    
-    // Return the first 'count' questions, or all if fewer available
-    return shuffled.slice(0, Math.min(count, shuffled.length))
   }
 
   getCurrentQuestion() {
@@ -546,12 +541,8 @@ class QuestionRenderer {
     const container = document.createElement('div')
     container.className = 'space-y-4'
 
-    if (question.grading_notes) {
-      const notes = document.createElement('div')
-      notes.className = 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800'
-      notes.innerHTML = `<strong>Note:</strong> ${question.grading_notes}`
-      container.appendChild(notes)
-    }
+    // Only show grading notes in teacher mode (not in student-facing modes)
+    // Grading notes are for teacher reference only
 
     const textarea = document.createElement('textarea')
     textarea.name = 'answer'
@@ -776,7 +767,12 @@ class UIController {
     }
   }
 
-  handleStartQuiz(e) {
+  showQuizLoadingState() {
+    // Reuse the existing loading screen
+    this.showScreen('loading')
+  }
+
+  async handleStartQuiz(e) {
     e.preventDefault()
     const formData = new FormData(e.target)
     const studentName = formData.get('studentName').trim()
@@ -792,10 +788,19 @@ class UIController {
       localStorage.removeItem('quiz-progress')
     }
 
-    this.quiz.init(studentName, mode)
-    this.initQuizUI()
-    this.showScreen('quiz')
-    this.renderCurrentQuestion()
+    try {
+      // Show loading while fetching questions
+      this.showQuizLoadingState()
+      
+      await this.quiz.init(studentName, mode)
+      this.initQuizUI()
+      this.showScreen('quiz')
+      this.renderCurrentQuestion()
+    } catch (error) {
+      console.error('Failed to start quiz:', error)
+      alert(`Failed to start quiz: ${error.message}`)
+      this.showScreen('welcome')
+    }
   }
 
   initQuizUI() {
@@ -813,7 +818,7 @@ class UIController {
         modeClass = 'bg-purple-100 text-purple-700'
         break
       case 'test':
-        modeText = 'Test Mode'
+        modeText = 'Final Exam'
         modeClass = 'bg-blue-100 text-blue-700'
         break
       default:
@@ -1160,7 +1165,7 @@ class UIController {
           <div class="text-sm text-gray-600 space-y-2">
             <p><strong>Submission ID:</strong> <span class="font-mono text-xs">${Date.now()}</span></p>
             <p><strong>Completed:</strong> ${new Date().toLocaleString()}</p>
-            <p><strong>Mode:</strong> Test Mode</p>
+            <p><strong>Mode:</strong> Final Exam</p>
           </div>
         </div>
       `
@@ -1212,7 +1217,7 @@ class UIController {
           <p><strong>Mode:</strong> ${
             this.quiz.mode === 'practice' ? 'Practice Mode' : 
             this.quiz.mode === 'random' ? 'Random Practice' : 
-            'Test Mode'
+            'Final Exam'
           }</p>
           ${this.quiz.mode === 'random' ? '<p class="text-purple-600"><strong>Note:</strong> This was a random selection of 25 questions.</p>' : ''}
         </div>
@@ -1242,6 +1247,54 @@ class UIController {
     }
   }
   
+  async checkTestModeAvailability() {
+    try {
+      const response = await fetch('/api/settings/test-mode-enabled')
+      if (response.ok) {
+        const data = await response.json()
+        const testModeRadio = document.querySelector('input[name="mode"][value="test"]')
+        const testModeLabel = testModeRadio ? testModeRadio.closest('label') : null
+        
+        if (testModeLabel) {
+          if (data.enabled) {
+            // Test mode is enabled
+            testModeRadio.disabled = false
+            testModeLabel.classList.remove('opacity-50', 'cursor-not-allowed')
+            testModeLabel.classList.add('cursor-pointer')
+          } else {
+            // Test mode is disabled
+            testModeRadio.disabled = true
+            testModeRadio.checked = false // Uncheck if selected
+            testModeLabel.classList.add('opacity-50', 'cursor-not-allowed')
+            testModeLabel.classList.remove('cursor-pointer')
+            
+            // Add disabled message
+            const disabledMsg = testModeLabel.querySelector('.test-disabled-msg')
+            if (!disabledMsg) {
+              const msgSpan = document.createElement('span')
+              msgSpan.className = 'block text-xs text-red-500 test-disabled-msg'
+              msgSpan.textContent = 'Final exam is currently disabled by the teacher'
+              const descSpan = testModeLabel.querySelector('.block.text-sm')
+              if (descSpan) {
+                descSpan.parentNode.insertBefore(msgSpan, descSpan.nextSibling)
+              }
+            }
+            
+            // If test mode was selected, switch to practice mode
+            const practiceRadio = document.querySelector('input[name="mode"][value="practice"]')
+            if (practiceRadio) {
+              practiceRadio.checked = true
+            }
+          }
+        }
+      } else {
+        console.warn('Failed to check test mode availability')
+      }
+    } catch (error) {
+      console.error('Error checking test mode availability:', error)
+    }
+  }
+  
   checkSavedProgress() {
     const savedProgress = localStorage.getItem('quiz-progress')
     
@@ -1249,12 +1302,12 @@ class UIController {
       try {
         const data = JSON.parse(savedProgress)
         const questionNumber = (data.currentQuestionIndex || 0) + 1
-        const totalQuestions = questionsData.length
+        // Note: We can't show total questions without API call, so just show current progress
         
         // Show the saved progress notice
         this.elements.savedStudentName.textContent = data.studentName || 'Unknown'
         this.elements.savedQuestionNumber.textContent = questionNumber
-        this.elements.totalQuestions.textContent = totalQuestions
+        this.elements.totalQuestions.textContent = '?' // Will be updated when test resumes
         this.elements.savedProgressNotice.classList.remove('hidden')
         
         // Hide the regular form when showing saved progress
@@ -1273,16 +1326,23 @@ class UIController {
     }
   }
   
-  handleResumeTest() {
+  async handleResumeTest() {
     const savedProgress = localStorage.getItem('quiz-progress')
     
     if (savedProgress) {
       try {
         const data = JSON.parse(savedProgress)
-        this.quiz.init(data.studentName, 'test')
+        
+        // Show loading while fetching questions
+        this.showQuizLoadingState()
+        
+        await this.quiz.init(data.studentName, 'test')
+        
+        // Update the total questions in the saved progress notice now that we have the data
+        this.elements.totalQuestions.textContent = this.quiz.questions.length
         
         setTimeout(() => {
-          alert(`Welcome back, ${data.studentName}! Resuming your test from question ${this.quiz.currentQuestionIndex + 1}.`)
+          alert(`Welcome back, ${data.studentName}! Resuming your test from question ${this.quiz.currentQuestionIndex + 1} of ${this.quiz.questions.length}.`)
         }, 500)
         
         this.initQuizUI()
@@ -1339,7 +1399,7 @@ class UIController {
         modeClass = 'bg-purple-100 text-purple-700'
         break
       case 'test':
-        modeText = 'Test Mode Review'
+        modeText = 'Final Exam Review'
         modeClass = 'bg-blue-100 text-blue-700'
         break
       default:
@@ -1380,7 +1440,7 @@ class UIController {
           </div>
         </div>
         <div class="mt-4 text-center">
-          <p class="text-sm text-amber-700"><strong>Note:</strong> Scores and correct answers are not shown in test mode.</p>
+              <p class="text-sm text-amber-700"><strong>Note:</strong> Scores and correct answers are not shown in final exam mode.</p>
         </div>
       `
     } else {
@@ -1628,7 +1688,8 @@ class UIController {
 const quiz = new QuizState()
 const ui = new UIController(quiz)
 
-// Show welcome screen after loading
-setTimeout(() => {
+// Check test mode availability and show welcome screen
+setTimeout(async () => {
+  await ui.checkTestModeAvailability()
   ui.showScreen('welcome')
 }, 1000)

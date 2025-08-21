@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Living Life Quiz - Student Portal</title>
+    <title>Living Life Bible Study - Student Portal</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <meta name="description" content="Interactive quiz platform for students to test their knowledge on Christian living">
 </head>
@@ -27,8 +27,8 @@
                                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
-                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Living Life Quiz</h1>
-                        <p class="text-gray-600">Welcome to your knowledge assessment</p>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Living Life Bible Study</h1>
+                        <p class="text-gray-600">Final Exam</p>
                     </div>
 
                     <!-- Saved Progress Notification -->
@@ -93,7 +93,7 @@
                                 <label class="flex items-center cursor-pointer">
                                     <input type="radio" name="mode" value="test" class="w-4 h-4 text-sky-600 border-gray-300 focus:ring-sky-100">
                                     <span class="ml-3">
-                                        <span class="font-medium text-gray-900">Test Mode</span>
+                                        <span class="font-medium text-gray-900">Final Exam</span>
                                         <span class="block text-sm text-gray-500">All questions, results at the end</span>
                                     </span>
                                 </label>
@@ -101,7 +101,7 @@
                         </div>
 
                         <button type="submit" class="btn-primary w-full">
-                            Start Quiz
+                            Start Bible Study
                             <svg class="w-5 h-5 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                             </svg>
@@ -124,7 +124,7 @@
                 <div class="max-w-4xl mx-auto px-4 py-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
-                            <h1 class="text-xl font-semibold text-gray-900">Living Life Quiz</h1>
+                            <h1 class="text-xl font-semibold text-gray-900">Living Life Bible Study</h1>
                             <span id="student-name-display" class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full"></span>
                         </div>
                         <div class="flex items-center space-x-4">
@@ -219,6 +219,18 @@
     </div>
 
     <!-- Questions data will be loaded by the main application -->
+    
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 py-8 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <div class="flex items-center justify-center mb-4">
+                <img src="/public/Heartbeat_Brandmark_Horizontal_Black.svg" alt="Heartbeat Church" class="h-8">
+            </div>
+            <p class="text-sm text-gray-600">
+                © Heartbeat Church 2025. Made with <span class="text-red-500">♥</span> by Digital Platform Team.
+            </p>
+        </div>
+    </footer>
     
     <script type="module" src="/src/main.js"></script>
 </body>

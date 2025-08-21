@@ -267,6 +267,103 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+// GET /api/settings/test-mode-enabled - Check if test mode is enabled (public endpoint)
+app.get('/api/settings/test-mode-enabled', (req, res) => {
+  db.get('SELECT value FROM settings WHERE key = ?', ['test_mode_enabled'], (err, row) => {
+    if (err) {
+      console.error('Error checking test mode setting:', err)
+      return res.status(500).json({ error: 'Failed to check test mode setting' })
+    }
+    
+    const enabled = row ? row.value === 'true' : false
+    res.json({ enabled })
+  })
+})
+
+// Questions API endpoints
+// GET /api/questions/:mode - Get questions for different quiz modes
+app.get('/api/questions/:mode', (req, res) => {
+  try {
+    const mode = req.params.mode
+    const questionsPath = join(__dirname, '../questions-master.json')
+    const questionsData = JSON.parse(readFileSync(questionsPath, 'utf8'))
+    
+    let filteredQuestions = []
+    
+    switch (mode) {
+      case 'practice':
+        // Return all questions for practice mode
+        filteredQuestions = questionsData
+        break
+        
+      case 'random':
+        // Return 25 random questions
+        const shuffled = [...questionsData]
+        // Fisher-Yates shuffle
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        filteredQuestions = shuffled.slice(0, 25)
+        break
+        
+      case 'test':
+        // Return specific questions for test mode
+        const testConfigPath = join(__dirname, '../test-config.json')
+        const testConfig = JSON.parse(readFileSync(testConfigPath, 'utf8'))
+        const testQuestionIds = testConfig.test_question_ids
+        const questionMap = new Map(questionsData.map(q => [q.id, q]))
+        
+        filteredQuestions = testQuestionIds
+          .map(id => questionMap.get(id))
+          .filter(q => q !== undefined) // Remove any invalid IDs
+        break
+        
+      default:
+        return res.status(400).json({
+          error: 'Invalid mode',
+          message: 'Mode must be one of: practice, random, test'
+        })
+    }
+    
+    // For frontend consumption, remove correct answers for test mode
+    const clientQuestions = filteredQuestions.map(q => {
+      if (mode === 'test') {
+        // Remove correct answers for test mode to prevent cheating
+        const { correct_answer, correct_answers, parts, ...questionForTest } = q
+        return {
+          ...questionForTest,
+          // For SIMPLE_FILL_IN_THE_BLANK, include expected_answers count
+          expected_answers: q.type === 'SIMPLE_FILL_IN_THE_BLANK' && correct_answers ? correct_answers.length : undefined,
+          // Keep parts structure but remove correct answers
+          parts: parts ? parts.map(({ correct_answer, ...part }) => part) : undefined
+        }
+      } else {
+        // For practice and random modes, include correct answers and expected_answers
+        return {
+          ...q,
+          // For SIMPLE_FILL_IN_THE_BLANK, include expected_answers count
+          expected_answers: q.type === 'SIMPLE_FILL_IN_THE_BLANK' && q.correct_answers ? q.correct_answers.length : undefined
+        }
+      }
+    })
+    
+    res.json({
+      success: true,
+      mode,
+      questions: clientQuestions,
+      count: clientQuestions.length
+    })
+    
+  } catch (error) {
+    console.error('Error serving questions:', error)
+    res.status(500).json({
+      error: 'Failed to load questions',
+      message: error.message
+    })
+  }
+})
+
 // Teacher Portal Routes
 const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || 'supersecret'
 
@@ -408,6 +505,48 @@ app.post('/api/teacher/update-grade', requireAuth, async (req, res) => {
     console.error('Error updating grade:', error)
     res.status(500).json({ error: 'Failed to update grade', message: error.message })
   }
+})
+
+// POST /api/teacher/settings/test-mode - Toggle test mode availability (protected endpoint)
+app.post('/api/teacher/settings/test-mode', requireAuth, (req, res) => {
+  const { enabled } = req.body
+  
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ message: 'enabled field must be a boolean' })
+  }
+  
+  const value = enabled ? 'true' : 'false'
+  
+  db.run(
+    'UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?',
+    [value, 'test_mode_enabled'],
+    function(err) {
+      if (err) {
+        console.error('Error updating test mode setting:', err)
+        return res.status(500).json({ error: 'Failed to update test mode setting' })
+      }
+      
+      if (this.changes === 0) {
+        // Setting doesn't exist, create it
+        db.run(
+          'INSERT INTO settings (key, value, description) VALUES (?, ?, ?)',
+          ['test_mode_enabled', value, 'Whether test mode is available to students'],
+          (err) => {
+            if (err) {
+              console.error('Error creating test mode setting:', err)
+              return res.status(500).json({ error: 'Failed to create test mode setting' })
+            }
+            
+            console.log(`✓ Test mode ${enabled ? 'enabled' : 'disabled'} by teacher`)
+            res.json({ success: true, enabled, message: `Test mode ${enabled ? 'enabled' : 'disabled'}` })
+          }
+        )
+      } else {
+        console.log(`✓ Test mode ${enabled ? 'enabled' : 'disabled'} by teacher`)
+        res.json({ success: true, enabled, message: `Test mode ${enabled ? 'enabled' : 'disabled'}` })
+      }
+    }
+  )
 })
 
 // GET /teacher - Serve the teacher portal

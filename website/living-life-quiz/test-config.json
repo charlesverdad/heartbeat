@@ -1,0 +1,25 @@
+{
+  "test_question_ids": [
+    "q1_sin_definitions",
+    "q2_prayer_components", 
+    "q4_ot_categories",
+    "q5_nt_categories",
+    "q6_god_definitions",
+    "q8_jesus_details",
+    "q10_famous_people",
+    "q12_spiritual_gifts",
+    "tf_rel_god_neighbors",
+    "tf_jesus_death_reason",
+    "tf_sin_nature",
+    "tf_confessing_sin_meaning",
+    "tf_repentance_meaning",
+    "tf_god_forgives_forgets",
+    "tf_fruit_of_repentance",
+    "tf_new_covenant_jeremiah",
+    "tf_children_of_god_baptism_effort",
+    "tf_salvation_resurrection_belief",
+    "tf_born_again_effort",
+    "sa_prayer_lords_model"
+  ],
+  "description": "Hardcoded question IDs for test mode - includes mix of fill-in-blank, true/false, and short answer questions"
+}
