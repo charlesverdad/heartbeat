@@ -158,37 +158,54 @@
   },
   {
     "id": "q10_famous_people",
-    "type": "SIMPLE_FILL_IN_THE_BLANK",
-    "question_text": "Write down the famous people who lived during these time periods.",
-    "points": 3,
-    "correct_answers": [
-      "BC 2000 (Abraham)",
-      "BC 1500 (Moses)",
-      "BC 1000 (David)",
-      "BC or AD 0 (Jesus)"
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Write down the famous people who lived during these time periods:",
+    "points": 4,
+    "parts": [
+      {
+        "prompt": "2000 BC",
+        "correct_answer": "Abraham"
+      },
+      {
+        "prompt": "1500 BC",
+        "correct_answer": "Moses"
+      },
+      {
+        "prompt": "1000 BC",
+        "correct_answer": "David"
+      },
+      {
+        "prompt": "0 BC/AD",
+        "correct_answer": "Jesus"
+      }
     ]
   },
   {
     "id": "q11_abraham_descendants_tribes",
-    "type": "SIMPLE_FILL_IN_THE_BLANK",
-    "question_text": "Write down the names of Abraham’s son, his grandson and three tribes out of the twelve tribes.",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Write down the names of Abraham’s son, his grandson, and three tribes out of the twelve tribes.",
     "points": 5,
-    "correct_answers": [
-      "Isaac (son)",
-      "Jacob (grandson)",
-      "Reuben",
-      "Judah",
-      "Levi",
-      "Simeon",
-      "Benjamin",
-      "Ephraim",
-      "Manasseh",
-      "Zebulun",
-      "Gad",
-      "Dan",
-      "Asher",
-      "Naphtali",
-      "Issachar"
+    "parts": [
+      {
+        "prompt": "Abraham’s son",
+        "correct_answer": "Isaac"
+      },
+      {
+        "prompt": "Abraham’s grandson",
+        "correct_answer": "Jacob"
+      },
+      {
+        "prompt": "One of the tribes of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      },
+      {
+        "prompt": "Another tribe of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      },
+      {
+        "prompt": "Another tribe of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      }
     ]
   },
   {
@@ -1057,12 +1074,10 @@
   {
     "id": "v3_isaiah_53_6",
     "type": "STRUCTURED_FILL_IN_THE_BLANK",
-    "question_text": "Isaiah 53:6 — “We all, ___(1)___, ___(2)___, and the Lord has laid on him the ___(3)___ of us all.”",
-    "points": 3,
+    "question_text": "Isaiah 53:6 — “We all, ___(1)___",
+    "points": 1,
     "parts": [
-      { "prompt": "Blank (1)", "correct_answer": "like sheep, have gone astray" },
-      { "prompt": "Blank (2)", "correct_answer": "each of us has turned to his own way" },
-      { "prompt": "Blank (3)", "correct_answer": "iniquity" }
+      { "prompt": "Blank (1)", "correct_answer": "like sheep, have gone astray, each of us has turned to our own way; and the Lord has laid on him the iniquity of us all." }
     ]
   },
   {

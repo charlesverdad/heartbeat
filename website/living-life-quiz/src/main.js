@@ -814,8 +814,8 @@ class UIController {
         modeClass = 'bg-green-100 text-green-700'
         break
       case 'random':
-        modeText = 'Random Practice'
-        modeClass = 'bg-purple-100 text-purple-700'
+        modeText = 'Practice Mode'
+        modeClass = 'bg-green-100 text-green-700'
         break
       case 'test':
         modeText = 'Final Exam'
@@ -1216,10 +1216,10 @@ class UIController {
           <p><strong>Questions answered:</strong> ${this.quiz.answers.size} of ${this.quiz.questions.length}</p>
           <p><strong>Mode:</strong> ${
             this.quiz.mode === 'practice' ? 'Practice Mode' : 
-            this.quiz.mode === 'random' ? 'Random Practice' : 
+            this.quiz.mode === 'random' ? 'Practice Mode' : 
             'Final Exam'
           }</p>
-          ${this.quiz.mode === 'random' ? '<p class="text-purple-600"><strong>Note:</strong> This was a random selection of 25 questions.</p>' : ''}
+          ${this.quiz.mode === 'random' ? '<p class="text-green-600"><strong>Note:</strong> This was a random selection of 25 questions.</p>' : ''}
         </div>
       </div>
     `
@@ -1395,8 +1395,8 @@ class UIController {
         modeClass = 'bg-green-100 text-green-700'
         break
       case 'random':
-        modeText = 'Random Practice Review'
-        modeClass = 'bg-purple-100 text-purple-700'
+        modeText = 'Practice Mode Review'
+        modeClass = 'bg-green-100 text-green-700'
         break
       case 'test':
         modeText = 'Final Exam Review'
