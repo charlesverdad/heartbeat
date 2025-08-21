@@ -155,13 +155,70 @@ class QuizState {
     return ((this.currentQuestionIndex + 1) / this.questions.length) * 100
   }
 
-  finish() {
+  async finish() {
     this.endTime = new Date()
-    // Clear localStorage when quiz is finished
+    
+    // For test mode, submit to server before clearing storage
     if (this.mode === 'test') {
+      await this.submitToServer()
       this.clearStorage()
     }
+    
     return this.calculateScore()
+  }
+
+  // Submit test answers to server with retry logic
+  async submitToServer(maxRetries = 3) {
+    const submissionData = {
+      studentName: this.studentName,
+      startTime: this.startTime.toISOString(),
+      endTime: this.endTime.toISOString(),
+      totalQuestions: this.questions.length,
+      answers: Array.from(this.answers.entries()).map(([questionId, answerData]) => ({
+        questionId,
+        answer: answerData.answer,
+        timestamp: answerData.timestamp.toISOString(),
+        questionIndex: answerData.questionIndex
+      }))
+    }
+
+    let lastError = null
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`Submitting test results (attempt ${attempt + 1}/${maxRetries})...`)
+        
+        const response = await fetch('/api/submit-test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(submissionData)
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log('Test submitted successfully:', result)
+          return result
+        } else {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`)
+        }
+      } catch (error) {
+        lastError = error
+        console.warn(`Submission attempt ${attempt + 1} failed:`, error.message)
+        
+        // If this isn't the last attempt, wait with exponential backoff
+        if (attempt < maxRetries - 1) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 10000) // Max 10 second delay
+          console.log(`Retrying in ${delay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+    }
+    
+    // All retries failed
+    console.error('Failed to submit test after all retries:', lastError)
+    throw new Error(`Failed to submit test: ${lastError.message}`)
   }
 
   // localStorage methods for test mode persistence
@@ -633,7 +690,8 @@ class UIController {
       loading: document.getElementById('loading-screen'),
       welcome: document.getElementById('welcome-screen'),
       quiz: document.getElementById('quiz-screen'),
-      results: document.getElementById('results-screen')
+      results: document.getElementById('results-screen'),
+      review: document.getElementById('review-screen')
     }
 
     this.elements = {
@@ -650,6 +708,12 @@ class UIController {
       resultsContent: document.getElementById('results-content'),
       restartBtn: document.getElementById('restart-btn'),
       reviewBtn: document.getElementById('review-btn'),
+      
+      // Review screen elements
+      reviewContent: document.getElementById('review-content'),
+      reviewStudentName: document.getElementById('review-student-name'),
+      reviewModeIndicator: document.getElementById('review-mode-indicator'),
+      backToResultsBtn: document.getElementById('back-to-results-btn'),
       
       // Welcome screen elements
       savedProgressNotice: document.getElementById('saved-progress-notice'),
@@ -669,6 +733,7 @@ class UIController {
     this.elements.startOverBtn.addEventListener('click', this.handleStartOver.bind(this))
     this.elements.restartBtn.addEventListener('click', this.handleRestart.bind(this))
     this.elements.reviewBtn.addEventListener('click', this.handleReview.bind(this))
+    this.elements.backToResultsBtn.addEventListener('click', this.handleBackToResults.bind(this))
     
     // Resume/Start Fresh buttons
     this.elements.resumeTestBtn.addEventListener('click', this.handleResumeTest.bind(this))
@@ -963,10 +1028,76 @@ class UIController {
       : 'btn-secondary flex items-center opacity-50 cursor-not-allowed'
   }
 
-  finishQuiz() {
-    const finalScore = this.quiz.finish()
-    this.showResults(finalScore)
+  async finishQuiz() {
+    // For test mode, show submission progress
+    if (this.quiz.mode === 'test') {
+      this.showSubmissionProgress()
+    }
+    
+    try {
+      const finalScore = await this.quiz.finish()
+      this.showResults(finalScore)
+      this.showScreen('results')
+    } catch (error) {
+      console.error('Failed to finish quiz:', error)
+      // For test mode, show error and allow retry
+      if (this.quiz.mode === 'test') {
+        this.showSubmissionError(error.message)
+      } else {
+        // For practice modes, just show results without server submission
+        const finalScore = this.quiz.calculateScore()
+        this.showResults(finalScore)
+        this.showScreen('results')
+      }
+    }
+  }
+  
+  showSubmissionProgress() {
+    this.elements.resultsContent.innerHTML = `
+      <div class="text-center space-y-6">
+        <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">Submitting Test...</h2>
+        <p class="text-gray-600">Please wait while we save your answers to the server.</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+          <p><strong>Important:</strong> Do not close this window or refresh the page.</p>
+        </div>
+      </div>
+    `
     this.showScreen('results')
+  }
+  
+  showSubmissionError(errorMessage) {
+    this.elements.resultsContent.innerHTML = `
+      <div class="text-center space-y-6">
+        <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+          <span class="text-3xl">⚠️</span>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">Submission Failed</h2>
+        <p class="text-gray-600">We couldn't save your test answers to the server.</p>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800">
+          <p><strong>Error:</strong> ${errorMessage}</p>
+        </div>
+        <div class="space-y-3">
+          <button id="retry-submission" class="btn-primary w-full">Try Again</button>
+          <button id="continue-without-saving" class="btn-secondary w-full">Continue Without Saving</button>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+          <p><strong>Note:</strong> Your answers are still saved locally and can be recovered if you retry.</p>
+        </div>
+      </div>
+    `
+    
+    // Add event listeners for retry buttons
+    document.getElementById('retry-submission').addEventListener('click', () => {
+      this.finishQuiz() // Retry submission
+    })
+    
+    document.getElementById('continue-without-saving').addEventListener('click', () => {
+      const finalScore = this.quiz.calculateScore()
+      this.showResults(finalScore)
+    })
   }
 
   showResults(score) {
@@ -1107,11 +1238,289 @@ class UIController {
   }
   
   handleReview() {
-    this.quiz.currentQuestionIndex = 0
-    this.quiz.mode = 'practice' // Switch to practice mode for review
-    this.initQuizUI()
-    this.showScreen('quiz')
-    this.renderCurrentQuestion()
+    this.showComprehensiveReview()
+  }
+  
+  handleBackToResults() {
+    this.showScreen('results')
+  }
+  
+  showComprehensiveReview() {
+    // Set up the review header
+    this.elements.reviewStudentName.textContent = this.quiz.studentName
+    
+    // Set the mode indicator
+    const originalMode = this.quiz.mode
+    let modeText, modeClass
+    switch (originalMode) {
+      case 'practice':
+        modeText = 'Practice Mode Review'
+        modeClass = 'bg-green-100 text-green-700'
+        break
+      case 'random':
+        modeText = 'Random Practice Review'
+        modeClass = 'bg-purple-100 text-purple-700'
+        break
+      case 'test':
+        modeText = 'Test Mode Review'
+        modeClass = 'bg-blue-100 text-blue-700'
+        break
+      default:
+        modeText = 'Quiz Review'
+        modeClass = 'bg-gray-100 text-gray-700'
+    }
+    
+    this.elements.reviewModeIndicator.textContent = modeText
+    this.elements.reviewModeIndicator.className = `text-sm font-medium px-3 py-1 rounded-full ${modeClass}`
+    
+    // Generate the comprehensive review content
+    this.generateComprehensiveReview()
+    
+    // Show the review screen
+    this.showScreen('review')
+  }
+  
+  generateComprehensiveReview() {
+    const reviewContainer = document.createElement('div')
+    reviewContainer.className = 'space-y-8'
+    
+    // Add a summary header
+    const summaryHeader = document.createElement('div')
+    summaryHeader.className = 'bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 rounded-lg p-6 mb-8'
+    summaryHeader.innerHTML = `
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Complete Answer Review</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <p class="text-2xl font-bold text-sky-600">${this.quiz.questions.length}</p>
+          <p class="text-sm text-gray-600">Total Questions</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <p class="text-2xl font-bold text-green-600">${this.quiz.answers.size}</p>
+          <p class="text-sm text-gray-600">Answered</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <p class="text-2xl font-bold text-purple-600">${Math.round((this.quiz.score / this.quiz.maxScore) * 100)}%</p>
+          <p class="text-sm text-gray-600">Score</p>
+        </div>
+      </div>
+    `
+    reviewContainer.appendChild(summaryHeader)
+    
+    // Add all questions with answers
+    this.quiz.questions.forEach((question, index) => {
+      const questionCard = this.createReviewQuestionCard(question, index)
+      reviewContainer.appendChild(questionCard)
+    })
+    
+    // Clear existing content and append new review
+    this.elements.reviewContent.innerHTML = ''
+    this.elements.reviewContent.appendChild(reviewContainer)
+  }
+  
+  createReviewQuestionCard(question, index) {
+    const card = document.createElement('div')
+    card.className = 'bg-white border border-gray-200 rounded-lg shadow-sm p-6'
+    
+    // Question number and header
+    const questionHeader = document.createElement('div')
+    questionHeader.className = 'flex items-start justify-between mb-4'
+    questionHeader.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <span class="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-sm font-bold">Q${index + 1}</span>
+        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+          ${question.type.replace(/_/g, ' ')}
+        </span>
+      </div>
+      <span class="text-sm text-gray-600 font-medium">${question.points} point${question.points !== 1 ? 's' : ''}</span>
+    `
+    card.appendChild(questionHeader)
+    
+    // Question text
+    const questionText = document.createElement('h3')
+    questionText.className = 'text-lg font-semibold text-gray-900 mb-4'
+    questionText.textContent = question.question_text
+    card.appendChild(questionText)
+    
+    // Citation if available
+    if (question.citation) {
+      const citation = document.createElement('p')
+      citation.className = 'text-sm text-gray-500 mb-4 italic'
+      citation.textContent = question.citation
+      card.appendChild(citation)
+    }
+    
+    // User's answer section
+    const userAnswer = this.quiz.getAnswer(question.id)
+    const answerSection = this.createReviewAnswerSection(question, userAnswer)
+    card.appendChild(answerSection)
+    
+    // Correct answer section (for practice and random modes)
+    if (this.quiz.mode === 'practice' || this.quiz.mode === 'random') {
+      const correctAnswerSection = this.createReviewCorrectAnswerSection(question, userAnswer)
+      card.appendChild(correctAnswerSection)
+    }
+    
+    return card
+  }
+  
+  createReviewAnswerSection(question, userAnswer) {
+    const section = document.createElement('div')
+    section.className = 'mb-4'
+    
+    const header = document.createElement('h4')
+    header.className = 'text-sm font-semibold text-gray-700 mb-2'
+    header.textContent = 'Your Answer:'
+    section.appendChild(header)
+    
+    const answerDisplay = document.createElement('div')
+    answerDisplay.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3'
+    
+    if (!userAnswer || (Array.isArray(userAnswer) && userAnswer.every(a => !a || !a.trim()))) {
+      // No answer provided
+      answerDisplay.className = 'bg-red-50 border border-red-200 rounded-lg p-3'
+      answerDisplay.innerHTML = `
+        <div class="flex items-center text-red-700">
+          <span class="mr-2">⚠</span>
+          <span class="text-sm font-medium">No answer provided</span>
+        </div>
+      `
+    } else {
+      // Display the answer based on question type
+      this.displayUserAnswerInReview(answerDisplay, question, userAnswer)
+    }
+    
+    section.appendChild(answerDisplay)
+    return section
+  }
+  
+  displayUserAnswerInReview(container, question, userAnswer) {
+    switch (question.type) {
+      case 'TRUE_FALSE':
+        container.innerHTML = `
+          <div class="flex items-center">
+            <span class="text-lg font-medium text-gray-900">${userAnswer ? 'True' : 'False'}</span>
+          </div>
+        `
+        break
+        
+      case 'SIMPLE_FILL_IN_THE_BLANK':
+        if (Array.isArray(userAnswer)) {
+          const answersHTML = userAnswer.map((answer, index) => 
+            `<div class="mb-2"><strong>${index + 1}.</strong> ${answer || '<em class="text-gray-500">(empty)</em>'}</div>`
+          ).join('')
+          container.innerHTML = `<div class="space-y-1">${answersHTML}</div>`
+        } else {
+          container.innerHTML = `<p class="text-gray-900">${userAnswer}</p>`
+        }
+        break
+        
+      case 'STRUCTURED_FILL_IN_THE_BLANK':
+        if (Array.isArray(userAnswer)) {
+          const answersHTML = question.parts.map((part, index) => 
+            `<div class="mb-3 p-2 bg-white rounded border">
+              <div class="text-sm font-medium text-gray-600 mb-1">${part.prompt}</div>
+              <div class="text-gray-900">${userAnswer[index] || '<em class="text-gray-500">(empty)</em>'}</div>
+            </div>`
+          ).join('')
+          container.innerHTML = `<div class="space-y-2">${answersHTML}</div>`
+        }
+        break
+        
+      case 'SHORT_ANSWER':
+        container.innerHTML = `
+          <div class="bg-white rounded border p-3 max-h-32 overflow-y-auto">
+            <p class="text-gray-900 whitespace-pre-wrap">${userAnswer}</p>
+          </div>
+        `
+        break
+    }
+  }
+  
+  createReviewCorrectAnswerSection(question, userAnswer) {
+    const section = document.createElement('div')
+    section.className = 'border-t border-gray-200 pt-4'
+    
+    const header = document.createElement('h4')
+    header.className = 'text-sm font-semibold text-gray-700 mb-2'
+    header.textContent = 'Correct Answer:'
+    section.appendChild(header)
+    
+    const correctDisplay = document.createElement('div')
+    
+    // Determine if the answer is correct and style accordingly
+    const isCorrect = this.quiz.isAnswerCorrect(question, userAnswer)
+    correctDisplay.className = isCorrect 
+      ? 'bg-green-50 border border-green-200 rounded-lg p-3'
+      : 'bg-red-50 border border-red-200 rounded-lg p-3'
+    
+    this.displayCorrectAnswerInReview(correctDisplay, question, isCorrect)
+    
+    section.appendChild(correctDisplay)
+    return section
+  }
+  
+  displayCorrectAnswerInReview(container, question, isCorrect) {
+    const statusIcon = isCorrect ? '✓' : '✗'
+    const statusText = isCorrect ? 'Correct' : 'Incorrect'
+    const statusColor = isCorrect ? 'text-green-700' : 'text-red-700'
+    
+    switch (question.type) {
+      case 'TRUE_FALSE':
+        const correctAnswer = question.correct_answer ? 'True' : 'False'
+        container.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-lg font-bold mr-2 ${statusColor}">${statusIcon}</span>
+            <div>
+              <p class="font-semibold ${statusColor}">${statusText}</p>
+              ${!isCorrect ? `<p class="text-sm mt-1">Correct answer: <strong>${correctAnswer}</strong></p>` : ''}
+            </div>
+          </div>
+        `
+        break
+        
+      case 'SIMPLE_FILL_IN_THE_BLANK':
+        container.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-lg font-bold mr-2 ${statusColor}">${statusIcon}</span>
+            <div>
+              <p class="font-semibold ${statusColor}">${statusText}</p>
+              <p class="text-sm mt-1">Accepted answers: <strong>${question.correct_answers.join(', ')}</strong></p>
+            </div>
+          </div>
+        `
+        break
+        
+      case 'STRUCTURED_FILL_IN_THE_BLANK':
+        const partsHTML = question.parts.map((part, index) => 
+          `<div class="mb-2 p-2 bg-white rounded border">
+            <div class="text-sm font-medium text-gray-600 mb-1">${part.prompt}</div>
+            <div><strong>${part.correct_answer}</strong></div>
+          </div>`
+        ).join('')
+        container.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-lg font-bold mr-2 ${statusColor}">${statusIcon}</span>
+            <div class="flex-1">
+              <p class="font-semibold ${statusColor} mb-2">${statusText}</p>
+              <div class="space-y-2">${partsHTML}</div>
+            </div>
+          </div>
+        `
+        break
+        
+      case 'SHORT_ANSWER':
+        container.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-lg font-bold mr-2 text-blue-700">ℹ️</span>
+            <div>
+              <p class="font-semibold text-blue-700">Requires Manual Grading</p>
+              <p class="text-sm mt-1 text-blue-600">Short answer questions need to be reviewed manually for proper grading.</p>
+              ${question.grading_notes ? `<p class="text-sm mt-2 text-gray-600"><strong>Grading Notes:</strong> ${question.grading_notes}</p>` : ''}
+            </div>
+          </div>
+        `
+        break
+    }
   }
 }
 

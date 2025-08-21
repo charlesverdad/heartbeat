@@ -50,7 +50,7 @@
   {
     "id": "q6_god_definitions",
     "type": "SIMPLE_FILL_IN_THE_BLANK",
-    "question_text": "The New Testament defines who God is by using three phrases that say, "God is ____________." What are the three words that describe God?",
+    "question_text": "The New Testament defines who God is by using three phrases that say, \"God is ____________.\" What are the three words that describe God?",
     "points": 3,
     "expected_answers": 3
   },

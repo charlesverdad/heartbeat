@@ -1,19 +1,228 @@
-Question Types
+# Living Life Quiz Application
 
-1. Simple Fill in the Blank: These questions pose a single prompt and expect one or more concise, direct answers, often presented as a numbered list in the source.
-    ◦ Example: "Write down the three definitions of sin found in the New Testament."
-    ◦ Example: "What are the five components of prayer?"
+An interactive quiz application for the Living Life Bible Study course with test submission capability.
 
-2. Structured Fill in the Blank: These questions act as a main heading or topic, under which multiple sub-questions or specific prompts are listed, each requiring a distinct short answer. This type is used when the main question introduces a set of related facts or details to be provided.
-    ◦ Example: "In regards to the books of the Bible:" followed by sub-questions like "1. How many books are in the Old Testament?"
-    ◦ Example: "In regards to Jesus Christ:" followed by sub-questions like "1. Which tribe is he from?"
+## Features
 
-3. True/False: These questions present a statement that the user must determine as either true or false. The source explicitly marks the correct answer with (T) or (F).
-    ◦ Example: "(T) The most important thing in Christian life is having the right relationship with God and neighbors."
-    ◦ Example: "(F) The reason why Jesus died on the cross is for his sins as well as for ours."
+- **Multiple Quiz Modes**:
+  - **Practice Mode**: Full question bank with immediate feedback and correct answers
+  - **Random Practice**: 25 random questions with immediate feedback
+  - **Test Mode**: Full question bank without feedback, submits answers to server
 
-4. Short Answer (Open-Ended): This type is characterized by questions that prompt a subjective or reflective answer, where the correct response isn't fixed but rather depends on the user's personal thought or experience. Scoring for this type would likely require manual review or be completion-based (e.g., points awarded for any non-empty, relevant response) rather than automated correctness checking.
-    ◦ Example: "Write down what you think your spiritual gifts are and why."
+- **Question Types Supported**:
+  - True/False questions
+  - Simple fill-in-the-blank (single or multiple answers)
+  - Structured fill-in-the-blank with multiple parts
+  - Short answer questions
+
+- **Test Mode Features**:
+  - Progress saving and resumption
+  - Server submission with retry logic and exponential backoff
+  - SQLite database storage for submitted answers
+  - Concurrency handling for multiple simultaneous submissions
+
+- **UI Features**:
+  - Responsive design with Tailwind CSS
+  - Progress tracking and question navigation
+  - Answer persistence across page refreshes (test mode)
+  - Visual feedback and validation
+
+## Setup and Installation
+
+### Prerequisites
+
+- Node.js (version 14 or higher)
+- npm or yarn package manager
+
+### Installation
+
+1. Clone or download the project files
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running the Application
+
+#### Development Mode (Frontend Only)
+For development with hot reload:
+```bash
+npm run dev
+```
+This runs the Vite development server on `http://localhost:5173`
+
+#### Production Server (Full Application)
+To run the complete application with server-side test submission:
+
+1. Build the frontend:
+   ```bash
+   npm run build
+   ```
+
+2. Start the server:
+   ```bash
+   npm run server
+   ```
+
+3. Access the application at `http://localhost:3000`
+
+#### Development Server Mode
+For server development with auto-restart:
+```bash
+npm run server:dev
+```
+
+## File Structure
+
+```
+├── index.html              # Main HTML file
+├── src/
+│   ├── main.js             # Main application logic
+│   └── style.css           # Styles
+├── questions-master.json   # Practice mode questions (with answers)
+├── questions-test.json     # Test mode questions (no answers)
+├── server.js              # Express server for test submissions
+├── package.json           # Dependencies and scripts
+└── README.md              # This file
+```
+
+## Usage
+
+### For Students
+
+1. **Starting a Quiz**:
+   - Enter your name
+   - Select your preferred mode:
+     - **Practice**: Complete question bank with feedback
+     - **Random Practice**: 25 random questions with feedback
+     - **Test**: Complete question bank, answers submitted to instructor
+
+2. **Taking the Quiz**:
+   - Answer questions using the provided input fields
+   - Use navigation buttons to move between questions
+   - In practice modes, use "Show Correct Answers" for immediate feedback
+   - Progress is automatically saved in test mode
+
+3. **Test Mode Specifics**:
+   - Answers are automatically saved as you type
+   - You can safely close and reopen the browser - progress will be restored
+   - When finished, answers are submitted to the server automatically
+   - Retry mechanism handles network issues automatically
+
+### For Instructors
+
+#### Accessing Submitted Tests
+
+The server provides several API endpoints for accessing submitted test data:
+
+1. **Recent Submissions**:
+   ```
+   GET /api/submissions/recent?limit=20
+   ```
+
+2. **Submission Statistics**:
+   ```
+   GET /api/submissions/stats
+   ```
+
+3. **Health Check**:
+   ```
+   GET /api/health
+   ```
+
+#### Database Structure
+
+Test submissions are stored in SQLite database (`test_submissions.db`) with two main tables:
+
+- **submissions**: Main submission records with student info and metadata
+- **answers**: Individual answers linked to submissions
+
+You can query the database directly using any SQLite tool or client.
+
+## Configuration
+
+### Environment Variables
+
+- `PORT`: Server port (default: 3000)
+
+### Database
+
+The SQLite database file (`test_submissions.db`) is created automatically when the server starts. It includes:
+
+- Automatic table creation
+- Transaction support for data consistency
+- Foreign key relationships
+- Proper indexing for performance
+
+## API Documentation
+
+### POST /api/submit-test
+
+Accepts test submissions from the client.
+
+**Request Body**:
+```json
+{
+  "studentName": "John Doe",
+  "startTime": "2023-01-01T10:00:00.000Z",
+  "endTime": "2023-01-01T11:30:00.000Z",
+  "totalQuestions": 20,
+  "answers": [
+    {
+      "questionId": "q1_sin_definitions",
+      "answer": true,
+      "timestamp": "2023-01-01T10:05:00.000Z",
+      "questionIndex": 0
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "submissionId": 123,
+  "message": "Test submission received for John Doe",
+  "answersProcessed": 15
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Server won't start**: Make sure all dependencies are installed (`npm install`)
+2. **Database errors**: Check file permissions in the project directory
+3. **Test submission fails**: Check network connection and server logs
+4. **Build failures**: Ensure Node.js version is 14 or higher
+
+### Server Logs
+
+The server provides detailed logging for:
+- Database operations
+- Test submissions
+- Error conditions
+- Connection status
+
+### Client-Side Retry
+
+The application automatically retries failed test submissions with exponential backoff:
+- Initial retry: 1 second delay
+- Second retry: 2 seconds delay  
+- Third retry: 4 seconds delay
+- Maximum delay: 10 seconds
+
+## Security Considerations
+
+- Input validation on both client and server
+- SQL injection prevention using prepared statements
+- Request size limits to prevent abuse
+- Graceful error handling without exposing internals
+
+---
+
+## Question Types Specification
 
 Question Class Schema
 
