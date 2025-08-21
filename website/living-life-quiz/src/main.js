@@ -116,6 +116,11 @@ class QuizState {
         return userAnswer === question.correct_answer
 
       case 'SIMPLE_FILL_IN_THE_BLANK':
+        // Check if correct_answers exists
+        if (!question.correct_answers || !Array.isArray(question.correct_answers)) {
+          return false
+        }
+        
         // For multiple answers, check if user provided answers match any of the correct ones
         if (Array.isArray(userAnswer)) {
           // Multiple text boxes - check if any user answer matches any correct answer
@@ -133,7 +138,9 @@ class QuizState {
         }
 
       case 'STRUCTURED_FILL_IN_THE_BLANK':
-        if (!Array.isArray(userAnswer)) return false
+        if (!Array.isArray(userAnswer) || !question.parts || !Array.isArray(question.parts)) {
+          return false
+        }
         return question.parts.every((part, index) => 
           userAnswer[index] && this.compareStrings(userAnswer[index], part.correct_answer)
         )
@@ -162,8 +169,11 @@ class QuizState {
     if (this.mode === 'test') {
       await this.submitToServer()
       this.clearStorage()
+      // In test mode, don't calculate score locally - backend handles it
+      return 0
     }
     
+    // Only calculate score for practice mode
     return this.calculateScore()
   }
 
@@ -738,6 +748,12 @@ class UIController {
     // Resume/Start Fresh buttons
     this.elements.resumeTestBtn.addEventListener('click', this.handleResumeTest.bind(this))
     this.elements.startFreshBtn.addEventListener('click', this.handleStartFresh.bind(this))
+    
+    // Teacher Portal button
+    const teacherPortalBtn = document.getElementById('teacher-portal-btn')
+    if (teacherPortalBtn) {
+      teacherPortalBtn.addEventListener('click', this.handleTeacherPortal.bind(this))
+    }
 
     // Auto-save answers
     this.elements.questionContainer.addEventListener('input', this.handleAnswerChange.bind(this))
@@ -1101,6 +1117,63 @@ class UIController {
   }
 
   showResults(score) {
+    // For test mode, show submission confirmation without scores
+    if (this.quiz.mode === 'test') {
+      const timeTaken = Math.round((this.quiz.endTime - this.quiz.startTime) / 1000 / 60) // minutes
+      
+      this.elements.resultsContent.innerHTML = `
+        <div class="space-y-6">
+          <div class="text-center">
+            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+              <span class="text-3xl">✅</span>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Test Submitted Successfully!</h2>
+            <p class="text-gray-600">Thank you, ${this.quiz.studentName}!</p>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div class="text-center space-y-3">
+              <h3 class="text-lg font-semibold text-blue-900">Test Completion Summary</h3>
+              <div class="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p class="text-2xl font-bold text-blue-700">${this.quiz.answers.size}</p>
+                  <p class="text-sm text-blue-600">Questions Answered</p>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-blue-700">${timeTaken}</p>
+                  <p class="text-sm text-blue-600">Minutes Taken</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-start">
+              <span class="text-lg font-bold mr-2 text-amber-700">📊</span>
+              <div>
+                <p class="font-semibold text-amber-800">Grading Information</p>
+                <p class="text-sm text-amber-700 mt-1">Your test has been submitted and will be graded by your instructor. You will receive your results separately.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-sm text-gray-600 space-y-2">
+            <p><strong>Submission ID:</strong> <span class="font-mono text-xs">${Date.now()}</span></p>
+            <p><strong>Completed:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Mode:</strong> Test Mode</p>
+          </div>
+        </div>
+      `
+      
+      // Hide the Review Answers button for test mode
+      this.elements.reviewBtn.style.display = 'none'
+      return
+    }
+    
+    // For practice and random modes, show the Review Answers button
+    this.elements.reviewBtn.style.display = 'inline-block'
+    
+    // For practice and random modes, show detailed scoring
     const percentage = Math.round((score / this.quiz.maxScore) * 100)
     const timeTaken = Math.round((this.quiz.endTime - this.quiz.startTime) / 1000 / 60) // minutes
     
@@ -1142,7 +1215,6 @@ class UIController {
             'Test Mode'
           }</p>
           ${this.quiz.mode === 'random' ? '<p class="text-purple-600"><strong>Note:</strong> This was a random selection of 25 questions.</p>' : ''}
-          ${this.quiz.mode === 'test' ? '<p class="text-amber-600"><strong>Note:</strong> Some answers may require manual grading.</p>' : ''}
         </div>
       </div>
     `
@@ -1245,6 +1317,11 @@ class UIController {
     this.showScreen('results')
   }
   
+  handleTeacherPortal() {
+    // Navigate to teacher portal page
+    window.location.href = '/teacher'
+  }
+  
   showComprehensiveReview() {
     // Set up the review header
     this.elements.reviewStudentName.textContent = this.quiz.studentName
@@ -1287,23 +1364,46 @@ class UIController {
     // Add a summary header
     const summaryHeader = document.createElement('div')
     summaryHeader.className = 'bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 rounded-lg p-6 mb-8'
-    summaryHeader.innerHTML = `
-      <h2 class="text-2xl font-bold text-gray-900 mb-4">Complete Answer Review</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-        <div class="bg-white rounded-lg p-4 shadow-sm">
-          <p class="text-2xl font-bold text-sky-600">${this.quiz.questions.length}</p>
-          <p class="text-sm text-gray-600">Total Questions</p>
+    
+    // For test mode, don't show score information
+    if (this.quiz.mode === 'test') {
+      summaryHeader.innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Answer Review</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-2xl font-bold text-sky-600">${this.quiz.questions.length}</p>
+            <p class="text-sm text-gray-600">Total Questions</p>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-2xl font-bold text-green-600">${this.quiz.answers.size}</p>
+            <p class="text-sm text-gray-600">Answered</p>
+          </div>
         </div>
-        <div class="bg-white rounded-lg p-4 shadow-sm">
-          <p class="text-2xl font-bold text-green-600">${this.quiz.answers.size}</p>
-          <p class="text-sm text-gray-600">Answered</p>
+        <div class="mt-4 text-center">
+          <p class="text-sm text-amber-700"><strong>Note:</strong> Scores and correct answers are not shown in test mode.</p>
         </div>
-        <div class="bg-white rounded-lg p-4 shadow-sm">
-          <p class="text-2xl font-bold text-purple-600">${Math.round((this.quiz.score / this.quiz.maxScore) * 100)}%</p>
-          <p class="text-sm text-gray-600">Score</p>
+      `
+    } else {
+      // For practice and random modes, show score information
+      summaryHeader.innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Complete Answer Review</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-2xl font-bold text-sky-600">${this.quiz.questions.length}</p>
+            <p class="text-sm text-gray-600">Total Questions</p>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-2xl font-bold text-green-600">${this.quiz.answers.size}</p>
+            <p class="text-sm text-gray-600">Answered</p>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-2xl font-bold text-purple-600">${Math.round((this.quiz.score / this.quiz.maxScore) * 100)}%</p>
+            <p class="text-sm text-gray-600">Score</p>
+          </div>
         </div>
-      </div>
-    `
+      `
+    }
+    
     reviewContainer.appendChild(summaryHeader)
     
     // Add all questions with answers
