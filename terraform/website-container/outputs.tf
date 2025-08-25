@@ -59,11 +59,8 @@ output "cloudflare_tunnel_cname" {
   value       = cloudflare_zero_trust_tunnel_cloudflared.website.cname
 }
 
-output "cloudflare_tunnel_token" {
-  description = "Cloudflare tunnel token"
-  value       = cloudflare_zero_trust_tunnel_cloudflared.website.tunnel_token
-  sensitive   = true
-}
+# Removed: tunnel token output to prevent tfstate leakage
+# Use: az keyvault secret show --vault-name <vault> --name cloudflare-tunnel-token
 
 output "dns_record_name" {
   description = "DNS record name"

@@ -91,6 +91,18 @@ def parse_arguments():
     return known_args.flavor, terraform_args
 
 
+def has_remote_backend():
+    """Check if current directory has a remote backend configured"""
+    backend_files = ['backend.tf', 'backend.tf.json']
+    for backend_file in backend_files:
+        if Path(backend_file).exists():
+            with open(backend_file, 'r') as f:
+                content = f.read()
+                if 'backend ' in content and ('azurerm' in content or 's3' in content or 'gcs' in content):
+                    return True
+    return False
+
+
 def add_flavor_args(flavor, terraform_args):
     """Add -var-file and -state arguments based on flavor"""
     if not terraform_args:
@@ -99,12 +111,22 @@ def add_flavor_args(flavor, terraform_args):
     command = terraform_args[0]
     modified_args = [command]
     
-    # Add state file for all stateful commands
+    # Handle backend configuration for init commands
+    if command == 'init' and has_remote_backend():
+        # Get current directory name for backend key prefix
+        current_dir = os.path.basename(os.getcwd())
+        backend_key = f"{current_dir}/{flavor}.tfstate"
+        log_info(f"Configuring remote backend with key: {backend_key}")
+        modified_args.extend([f"-backend-config=key={backend_key}"])
+    
+    # Add state file for all stateful commands (only if no remote backend)
     stateful_commands = ['plan', 'apply', 'destroy', 'import', 'refresh', 'show', 'state', 'taint', 'untaint', 'output']
-    if command in stateful_commands:
+    if command in stateful_commands and not has_remote_backend():
         state_file = f"{flavor}.tfstate"
         log_info(f"Using state file: {state_file}")
         modified_args.extend([f"-state={state_file}"])
+    elif command in stateful_commands and has_remote_backend():
+        log_info(f"Remote backend detected, using remote state management")
     
     # Add var-file for plan/apply commands
     if command in ['plan', 'apply']:
