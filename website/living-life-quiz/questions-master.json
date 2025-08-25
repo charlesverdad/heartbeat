@@ -1,0 +1,1201 @@
+[
+  {
+    "id": "q1_sin_definitions",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "Write down the three definitions of sin found in the New Testament.",
+    "points": 3,
+    "correct_answers": [
+      "Lawlessness",
+      "Knowing the good we ought to do and are not doing it",
+      "Everything that doesn’t come from faith"
+    ]
+  },
+  {
+    "id": "q2_prayer_components",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "What are the five components of prayer?",
+    "points": 5,
+    "correct_answers": [
+      "Praise",
+      "Thanksgiving",
+      "Repentance",
+      "Intercession",
+      "Requests"
+    ]
+  },
+  {
+    "id": "q3_bible_books_details",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "In regards to the books of the Bible:",
+    "points": 4,
+    "parts": [
+      {
+        "prompt": "1. How many books are in the Old Testament?",
+        "correct_answer": "39 books"
+      },
+      {
+        "prompt": "2. How many books are in the New Testament?",
+        "correct_answer": "27 books"
+      },
+      {
+        "prompt": "3. When was the Old Testament completed?",
+        "correct_answer": "400 BC"
+      },
+      {
+        "prompt": "4. When was the New Testament completed?",
+        "correct_answer": "AD 90"
+      }
+    ]
+  },
+  {
+    "id": "q4_ot_categories",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "Write down the four different categories of the books of the Old Testament including where it starts from and ends.",
+    "points": 8,
+    "correct_answers": [
+      "The Law (Genesis to Deuteronomy)",
+      "History (Joshua to Esther)",
+      "Wisdom Literature (Job to Song of Songs)",
+      "Prophets (Isaiah to Malachi)"
+    ]
+  },
+  {
+    "id": "q5_nt_categories",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "Write down the four different categories of the books of the New Testament including where it starts from and ends.",
+    "points": 8,
+    "correct_answers": [
+      "The gospels (Matthew to John)",
+      "History (Acts)",
+      "Letters (Romans to Jude)",
+      "Prophetic book (Revelation)"
+    ]
+  },
+  {
+    "id": "q6_god_definitions",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "The New Testament defines who God is by using three phrases that say, “God is ____________.” What are the three words that describe God?",
+    "points": 3,
+    "correct_answers": [
+      "Spirit",
+      "Light",
+      "Love"
+    ]
+  },
+  {
+    "id": "q7_triune_god_relation",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "How does the New Testament describe the triune God, God the Father, God the Son and God the Holy Spirit, in relation to us?",
+    "points": 3,
+    "correct_answers": [
+      "God’s children",
+      "Christ’s bride",
+      "the Holy Spirit’s temple"
+    ]
+  },
+  {
+    "id": "q8_jesus_details",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "In regards to Jesus Christ:",
+    "points": 9,
+    "parts": [
+      {
+        "prompt": "1. Which tribe is he from?",
+        "correct_answer": "Judah",
+        "citation": "Matthew 1: 1"
+      },
+      {
+        "prompt": "2. His birthplace?",
+        "correct_answer": "Bethlehem",
+        "citation": "Matthew 2: 1"
+      },
+      {
+        "prompt": "3. Parents’ names?",
+        "correct_answer": "Mary and Joseph",
+        "citation": "Matthew 1: 18"
+      },
+      {
+        "prompt": "4. Where did he grow up?",
+        "correct_answer": "Nazareth",
+        "citation": "Matthew 2: 23"
+      },
+      {
+        "prompt": "5. His profession?",
+        "correct_answer": "Carpenter",
+        "citation": "Mark 6; 3"
+      },
+      {
+        "prompt": "6. The age when he began his public ministry?",
+        "correct_answer": "30 yrs.",
+        "citation": "Luke 3: 23"
+      },
+      {
+        "prompt": "7. Place where he died?",
+        "correct_answer": "Golgotha (Calvary)",
+        "citation": "John 19: 17"
+      },
+      {
+        "prompt": "8. Place where he ascended to heaven?",
+        "correct_answer": "Mount of Olives",
+        "citation": "Acts 1: 12"
+      },
+      {
+        "prompt": "9. How many years did he do public ministry?",
+        "correct_answer": "3 years"
+      }
+    ]
+  },
+  {
+    "id": "q9_israel_land_division",
+    "type": "SIMPLE_FILL_IN_THE_BLANK",
+    "question_text": "Describe the land of Israel during Jesus’ time by dividing it into three parts and naming them.",
+    "points": 3,
+    "correct_answers": [
+      "North (Galilee)",
+      "Middle (Samaria)",
+      "South (Judah)"
+    ]
+  },
+  {
+    "id": "q10_famous_people",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Write down the famous people who lived during these time periods:",
+    "points": 4,
+    "parts": [
+      {
+        "prompt": "2000 BC",
+        "correct_answer": "Abraham"
+      },
+      {
+        "prompt": "1500 BC",
+        "correct_answer": "Moses"
+      },
+      {
+        "prompt": "1000 BC",
+        "correct_answer": "David"
+      },
+      {
+        "prompt": "0 BC/AD",
+        "correct_answer": "Jesus"
+      }
+    ]
+  },
+  {
+    "id": "q11_abraham_descendants_tribes",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Write down the names of Abraham’s son, his grandson, and three tribes out of the twelve tribes.",
+    "points": 5,
+    "parts": [
+      {
+        "prompt": "Abraham’s son",
+        "correct_answer": "Isaac"
+      },
+      {
+        "prompt": "Abraham’s grandson",
+        "correct_answer": "Jacob"
+      },
+      {
+        "prompt": "One of the tribes of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      },
+      {
+        "prompt": "Another tribe of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      },
+      {
+        "prompt": "Another tribe of Israel",
+        "correct_answer": "Reuben, Judah, Levi, Simeon, Benjamin, Ephraim, Manasseh, Zebulun, Gad, Dan, Asher, Naphtali, Issachar"
+      }
+    ]
+  },
+  {
+    "id": "q12_spiritual_gifts",
+    "type": "SHORT_ANSWER",
+    "question_text": "Write down what you think your spiritual gifts are and why.",
+    "points": 1,
+    "grading_notes": "This question requires manual review. Points may be awarded for a thoughtful, relevant answer."
+  },
+  {
+    "id": "tf_rel_god_neighbors",
+    "type": "TRUE_FALSE",
+    "question_text": "The most important thing in Christian life is having the right relationship with God and neighbors.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 22: 34-40"
+  },
+  {
+    "id": "tf_neighbor_god_rel",
+    "type": "TRUE_FALSE",
+    "question_text": "Just because you don’t have good relationship with your neighbor doesn’t mean you have bad relationship with God.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 22: 39"
+  },
+  {
+    "id": "tf_jesus_death_reason",
+    "type": "TRUE_FALSE",
+    "question_text": "The reason why Jesus died on the cross is for his sins as well as for ours.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Isaiah 53: 6"
+  },
+  {
+    "id": "tf_sin_nature",
+    "type": "TRUE_FALSE",
+    "question_text": "We are not sinners because we sin. We sin because we are sinners.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Romans 1: 28-31"
+  },
+  {
+    "id": "tf_confessing_sin_meaning",
+    "type": "TRUE_FALSE",
+    "question_text": "The original meaning of confessing our sin is agreeing with God.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 John 1: 9"
+  },
+  {
+    "id": "tf_repentance_meaning",
+    "type": "TRUE_FALSE",
+    "question_text": "The core meaning of repentance is having a sorrowful heart for the sins we committed.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 John 1: 9"
+  },
+  {
+    "id": "tf_god_remembers_sins",
+    "type": "TRUE_FALSE",
+    "question_text": "If we confess our sins, God forgives our sins but remembers them.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Hebrews 8: 12"
+  },
+  {
+    "id": "tf_god_forgives_forgets",
+    "type": "TRUE_FALSE",
+    "question_text": "When we confess our sins, not only does God forgive our sins, He doesn’t remember them anymore.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Hebrews 8: 12"
+  },
+  {
+    "id": "tf_fruit_of_repentance",
+    "type": "TRUE_FALSE",
+    "question_text": "If we have truly repented, we should produce fruit in keeping with repentance.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Luke 3: 8"
+  },
+  {
+    "id": "tf_repentance_scope",
+    "type": "TRUE_FALSE",
+    "question_text": "When we repent, we just need to confess our sins before God. We don’t have to ask for forgiveness from people that we sinned against or pay back any debt we owe.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Luke 3: 8"
+  },
+  {
+    "id": "tf_new_covenant_jeremiah",
+    "type": "TRUE_FALSE",
+    "question_text": "The person who used the word “New Covenant” which also means “New Testament” is Jeremiah.",
+    "points": 1,
+    "correct_answer": true
+  },
+  {
+    "id": "tf_new_covenant_isaiah",
+    "type": "TRUE_FALSE",
+    "question_text": "The person who used the word “New Covenant” which also means “New Testament” is Isaiah.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_children_of_god_baptism_effort",
+    "type": "TRUE_FALSE",
+    "question_text": "The right to become children of God has been given to those who get baptized and make their effort to live their life according to God’s will.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "John 1: 13"
+  },
+  {
+    "id": "tf_receive_believe_jesus",
+    "type": "TRUE_FALSE",
+    "question_text": "Receiving Jesus means the same as believing in Jesus.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "John 1: 12"
+  },
+  {
+    "id": "tf_salvation_resurrection_belief",
+    "type": "TRUE_FALSE",
+    "question_text": "Even if you don’t believe that Jesus died and rose from the dead, you will be saved if you receive him as your Lord and Savior.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Romans 10: 9"
+  },
+  {
+    "id": "tf_salvation_resurrection_must",
+    "type": "TRUE_FALSE",
+    "question_text": "In order for us to be saved we must believe in Jesus’ resurrection.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Romans 10: 9"
+  },
+  {
+    "id": "tf_saved_not_born_again",
+    "type": "TRUE_FALSE",
+    "question_text": "There could be saved Christians who are not necessarily born again.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "John 3: 1-8"
+  },
+  {
+    "id": "tf_born_again_effort",
+    "type": "TRUE_FALSE",
+    "question_text": "After we become Christians, we become born again through our effort to live a holy life.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "John 3: 1-8"
+  },
+  {
+    "id": "tf_jewish_worship_place",
+    "type": "TRUE_FALSE",
+    "question_text": "A place where Jewish people gather together on Sabbath for worship is called synagogue.",
+    "points": 1,
+    "correct_answer": true
+  },
+  {
+    "id": "tf_no_assurance_not_saved",
+    "type": "TRUE_FALSE",
+    "question_text": "Those who don’t have the assurance of salvation are not saved.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 John 5: 13"
+  },
+  {
+    "id": "tf_saved_no_assurance",
+    "type": "TRUE_FALSE",
+    "question_text": "There could be people who are saved but don’t have the assurance of salvation.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 John 5: 13"
+  },
+  {
+    "id": "tf_jesus_holds_salvation",
+    "type": "TRUE_FALSE",
+    "question_text": "Because Jesus is holding onto our hands we can’t lose our salvation.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "John 10: 28"
+  },
+  {
+    "id": "tf_let_go_lose_salvation",
+    "type": "TRUE_FALSE",
+    "question_text": "When we let go of Jesus’ hand after holding on to it for a while, we could lose our salvation.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "John 10: 28"
+  },
+  {
+    "id": "tf_future_salvation_souls",
+    "type": "TRUE_FALSE",
+    "question_text": "The “future salvation” refers to the salvation of our souls.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_present_salvation_character",
+    "type": "TRUE_FALSE",
+    "question_text": "The “present salvation” refers to the salvation of our character.",
+    "points": 1,
+    "correct_answer": true
+  },
+  {
+    "id": "tf_adam_eve_immediate_death",
+    "type": "TRUE_FALSE",
+    "question_text": "Adam and Eve died immediately after they disobeyed God by eating the fruit of the tree of the knowledge of good and evil.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_holy_reason_god",
+    "type": "TRUE_FALSE",
+    "question_text": "The reason why we must be holy is because God is holy.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 Peter 1: 15-16"
+  },
+  {
+    "id": "tf_holiness_words_behavior",
+    "type": "TRUE_FALSE",
+    "question_text": "Paying attention to our words and behavior is the most important thing in becoming a holy person.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_god_desire_power",
+    "type": "TRUE_FALSE",
+    "question_text": "God gives us both the desire and the power to live the life that is according to His will.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Philippians 2: 13"
+  },
+  {
+    "id": "tf_god_desire_power_from_us",
+    "type": "TRUE_FALSE",
+    "question_text": "God gives us the desire to live the life that is according to His will. The power must come from us.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Philippians 2: 13"
+  },
+  {
+    "id": "tf_christ_lives_in_us",
+    "type": "TRUE_FALSE",
+    "question_text": "The life that Christians live, they no longer live but Christ lives in them.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Galatians 2: 20"
+  },
+  {
+    "id": "tf_hate_not_saved",
+    "type": "TRUE_FALSE",
+    "question_text": "If there is anyone that we hate even after we are saved, this means that we are not truly saved.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_spiritual_maturity_duration",
+    "type": "TRUE_FALSE",
+    "question_text": "Our spiritual maturity gets determined by how long we have been Christians.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 Corinthians 3: 1-3"
+  },
+  {
+    "id": "tf_spiritual_maturity_divisive",
+    "type": "TRUE_FALSE",
+    "question_text": "Even if someone has been a Christian for a long time, has much spiritual experience and knows a lot about the Bible, if he is divisive and quarrels a lot, he is a spiritually immature person.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 Corinthians 3: 1-3"
+  },
+  {
+    "id": "tf_husband_wife_submit",
+    "type": "TRUE_FALSE",
+    "question_text": "Husband and wife submit to each other.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Ephesians 5: 22"
+  },
+  {
+    "id": "tf_submission_reason_order",
+    "type": "TRUE_FALSE",
+    "question_text": "The main reason why Christians must make submission as the foundation in their family, work and society is to maintain order.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_jesus_came_to_be_served",
+    "type": "TRUE_FALSE",
+    "question_text": "The most important reason why Jesus came into this world is to be served as the king of all nations.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 20: 28"
+  },
+  {
+    "id": "tf_true_servant_obedience",
+    "type": "TRUE_FALSE",
+    "question_text": "The true servant is doing whatever people tell him to do.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_never_like_jesus_until_death",
+    "type": "TRUE_FALSE",
+    "question_text": "We will never be exactly like Jesus until we die.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Philippians 3: 12-14"
+  },
+  {
+    "id": "tf_true_christian_become_like_jesus",
+    "type": "TRUE_FALSE",
+    "question_text": "If we are true Christians, after some time, we will be exactly like Jesus.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Philippians 3: 12-14"
+  },
+  {
+    "id": "tf_bible_not_written_by_men",
+    "type": "TRUE_FALSE",
+    "question_text": "The Bible is not written by men. It is directly written by God.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "2 Peter 1: 21"
+  },
+  {
+    "id": "tf_bible_written_by_men",
+    "type": "TRUE_FALSE",
+    "question_text": "The Bible is God’s word but it is written by men.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "2 Peter 1: 21"
+  },
+  {
+    "id": "tf_bible_spiritual_world",
+    "type": "TRUE_FALSE",
+    "question_text": "More than being a practical and helpful book, the Bible is a book that describes the spiritual world.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "2 Timothy 3: 16"
+  },
+  {
+    "id": "tf_synoptic_gospels",
+    "type": "TRUE_FALSE",
+    "question_text": "The synoptic gospels refer to Matthew, Luke and John.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_prophets_purpose_predict_future",
+    "type": "TRUE_FALSE",
+    "question_text": "The main purpose of the prophets is to receive God’s word in order to predict the future.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_jesus_grew_up_bethlehem",
+    "type": "TRUE_FALSE",
+    "question_text": "Jesus grew up in Bethlehem.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 2: 23"
+  },
+  {
+    "id": "tf_christ_messiah_same",
+    "type": "TRUE_FALSE",
+    "question_text": "There is no difference between Christ and Messiah in meaning.",
+    "points": 1,
+    "correct_answer": true
+  },
+  {
+    "id": "tf_jesus_fisherman",
+    "type": "TRUE_FALSE",
+    "question_text": "Jesus was a fisherman by profession.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Mark 6: 3"
+  },
+  {
+    "id": "tf_jesus_ascended_mount_olives",
+    "type": "TRUE_FALSE",
+    "question_text": "Jesus ascended to heaven on the Mount of Olives.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Acts 1: 12"
+  },
+  {
+    "id": "tf_jesus_cross_righteousness",
+    "type": "TRUE_FALSE",
+    "question_text": "By dying on the cross for us, Jesus prepared a way not just for us to be forgiven of our sins but also to live for righteousness.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 Peter 2: 24"
+  },
+  {
+    "id": "tf_jesus_cross_no_power_sins",
+    "type": "TRUE_FALSE",
+    "question_text": "By dying on the cross for us, Jesus has paid the price for our sins but has not given us the power to overcome our sins.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 Peter 2: 24"
+  },
+  {
+    "id": "tf_jesus_work_ended",
+    "type": "TRUE_FALSE",
+    "question_text": "The work of Jesus has ended with his death, resurrection and ascension.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Romans 8: 34"
+  },
+  {
+    "id": "tf_jesus_work_continuing",
+    "type": "TRUE_FALSE",
+    "question_text": "The work of Jesus has not ended with his death, resurrection and ascension but is still continuing on right now.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Romans 8: 34"
+  },
+  {
+    "id": "tf_jesus_second_coming_visible",
+    "type": "TRUE_FALSE",
+    "question_text": "Unlike his first coming, when Jesus comes for the second time, he will come in a way that everyone will see.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 24: 30"
+  },
+  {
+    "id": "tf_jesus_second_coming_quiet",
+    "type": "TRUE_FALSE",
+    "question_text": "When Jesus comes for the second time, he will come quietly so that only his people will recognize him.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 24: 30"
+  },
+  {
+    "id": "tf_holy_spirit_baptism_after_salvation",
+    "type": "TRUE_FALSE",
+    "question_text": "God’s people must be baptized by the Holy Spirit after they receive Jesus and become saved.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Ephesians 4: 30"
+  },
+  {
+    "id": "tf_saved_baptized_holy_spirit",
+    "type": "TRUE_FALSE",
+    "question_text": "Everyone who is saved has been baptized by the Holy Spirit.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Ephesians 4: 30"
+  },
+  {
+    "id": "tf_continue_filled_holy_spirit",
+    "type": "TRUE_FALSE",
+    "question_text": "Believers must continue to be filled with the Holy Spirit.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Ephesians 5: 18"
+  },
+  {
+    "id": "tf_fullness_holy_spirit_once",
+    "type": "TRUE_FALSE",
+    "question_text": "The fullness of the Holy Spirit happens only once in believer’s lifetime.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Ephesians 5: 18"
+  },
+  {
+    "id": "tf_gentleness_obey_others",
+    "type": "TRUE_FALSE",
+    "question_text": "Gentleness as one of the fruit of the Holy Spirit is doing whatever others ask us to do.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Galatians 5: 22-23"
+  },
+  {
+    "id": "tf_gentleness_not_using_power",
+    "type": "TRUE_FALSE",
+    "question_text": "Gentleness as one of the fruit of the Holy Spirit is not using power even when you have it.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Galatians 5: 22-23"
+  },
+  {
+    "id": "tf_kindness_fruit_holy_spirit",
+    "type": "TRUE_FALSE",
+    "question_text": "Kindness is a fruit of the Holy Spirit.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Galatians 5: 22-23"
+  },
+  {
+    "id": "tf_faithfulness_keeping_promise",
+    "type": "TRUE_FALSE",
+    "question_text": "Faithfulness as one of the fruit of the Holy Spirit is keeping your promise.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Galatians 5: 22-23"
+  },
+  {
+    "id": "tf_spiritual_gifts_own_growth",
+    "type": "TRUE_FALSE",
+    "question_text": "The spiritual gifts are given to us primarily for our own spiritual growth.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 Corinthians 12: 7"
+  },
+  {
+    "id": "tf_spiritual_gifts_common_good",
+    "type": "TRUE_FALSE",
+    "question_text": "The reason why spiritual gifts are given to us is for the common good.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 Corinthians 12: 7"
+  },
+  {
+    "id": "tf_church_built_peter",
+    "type": "TRUE_FALSE",
+    "question_text": "Church is built upon Peter whom Jesus called rock.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 16: 16-18"
+  },
+  {
+    "id": "tf_church_built_peter_confession",
+    "type": "TRUE_FALSE",
+    "question_text": "Church is built upon Peter’s confession that says, “Jesus is Christ.”",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 16: 16-18"
+  },
+  {
+    "id": "tf_church_head_senior_pastor",
+    "type": "TRUE_FALSE",
+    "question_text": "Church is the body of Christ and the head of the body of Christ is the senior pastor.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Colossians 1: 18"
+  },
+  {
+    "id": "tf_great_commission_purpose_unpreached",
+    "type": "TRUE_FALSE",
+    "question_text": "According to the Great Commission the ultimate purpose of church is going to places where the gospel has not been preached.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 28: 19-20"
+  },
+  {
+    "id": "tf_great_commission_disciples_not_made",
+    "type": "TRUE_FALSE",
+    "question_text": "According to the Great Commission churches where the disciples are not being made can’t be called church.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 28: 19-20"
+  },
+  {
+    "id": "tf_jesus_discipleship_method_ot",
+    "type": "TRUE_FALSE",
+    "question_text": "The most important method Jesus used in making disciples was to teach the Old Testament.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Mark 3: 14-15"
+  },
+  {
+    "id": "tf_jesus_discipleship_modeling",
+    "type": "TRUE_FALSE",
+    "question_text": "Jesus made disciples through modeling instead of just teaching.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Mark 3: 14-15"
+  },
+  {
+    "id": "tf_community_share_all_resources",
+    "type": "TRUE_FALSE",
+    "question_text": "If you want to build a true community of believers you must share all your resources just as they did in Jerusalem church in the 1st century AD.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_early_christians_four_things",
+    "type": "TRUE_FALSE",
+    "question_text": "The four important things that the early Christians did were learning God’s word, fellowshipping with each other, breaking the bread and praying together.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Acts 2: 42"
+  },
+  {
+    "id": "tf_early_christians_praise_psalms_only",
+    "type": "TRUE_FALSE",
+    "question_text": "When the early Christians praised God they only used psalms with tunes attached to them.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Ephesians 5: 19"
+  },
+  {
+    "id": "tf_early_christians_worship_sabbath",
+    "type": "TRUE_FALSE",
+    "question_text": "Until the 3rd century AD when the Christians began to worship God on Sundays, the early Christians gathered together for worship on Sabbath which is from Friday evening to Saturday evening.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Acts 20: 7"
+  },
+  {
+    "id": "tf_offering_individual_income",
+    "type": "TRUE_FALSE",
+    "question_text": "It is scriptural to prepare and give offering individually based on his income.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Acts 20: 7"
+  },
+  {
+    "id": "tf_resources_self_others",
+    "type": "TRUE_FALSE",
+    "question_text": "Among the resources God has given us, there are those that we can use on ourselves and those that we must use for others.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "2 Corinthians 9: 6-11"
+  },
+  {
+    "id": "tf_god_loves_reluctant_givers",
+    "type": "TRUE_FALSE",
+    "question_text": "God loves those who are reluctant givers.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "2 Corinthians 9: 6-11"
+  },
+  {
+    "id": "tf_tithing_only_ot",
+    "type": "TRUE_FALSE",
+    "question_text": "Tithing is mentioned only in the Old Testament.",
+    "points": 1,
+    "correct_answer": false
+  },
+  {
+    "id": "tf_tithing_before_law",
+    "type": "TRUE_FALSE",
+    "question_text": "Tithing has been practiced even before the Law was given to Moses.",
+    "points": 1,
+    "correct_answer": true
+  },
+  {
+    "id": "tf_vine_branches_no_effort",
+    "type": "TRUE_FALSE",
+    "question_text": "Since Jesus is the vine and we are the branches there is nothing we need to do to bear fruit.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "John 15: 5"
+  },
+  {
+    "id": "tf_vine_branches_effort_stay_close",
+    "type": "TRUE_FALSE",
+    "question_text": "In order to bear fruit in our life, we who are the branches must make an effort to stay close to Jesus who is the vine.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "John 15: 5"
+  },
+  {
+    "id": "tf_trials_perseverance",
+    "type": "TRUE_FALSE",
+    "question_text": "Trials make us more like Jesus through the process called perseverance.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "James 1: 2-4"
+  },
+  {
+    "id": "tf_trials_reason_sin",
+    "type": "TRUE_FALSE",
+    "question_text": "The reason why trials come to God’s children is because they have sinned before God.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Hebrews 12: 5-11"
+  },
+  {
+    "id": "tf_god_disciplines_love",
+    "type": "TRUE_FALSE",
+    "question_text": "The reason why God disciplines us is because He loves us.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Hebrews 12: 5-11"
+  },
+  {
+    "id": "tf_evil_spirit_structure",
+    "type": "TRUE_FALSE",
+    "question_text": "The evil spirit has a great structure.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Ephesians 6: 12"
+  },
+  {
+    "id": "tf_evil_spirit_behind_opposition",
+    "type": "TRUE_FALSE",
+    "question_text": "Often there is work of the evil spirit behind those who work against God’s people.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Ephesians 6: 12"
+  },
+  {
+    "id": "tf_god_tempts_beyond_bear",
+    "type": "TRUE_FALSE",
+    "question_text": "God at times lets us be tempted beyond what we can bear.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 Corinthians 10: 13"
+  },
+  {
+    "id": "tf_god_not_tempt_beyond_bear",
+    "type": "TRUE_FALSE",
+    "question_text": "God will not let us be tempted beyond what we can bear.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "1 Corinthians 10: 13"
+  },
+  {
+    "id": "tf_mercy_must_be_pastor",
+    "type": "TRUE_FALSE",
+    "question_text": "If you realize God’s mercy and want to offer yourselves as sacrifice, you must become a pastor or missionary.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Romans 12: 1"
+  },
+  {
+    "id": "tf_everyone_living_sacrifice",
+    "type": "TRUE_FALSE",
+    "question_text": "Everyone who has realized God’s mercy must offer himself as a living sacrifice.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Romans 12: 1"
+  },
+  {
+    "id": "tf_living_sacrifice_discern_will",
+    "type": "TRUE_FALSE",
+    "question_text": "Offering yourself as a living sacrifice means that you discern God’s will in whatever the situation and act upon it.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Romans 12: 2"
+  },
+  {
+    "id": "tf_sacrifice_church_ministry",
+    "type": "TRUE_FALSE",
+    "question_text": "When the Bible says sacrifice, it means doing ministry in church setting for the work of the gospel.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Romans 12: 2"
+  },
+  {
+    "id": "tf_priest_ot_nt",
+    "type": "TRUE_FALSE",
+    "question_text": "The priest in the Old Testament refers to Aaron’s descendants whereas in the New Testament it refers to the pastors.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "1 Peter 2: 9"
+  },
+  {
+    "id": "tf_priest_ot_nt_anyone",
+    "type": "TRUE_FALSE",
+    "question_text": "In the Old Testament only the descendants of Aaron were able to become priests. But in the New Testament anyone who is saved can become a priest of God.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "2 Peter 2: 9"
+  },
+  {
+    "id": "tf_pastors_equip_members",
+    "type": "TRUE_FALSE",
+    "question_text": "It is biblical for pastors to equip church members so the members could do the works of ministry.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Ephesians 4: 11-12"
+  },
+  {
+    "id": "tf_pastors_three_works",
+    "type": "TRUE_FALSE",
+    "question_text": "The three important works of pastors is to equip the members, do the works of ministry and build up the body of Christ.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Ephesians 4: 11-12"
+  },
+  {
+    "id": "tf_gods_commands_freedom",
+    "type": "TRUE_FALSE",
+    "question_text": "God’s commands seem to restrict us but they truly give us freedom.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "James 1: 22-25"
+  },
+  {
+    "id": "tf_practice_gods_word_growth",
+    "type": "TRUE_FALSE",
+    "question_text": "Even if we don’t practice God’s word, we will grow and change if we listen to God’s word a lot.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "James 1: 22-25"
+  },
+  {
+    "id": "tf_rocky_soil_worries",
+    "type": "TRUE_FALSE",
+    "question_text": "The rocky soil is someone who hears God’s word but does not bear fruit because of the worries of this life and the deceitfulness of wealth.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 13: 3-8"
+  },
+  {
+    "id": "tf_hears_word_hardened_path",
+    "type": "TRUE_FALSE",
+    "question_text": "Someone who hears God’s word with one ear but lets it out through the other ear is compared to the hardened path.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 13: 3-8"
+  },
+  {
+    "id": "tf_god_honoring_priority_necessities",
+    "type": "TRUE_FALSE",
+    "question_text": "If you have God-honoring priority, God will take care of your basic necessities.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 6: 33"
+  },
+  {
+    "id": "tf_responsible_christian_needs_first",
+    "type": "TRUE_FALSE",
+    "question_text": "A responsible Christian is someone who takes care of his needs first and then seeks God’s kingdom and His righteousness.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 6: 33"
+  },
+  {
+    "id": "tf_god_evaluates_faithfulness_results",
+    "type": "TRUE_FALSE",
+    "question_text": "When God evaluates our work, He looks for faithfulness more than the results.",
+    "points": 1,
+    "correct_answer": true,
+    "citation": "Matthew 25: 14-30"
+  },
+  {
+    "id": "tf_gods_compliment_proportional_fruit",
+    "type": "TRUE_FALSE",
+    "question_text": "God’s compliment is proportional to the fruit of our ministry.",
+    "points": 1,
+    "correct_answer": false,
+    "citation": "Matthew 25: 14-30"
+  },
+  {
+    "id": "v1_romans_3_10_11",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Romans 3:10-11 — “There is no one ___(1)___, not even one; there is no one who ___(2)___, no one who ___(3)___ God.”",
+    "points": 3,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "righteous" },
+      { "prompt": "Blank (2)", "correct_answer": "understands" },
+      { "prompt": "Blank (3)", "correct_answer": "seeks" }
+    ]
+  },
+  {
+    "id": "v2_isaiah_59_2",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Isaiah 59:2 — “But your ___(1)___ have ___(2)___ you from your God; your ___(3)___ have hidden his ___(4)___ from you, so that he will not ___(5)___.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "iniquities" },
+      { "prompt": "Blank (2)", "correct_answer": "separated" },
+      { "prompt": "Blank (3)", "correct_answer": "sins" },
+      { "prompt": "Blank (4)", "correct_answer": "face" },
+      { "prompt": "Blank (5)", "correct_answer": "hear" }
+    ]
+  },
+  {
+    "id": "v3_isaiah_53_6",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Isaiah 53:6 — “We all, ___(1)___",
+    "points": 1,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "like sheep, have gone astray, each of us has turned to our own way; and the Lord has laid on him the iniquity of us all." }
+    ]
+  },
+  {
+    "id": "v4_hebrews_9_27",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Hebrews 9:27 — “Just as man is ___(1)___ to ___(2)___ once, and after that to ___(3)___ judgment.”",
+    "points": 3,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "destined" },
+      { "prompt": "Blank (2)", "correct_answer": "die" },
+      { "prompt": "Blank (3)", "correct_answer": "face" }
+    ]
+  },
+  {
+    "id": "v5_1peter_2_24",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "1 Peter 2:24 — “He himself ___(1)___ our sins in his ___(2)___ on the ___(3)___, so that we might die to ___(4)___ and live for ___(5)___; by his ___(6)___ you have been healed.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "bore" },
+      { "prompt": "Blank (2)", "correct_answer": "body" },
+      { "prompt": "Blank (3)", "correct_answer": "tree" },
+      { "prompt": "Blank (4)", "correct_answer": "sins" },
+      { "prompt": "Blank (5)", "correct_answer": "righteousness" },
+      { "prompt": "Blank (6)", "correct_answer": "wounds" }
+    ]
+  },
+  {
+    "id": "v6_john_3_16",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 3:16 — “For God so ___(1)___ the ___(2)___ that he gave his one and only ___(3)___, that whoever ___(4)___ in him shall not ___(5)___ but have ___(6)___ life.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "loved" },
+      { "prompt": "Blank (2)", "correct_answer": "world" },
+      { "prompt": "Blank (3)", "correct_answer": "Son" },
+      { "prompt": "Blank (4)", "correct_answer": "believes" },
+      { "prompt": "Blank (5)", "correct_answer": "perish" },
+      { "prompt": "Blank (6)", "correct_answer": "eternal" }
+    ]
+  },
+  {
+    "id": "v7_john_1_12",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 1:12 — “Yet to all who ___(1)___ him, to those who ___(2)___ in his ___(3)___, he gave the ___(4)___ to become children of God.”",
+    "points": 4,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "received" },
+      { "prompt": "Blank (2)", "correct_answer": "believed" },
+      { "prompt": "Blank (3)", "correct_answer": "name" },
+      { "prompt": "Blank (4)", "correct_answer": "right" }
+    ]
+  },
+  {
+    "id": "v8_revelation_3_20",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Revelation 3:20 — “Here I am! I ___(1)___ at the ___(2)___ and ___(3)___. If anyone ___(4)___ my ___(5)___ and opens the ___(6)___, I will come in and eat with him, and he with me.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "stand" },
+      { "prompt": "Blank (2)", "correct_answer": "door" },
+      { "prompt": "Blank (3)", "correct_answer": "knock" },
+      { "prompt": "Blank (4)", "correct_answer": "hears" },
+      { "prompt": "Blank (5)", "correct_answer": "voice" },
+      { "prompt": "Blank (6)", "correct_answer": "door" }
+    ]
+  },
+  {
+    "id": "v9_1john_5_11_12",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "1 John 5:11-12 — “And this is the ___(1)___: God has given us ___(2)___ life, and this life is in his Son. He who has the ___(3)___ has life; he who does not have the ___(4)___ of ___(5)___ does not have life.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "testimony" },
+      { "prompt": "Blank (2)", "correct_answer": "eternal" },
+      { "prompt": "Blank (3)", "correct_answer": "Son" },
+      { "prompt": "Blank (4)", "correct_answer": "Son" },
+      { "prompt": "Blank (5)", "correct_answer": "God" }
+    ]
+  },
+  {
+    "id": "v10_john_5_24",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "John 5:24 — “I tell you the truth, whoever ___(1)___ my word and believes him who sent ___(2)___ has eternal life and will not be ___(3)___; he has ___(4)___ ___(5)___ from death to life.”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "hears" },
+      { "prompt": "Blank (2)", "correct_answer": "me" },
+      { "prompt": "Blank (3)", "correct_answer": "condemned" },
+      { "prompt": "Blank (4)", "correct_answer": "crossed" },
+      { "prompt": "Blank (5)", "correct_answer": "over" }
+    ]
+  },
+  {
+    "id": "v11_ephesians_2_8_9",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "Ephesians 2:8-9 — “For it is by ___(1)___ you have been ___(2)___, through ___(3)___—and this not from yourselves, it is the ___(4)___ of God— not by ___(5)___, so that no one can ___(6)___.”",
+    "points": 6,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "grace" },
+      { "prompt": "Blank (2)", "correct_answer": "saved" },
+      { "prompt": "Blank (3)", "correct_answer": "faith" },
+      { "prompt": "Blank (4)", "correct_answer": "gift" },
+      { "prompt": "Blank (5)", "correct_answer": "works" },
+      { "prompt": "Blank (6)", "correct_answer": "boast" }
+    ]
+  },
+  {
+    "id": "v12_2corinthians_5_17",
+    "type": "STRUCTURED_FILL_IN_THE_BLANK",
+    "question_text": "2 Corinthians 5:17 — “Therefore, if anyone is in ___(1)___, he is a ___(2)___ ___(3)___; the ___(4)___ has gone, the ___(5)___ has come!”",
+    "points": 5,
+    "parts": [
+      { "prompt": "Blank (1)", "correct_answer": "Christ" },
+      { "prompt": "Blank (2)", "correct_answer": "new" },
+      { "prompt": "Blank (3)", "correct_answer": "creation" },
+      { "prompt": "Blank (4)", "correct_answer": "old" },
+      { "prompt": "Blank (5)", "correct_answer": "new" }
+    ]
+  }
+]
