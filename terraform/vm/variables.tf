@@ -43,13 +43,29 @@ variable "subnet_address_space" {
 variable "admin_username" {
   description = "Administrator username for the VM"
   type        = string
-  default     = "user"
+  default     = "vmadmin"
 }
 
 variable "git_repo_url" {
   description = "Git repository URL to clone"
   type        = string
   default     = "https://github.com/charlesverdad/heartbeat"
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID for tunnel management"
+  type        = string
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone ID for DNS record management"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Domain name for SSH access (e.g. vm1.heartbeatchurch.com.au)"
+  type        = string
+  default     = "vm1.heartbeatchurch.com.au"
 }
 
 variable "tags" {

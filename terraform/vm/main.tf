@@ -155,7 +155,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7VIGq6B1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz placeholder@key"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+kC89VCdzAw1+h7yof+Bx3NY93AhUv/mmC/o6jDrhm3jDhNo/VItYaJzeHXJe1pwYBtLNrqoVJQw+ZJriI+q3yNmnQvKnfqpTZrOQpgFXpFxCYQSQzDoGPxuq5DR8oy6JUe2IkZtc24GlEcae3xzxFH/TQLPdkWsAC1tT8k8bySKYQ7k/IOsQY94B/M+eXWg7bJ4NJGRnjddEKy3U6nulze1+NT241OtkdukNV+eVGNYbNUWi8nBcNe8zTdu56QOckNykOlF1isuTSzGewKei+nGh32nsXjjca2l+8H/7XHsiiYCGFaLNYUkz0+Bu9MnQsnGxZuN/NaacllfLkN67 terraform@vm"
   }
 
   os_disk {

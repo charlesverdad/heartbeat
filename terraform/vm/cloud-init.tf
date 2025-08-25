@@ -72,14 +72,15 @@ runcmd:
     dpkg -i cloudflared-linux-amd64.deb
     rm cloudflared-linux-amd64.deb
 
-  # Configure Cloudflared tunnel (if token is available)
+  # Configure Cloudflared tunnel
   - |
-    if [ -s /secrets/cloudflare-tunnel-token ] && [ "$(cat /secrets/cloudflare-tunnel-token)" != "PLACEHOLDER_TUNNEL_TOKEN_CHANGE_AFTER_DEPLOYMENT" ]; then
+    if [ -s /secrets/cloudflare-tunnel-token ]; then
       sudo -u ${var.admin_username} cloudflared service install $(cat /secrets/cloudflare-tunnel-token)
       systemctl enable cloudflared
       systemctl start cloudflared
+      echo "Cloudflare tunnel configured and started successfully"
     else
-      echo "Cloudflare tunnel token not available or is placeholder. Skipping tunnel setup."
+      echo "Cloudflare tunnel token not available. Skipping tunnel setup."
     fi
 
   # Configure SSH with Cloudflare CA (if CA key is available)

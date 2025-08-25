@@ -37,3 +37,18 @@ output "subnet_name" {
   description = "Name of the subnet"
   value       = azurerm_subnet.vm.name
 }
+
+output "cloudflare_tunnel_id" {
+  description = "Cloudflare tunnel ID"
+  value       = cloudflare_zero_trust_tunnel_cloudflared.vm_ssh.id
+}
+
+output "cloudflare_tunnel_cname" {
+  description = "Cloudflare tunnel CNAME"
+  value       = cloudflare_zero_trust_tunnel_cloudflared.vm_ssh.cname
+}
+
+output "ssh_access_command" {
+  description = "Command to access VM via SSH through Cloudflare tunnel"
+  value       = "cloudflared access ssh --hostname ${var.domain_name}"
+}

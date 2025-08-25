@@ -42,15 +42,11 @@ resource "azurerm_key_vault" "vm" {
   tags = var.tags
 }
 
-# Placeholder secrets (will be populated manually after deployment)
+# Cloudflare tunnel token (automatically generated)
 resource "azurerm_key_vault_secret" "cloudflare_tunnel_token" {
   name         = "cloudflare-tunnel-token"
-  value        = "PLACEHOLDER_TUNNEL_TOKEN_CHANGE_AFTER_DEPLOYMENT"
+  value        = cloudflare_zero_trust_tunnel_cloudflared.vm_ssh.tunnel_token
   key_vault_id = azurerm_key_vault.vm.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
 }
 
 resource "azurerm_key_vault_secret" "cloudflare_ca_public_key" {
