@@ -2,23 +2,17 @@ locals {
   cloud_init_config = <<-EOF
 #cloud-config
 
-# Update packages
-package_update: true
-package_upgrade: true
+# Skip package upgrade to speed up deployment
+package_update: false
+package_upgrade: false
 
-# Install required packages
+# Install minimal required packages only
 packages:
   - curl
   - wget
-  - unzip
-  - gnupg
-  - lsb-release
   - ca-certificates
-  - software-properties-common
-  - ufw
-  - unattended-upgrades
 
-# Create directories
+# Create directories and setup essentials only
 runcmd:
   # Create required directories
   - mkdir -p /secrets
@@ -35,15 +29,15 @@ runcmd:
       touch /data/mounted
     fi
 
-  # Install Azure CLI
-  - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-
-  # Install Docker
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-  - apt-get update
-  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  # Fast Docker installation using convenience script
+  - curl -fsSL https://get.docker.com -o get-docker.sh
+  - sh get-docker.sh
   - usermod -aG docker ${var.admin_username}
+  - systemctl enable docker
+  - systemctl start docker
+
+  # Install Azure CLI (faster method)
+  - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
   # Login to Azure with managed identity and retrieve secrets
   - |

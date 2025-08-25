@@ -43,7 +43,20 @@ resource "azurerm_network_security_group" "vm" {
   location            = azurerm_resource_group.vm.location
   resource_group_name = azurerm_resource_group.vm.name
 
-  # Deny all inbound traffic
+  # Allow SSH for debugging (temporary)
+  security_rule {
+    name                       = "AllowSSHInbound"
+    priority                   = 1000
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  # Deny all other inbound traffic
   security_rule {
     name                       = "DenyAllInbound"
     priority                   = 4000
@@ -95,6 +108,19 @@ resource "azurerm_network_security_group" "vm" {
     destination_address_prefix = "*"
   }
 
+  # Allow Cloudflare tunnel outbound
+  security_rule {
+    name                       = "AllowCloudflareOutbound"
+    priority                   = 1030
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Udp"
+    source_port_range          = "*"
+    destination_port_range     = "7844"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
   # Deny all other outbound traffic
   security_rule {
     name                       = "DenyAllOutbound"
@@ -111,6 +137,16 @@ resource "azurerm_network_security_group" "vm" {
   tags = var.tags
 }
 
+# Public IP for debugging
+resource "azurerm_public_ip" "vm" {
+  name                = "pip-${var.vm_name}-${var.environment}-${random_string.suffix.result}"
+  location            = azurerm_resource_group.vm.location
+  resource_group_name = azurerm_resource_group.vm.name
+  allocation_method   = "Static"
+  sku                = "Standard"
+  tags               = var.tags
+}
+
 # Network Interface
 resource "azurerm_network_interface" "vm" {
   name                = "nic-${var.vm_name}-${var.environment}-${random_string.suffix.result}"
@@ -121,6 +157,7 @@ resource "azurerm_network_interface" "vm" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.vm.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.vm.id
   }
 
   tags = var.tags
@@ -155,7 +192,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+kC89VCdzAw1+h7yof+Bx3NY93AhUv/mmC/o6jDrhm3jDhNo/VItYaJzeHXJe1pwYBtLNrqoVJQw+ZJriI+q3yNmnQvKnfqpTZrOQpgFXpFxCYQSQzDoGPxuq5DR8oy6JUe2IkZtc24GlEcae3xzxFH/TQLPdkWsAC1tT8k8bySKYQ7k/IOsQY94B/M+eXWg7bJ4NJGRnjddEKy3U6nulze1+NT241OtkdukNV+eVGNYbNUWi8nBcNe8zTdu56QOckNykOlF1isuTSzGewKei+nGh32nsXjjca2l+8H/7XHsiiYCGFaLNYUkz0+Bu9MnQsnGxZuN/NaacllfLkN67 terraform@vm"
+    public_key = var.admin_ssh_public_key != null ? var.admin_ssh_public_key : file("${path.module}/vm_access_key.pub")
   }
 
   os_disk {
@@ -170,7 +207,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
-  custom_data = base64encode(local.cloud_init_config)
+  custom_data = base64encode(local.cloud_init_config_minimal)
 
   tags = var.tags
 }

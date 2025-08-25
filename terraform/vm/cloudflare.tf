@@ -15,7 +15,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "vm_ssh" {
 resource "cloudflare_record" "vm_ssh" {
   zone_id = var.cloudflare_zone_id
   name    = replace(var.domain_name, ".heartbeatchurch.com.au", "")
-  value   = cloudflare_zero_trust_tunnel_cloudflared.vm_ssh.cname
+  content = cloudflare_zero_trust_tunnel_cloudflared.vm_ssh.cname
   type    = "CNAME"
   proxied = true
   ttl     = 1

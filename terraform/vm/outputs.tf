@@ -3,6 +3,11 @@ output "vm_private_ip" {
   value       = azurerm_network_interface.vm.private_ip_address
 }
 
+output "vm_public_ip" {
+  description = "Public IP address of the VM (for debugging)"
+  value       = azurerm_public_ip.vm.ip_address
+}
+
 output "vm_name" {
   description = "Name of the virtual machine"
   value       = azurerm_linux_virtual_machine.vm.name
@@ -51,4 +56,9 @@ output "cloudflare_tunnel_cname" {
 output "ssh_access_command" {
   description = "Command to access VM via SSH through Cloudflare tunnel"
   value       = "cloudflared access ssh --hostname ${var.domain_name}"
+}
+
+output "ssh_direct_command" {
+  description = "Command to access VM directly via SSH (debugging)"
+  value       = "ssh -i vm_access_key ${var.admin_username}@${azurerm_public_ip.vm.ip_address}"
 }

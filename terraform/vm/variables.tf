@@ -68,6 +68,12 @@ variable "domain_name" {
   default     = "vm1.heartbeatchurch.com.au"
 }
 
+variable "admin_ssh_public_key" {
+  description = "SSH public key for VM admin access"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags for all resources"
   type        = map(string)
