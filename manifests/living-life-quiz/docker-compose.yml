@@ -23,7 +23,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared-tunnel
     restart: unless-stopped
-    command: ["sh", "-c", "cloudflared tunnel run --token $$(cat /secrets/cloudflare-tunnel-token)"]
+    command: ["cloudflared", "tunnel", "run", "--token-file", "/secrets/cloudflare-tunnel-token"]
     volumes:
       - /secrets:/secrets:ro
     depends_on:
