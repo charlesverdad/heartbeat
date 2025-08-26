@@ -119,7 +119,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "living_life_quiz" {
   config {
     ingress_rule {
       hostname = var.domain_name
-      service  = "http://living-life-quiz:3000"
+      service  = "http://localhost:3000"
       
       origin_request {
         http_host_header = var.domain_name
