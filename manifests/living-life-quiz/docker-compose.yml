@@ -24,9 +24,9 @@ services:
     container_name: cloudflared-tunnel
     restart: unless-stopped
     network_mode: host
-    command: ["/bin/sh", "-c", "cloudflared tunnel run --token $(cat /secrets/cloudflare-tunnel-token)"]
-    volumes:
-      - /secrets:/secrets:ro
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    command: ["cloudflared", "tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
     depends_on:
       - living-life-quiz
 
