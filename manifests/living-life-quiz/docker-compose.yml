@@ -18,12 +18,6 @@ services:
       - /secrets:/secrets:ro
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -33,8 +27,7 @@ services:
     volumes:
       - /secrets:/secrets:ro
     depends_on:
-      living-life-quiz:
-        condition: service_healthy
+      - living-life-quiz
     networks:
       - app-network
 
