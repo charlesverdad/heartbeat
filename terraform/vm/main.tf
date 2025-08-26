@@ -169,6 +169,19 @@ resource "azurerm_network_interface_security_group_association" "vm" {
   network_security_group_id = azurerm_network_security_group.vm.id
 }
 
+# Reference the ACR to grant pull permissions
+data "azurerm_container_registry" "acr" {
+  name                = "acrheartbeatterraformzi87"
+  resource_group_name = "rg-heartbeat-acr-terraform-zi87"
+}
+
+# Allow the VM's identity to pull from ACR
+resource "azurerm_role_assignment" "vm_acr_pull" {
+  scope                = data.azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.vm.principal_id
+}
+
 # Virtual Machine
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "${var.vm_name}-${var.environment}-${random_string.suffix.result}"
