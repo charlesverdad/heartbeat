@@ -23,7 +23,8 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared-tunnel
     restart: unless-stopped
-    command: ["cloudflared", "tunnel", "run", "--token-file", "/secrets/cloudflare-tunnel-token"]
+    environment:
+      - TUNNEL_TOKEN_FILE=/secrets/cloudflare-tunnel-token
     volumes:
       - /secrets:/secrets:ro
     depends_on:
