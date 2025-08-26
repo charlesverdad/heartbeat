@@ -31,15 +31,15 @@ An interactive quiz application for the Living Life Bible Study course with test
 
 ### Prerequisites
 
-- Node.js (version 14 or higher)
-- npm or yarn package manager
+- Node.js (version 18 or higher)
+- yarn package manager
 
 ### Installation
 
 1. Clone or download the project files
 2. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 
 ### Running the Application
@@ -47,7 +47,7 @@ An interactive quiz application for the Living Life Bible Study course with test
 #### Development Mode (Frontend Only)
 For development with hot reload:
 ```bash
-npm run dev
+yarn dev
 ```
 This runs the Vite development server on `http://localhost:5173`
 
@@ -56,12 +56,12 @@ To run the complete application with server-side test submission:
 
 1. Build the frontend:
    ```bash
-   npm run build
+   yarn build
    ```
 
 2. Start the server:
    ```bash
-   npm run server
+   yarn server
    ```
 
 3. Access the application at `http://localhost:3000`
@@ -69,7 +69,7 @@ To run the complete application with server-side test submission:
 #### Development Server Mode
 For server development with auto-restart:
 ```bash
-npm run server:dev
+yarn server:dev
 ```
 
 ## File Structure

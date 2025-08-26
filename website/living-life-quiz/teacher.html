@@ -300,8 +300,7 @@
                                placeholder="Enter teacher password" required>
                     </div>
                     <button type="submit" class="button button-primary">
-                        <span id="login-text">🔑 Login</span>
-                        <span id="login-spinner" class="spinner hidden" style="margin-left: 0.5rem;"></span>
+                        🔑 Login
                     </button>
                 </form>
                 
@@ -451,8 +450,6 @@
                     // Login screen
                     loginForm: document.getElementById('login-form'),
                     loginError: document.getElementById('login-error'),
-                    loginText: document.getElementById('login-text'),
-                    loginSpinner: document.getElementById('login-spinner'),
                     
                     // Dashboard screen
                     logoutBtn: document.getElementById('logout-btn'),
@@ -530,10 +527,6 @@
                 const formData = new FormData(e.target)
                 const password = formData.get('password')
                 
-                // Show loading state
-                this.elements.loginText.classList.add('hidden')
-                this.elements.loginSpinner.classList.remove('hidden')
-                
                 try {
                     const response = await fetch('/api/teacher/login', {
                         method: 'POST',
@@ -554,10 +547,6 @@
                 } catch (error) {
                     console.error('Login failed:', error)
                     this.showError('login-error', 'Failed to connect to server')
-                } finally {
-                    // Reset button state
-                    this.elements.loginText.classList.remove('hidden')
-                    this.elements.loginSpinner.classList.add('hidden')
                 }
             }
             

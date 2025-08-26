@@ -1535,7 +1535,10 @@ class UIController {
     const answerDisplay = document.createElement('div')
     answerDisplay.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3'
     
-    if (!userAnswer || (Array.isArray(userAnswer) && userAnswer.every(a => !a || !a.trim()))) {
+    // Check if no answer was provided based on question type
+    const hasNoAnswer = this.hasNoAnswerForQuestion(question, userAnswer)
+    
+    if (hasNoAnswer) {
       // No answer provided
       answerDisplay.className = 'bg-red-50 border border-red-200 rounded-lg p-3'
       answerDisplay.innerHTML = `
@@ -1551,6 +1554,35 @@ class UIController {
     
     section.appendChild(answerDisplay)
     return section
+  }
+  
+  // Helper method to check if no answer was provided based on question type
+  hasNoAnswerForQuestion(question, userAnswer) {
+    switch (question.type) {
+      case 'TRUE_FALSE':
+        // For TRUE_FALSE, both true and false are valid answers, only null/undefined means no answer
+        return userAnswer === null || userAnswer === undefined
+      
+      case 'SIMPLE_FILL_IN_THE_BLANK':
+        if (Array.isArray(userAnswer)) {
+          // For array answers, check if all elements are empty
+          return userAnswer.every(a => !a || !a.trim())
+        } else {
+          // For single answers, check if empty or null
+          return !userAnswer || !userAnswer.trim()
+        }
+      
+      case 'STRUCTURED_FILL_IN_THE_BLANK':
+        // For structured fill, check if array exists and all parts are empty
+        return !Array.isArray(userAnswer) || userAnswer.every(a => !a || !a.trim())
+      
+      case 'SHORT_ANSWER':
+        // For short answers, check if empty or null
+        return !userAnswer || !userAnswer.trim()
+      
+      default:
+        return true // Unknown question type, assume no answer
+    }
   }
   
   displayUserAnswerInReview(container, question, userAnswer) {
