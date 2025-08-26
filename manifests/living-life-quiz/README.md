@@ -69,10 +69,20 @@ az acr login --name acrheartbeatterraformzi87
 
 ### 6. Deploy Application
 
+**✅ SUCCESSFUL METHOD (Use this approach):**
+
 ```bash
+# Method 1: Use the deploy script (recommended)
+./deploy.sh
+
+# Method 2: Manual deployment
+export TUNNEL_TOKEN=$(sudo cat /secrets/cloudflare-tunnel-token)
 docker compose pull
 docker compose up -d
 ```
+
+**🔑 Key Insight:** 
+The cloudflared container has no shell, so we must inject the tunnel token via host environment variables, not container file reading.
 
 ### 7. Verify Deployment
 
