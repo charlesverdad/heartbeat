@@ -23,14 +23,13 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared-tunnel
     restart: unless-stopped
+    network_mode: host
     environment:
       - TUNNEL_TOKEN_FILE=/secrets/cloudflare-tunnel-token
     volumes:
       - /secrets:/secrets:ro
     depends_on:
       - living-life-quiz
-    networks:
-      - app-network
 
 volumes:
   quiz-data:
