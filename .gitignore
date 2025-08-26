@@ -79,8 +79,10 @@ htmlcov/
 # Terraform
 .terraform/
 .terraform.*
+*.tfstate
 *.tfstate.backup
 *.tfstate.*.backup
+bootstrap-tfstate/
 crash.log
 crash.*.log
 *.tfplan

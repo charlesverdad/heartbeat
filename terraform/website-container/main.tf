@@ -383,19 +383,19 @@ resource "azurerm_container_app" "ghost" {
 
   secret {
     name                = "mysql-password"
-    key_vault_secret_id = azurerm_key_vault_secret.mysql_password.id
+    key_vault_secret_id = azurerm_key_vault_secret.mysql_password.versionless_id
     identity            = azurerm_user_assigned_identity.main.id
   }
 
   secret {
     name                = "mysql-host"
-    key_vault_secret_id = azurerm_key_vault_secret.mysql_host.id
+    key_vault_secret_id = azurerm_key_vault_secret.mysql_host.versionless_id
     identity            = azurerm_user_assigned_identity.main.id
   }
 
   secret {
     name                = "cloudflare-tunnel-token"
-    key_vault_secret_id = azurerm_key_vault_secret.cloudflare_tunnel_token.id
+    key_vault_secret_id = azurerm_key_vault_secret.cloudflare_tunnel_token.versionless_id
     identity            = azurerm_user_assigned_identity.main.id
   }
 

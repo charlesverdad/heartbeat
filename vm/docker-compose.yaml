@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Secrets synchronization service (placeholder for future enhancement)
+  secrets-sync:
+    image: alpine:latest
+    container_name: secrets-sync
+    volumes:
+      - /secrets:/secrets
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - KEY_VAULT_NAME=${KEY_VAULT_NAME}
+      - SYNC_INTERVAL=300  # 5 minutes
+    command: |
+      sh -c '
+        echo "Secrets sync service - implementation pending"
+        echo "This service will regularly check Key Vault for secret updates"
+        echo "It will restart affected containers when secrets change"
+        echo "Key Vault: $${KEY_VAULT_NAME}"
+        echo "Sync Interval: $${SYNC_INTERVAL} seconds"
+        echo ""
+        echo "Future implementation will:"
+        echo "- Use Azure CLI to fetch latest secrets"
+        echo "- Compare with existing secrets in /secrets"
+        echo "- Update changed secrets and restart containers"
+        echo "- Log all changes for audit trail"
+        echo ""
+        while true; do
+          echo "$(date): Secrets sync check (placeholder)"
+          sleep $${SYNC_INTERVAL}
+        done
+      '
+    restart: unless-stopped
+    network_mode: host
+
+  # Container update service
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /secrets:/secrets:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 2 * * *  # Run at 2 AM daily
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr://logger://
+      - WATCHTOWER_NOTIFICATION_LOG_LEVEL=info
+    restart: unless-stopped
+
+# Networks
+networks:
+  default:
+    name: vm-network
+    driver: bridge
+
+# Volumes for persistent data
+volumes:
+  # Example volumes for future services
+  app_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/apps
+  
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/databases
