@@ -62,9 +62,96 @@ Cloudflare (outside Terraform, one-time)
 	•	Create a Tunnel; get a tunnel token for this VM.
 	•	Policy: allow only your identity (SSO/MFA). Log access.
 
-SSH usage (client side)
-	•	Use Cloudflare Access SSH flow (e.g., cloudflared access ssh --hostname vm1.heartbeatchurch.com.au).
-	•	Cloudflare authenticates you, mints a short-lived client cert; sshd trusts it via TrustedUserCAKeys. No static authorized_keys needed.
+## SSH Access via Cloudflare
+
+### Prerequisites
+1. Install `cloudflared` on your local machine:
+   ```bash
+   # macOS
+   brew install cloudflared
+   
+   # Ubuntu/Debian
+   wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+   sudo dpkg -i cloudflared-linux-amd64.deb
+   ```
+
+2. Ensure you have access to the Cloudflare Access application (configured in Cloudflare Zero Trust)
+
+### SSH Connection Commands
+
+**Method 1: Using Cloudflare Short-Lived SSH Certificates (Recommended)**
+Once Cloudflare Access SSH certificates are properly configured:
+```bash
+cloudflared access ssh --hostname vm1.heartbeatchurch.com.au
+```
+
+This method:
+- ✅ No SSH keys to manage locally
+- ✅ Automatic certificate generation and rotation
+- ✅ Centralized access control via Cloudflare Access
+- ✅ Full audit logging
+
+**Method 2: Direct SSH with ProxyCommand (Fallback)**
+If certificates aren't configured yet, use the static SSH key:
+```bash
+ssh vmadmin@vm1.heartbeatchurch.com.au -i vm_access_key -o ProxyCommand="cloudflared access ssh --hostname vm1.heartbeatchurch.com.au"
+```
+
+**Method 3: SSH Config Setup**
+For easier access with short-lived certificates, add this to your `~/.ssh/config`:
+```
+Host vm1.heartbeatchurch.com.au
+  ProxyCommand cloudflared access ssh --hostname vm1.heartbeatchurch.com.au
+  User vmadmin
+  IdentitiesOnly yes
+  CertificateFile ~/.cloudflared/vm1.heartbeatchurch.com.au-cf_key-cert.pub
+  IdentityFile ~/.cloudflared/vm1.heartbeatchurch.com.au-cf_key
+```
+
+Then connect with:
+```bash
+ssh vm1.heartbeatchurch.com.au
+```
+
+### Authentication Flow
+1. Cloudflare Access will open a browser window for authentication
+2. Log in with your configured identity provider
+3. Once authenticated, SSH connection will be established
+4. No static authorized_keys needed - Cloudflare manages authentication
+
+### Troubleshooting
+- If you get "Invalid SSH identification string", ensure cloudflared is properly tunneling
+- Check that vm_access_key has correct permissions: `chmod 400 vm_access_key`
+- Verify Cloudflare Access policies allow your identity
+- Check VM logs: `sudo journalctl -u cloudflared`
+
+### Monitoring VM Setup Progress
+
+The VM uses an optimized cloud-init script that prioritizes SSH access. You can monitor the setup progress:
+
+```bash
+# Check overall setup progress
+sudo /usr/local/bin/check-setup-progress.sh
+
+# Monitor live progress during setup
+tail -f /var/log/cloud-init-progress.log
+
+# Check cloud-init status
+sudo cloud-init status
+
+# View detailed cloud-init logs
+sudo tail -f /var/log/cloud-init-output.log
+```
+
+**Expected Timeline:**
+- **2-3 minutes**: SSH access ready
+- **5-6 minutes**: Docker installed and running
+- **8-10 minutes**: Full application setup complete
+
+**Key Milestones in Log:**
+- `=== SSH ACCESS READY ===` - SSH is now available
+- `Docker installed and started` - Docker ready for containers
+- `=== SETUP COMPLETE ===` - All services configured
 
 Docker/Compose pattern
 	•	All persistent data volumes bind-mount under /data/....

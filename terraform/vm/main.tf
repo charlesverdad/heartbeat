@@ -43,7 +43,7 @@ resource "azurerm_network_security_group" "vm" {
   location            = azurerm_resource_group.vm.location
   resource_group_name = azurerm_resource_group.vm.name
 
-  # Allow SSH for debugging (temporary)
+  # Temporary SSH access for setup - will remove after configuration
   security_rule {
     name                       = "AllowSSHInbound"
     priority                   = 1000
@@ -199,6 +199,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
+  
+  # Note: In Azure, disks created from golden images are managed disks that persist
+  # independently of the VM by default. They need to be manually deleted if not needed.
 
   source_image_reference {
     publisher = "Canonical"
@@ -207,7 +210,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
-  custom_data = base64encode(local.cloud_init_config_minimal)
+  custom_data = base64encode(local.cloud_init_script)
 
   tags = var.tags
 }
