@@ -29,8 +29,8 @@ if [[ ! -d "/secrets" ]]; then
     error "Secrets directory /secrets does not exist. Run mount-secrets.sh first."
 fi
 
-# Check if tunnel token exists
-if [[ ! -f "/secrets/cloudflare-tunnel-token" ]]; then
+# Check if tunnel token exists (using sudo since it may have restricted permissions)
+if ! sudo test -f "/secrets/cloudflare-tunnel-token"; then
     error "Tunnel token not found. Run mount-secrets.sh first."
 fi
 
