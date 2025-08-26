@@ -1720,6 +1720,14 @@ class UIController {
 const quiz = new QuizState()
 const ui = new UIController(quiz)
 
+// Inject version info
+document.addEventListener('DOMContentLoaded', function() {
+  const versionElement = document.getElementById('version-info');
+  if (versionElement && typeof __APP_VERSION__ !== 'undefined') {
+    versionElement.textContent = `v-${__APP_VERSION__}`;
+  }
+});
+
 // Check test mode availability and show welcome screen
 setTimeout(async () => {
   await ui.checkTestModeAvailability()

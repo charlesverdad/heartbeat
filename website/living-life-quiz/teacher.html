@@ -1010,8 +1010,21 @@
                 <img src="/public/Heartbeat_Brandmark_Horizontal_Black.svg" alt="Heartbeat Church" style="height: 2rem;">
             </div>
             <p style="font-size: 0.875rem; color: #6b7280;">
-                © Heartbeat Church 2025. Made with <span style="color: #dc2626;">♥</span> by Digital Platform Team.
+                Made with <span style="color: #dc2626;">♥</span> by Digital Platform Team<br>
+                © Heartbeat Church 2025
             </p>
+            <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">
+                <span id="version-info">v-loading...</span>
+            </p>
+            <script>
+                // Inject version info immediately
+                document.addEventListener('DOMContentLoaded', function() {
+                    const versionElement = document.getElementById('version-info');
+                    if (versionElement && typeof __APP_VERSION__ !== 'undefined') {
+                        versionElement.textContent = `v-${__APP_VERSION__}`;
+                    }
+                });
+            </script>
         </div>
     </footer>
 </body>

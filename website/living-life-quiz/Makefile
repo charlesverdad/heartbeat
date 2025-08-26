@@ -4,7 +4,9 @@
 # Configuration
 IMAGE_NAME := living-life-quiz
 IMAGE_TAG := latest
+COMMIT_HASH := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 FULL_IMAGE_NAME := $(IMAGE_NAME):$(IMAGE_TAG)
+FULL_IMAGE_NAME_WITH_HASH := $(IMAGE_NAME):$(COMMIT_HASH)
 
 # Azure Container Registry configuration
 ACR_NAME ?= $(shell echo "$$ACR_NAME")
@@ -12,6 +14,7 @@ ACR_LOGIN_SERVER ?= $(shell if [ -n "$(ACR_NAME)" ]; then az acr show --name $(A
 
 # Derived variables
 ACR_IMAGE_NAME := $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(IMAGE_TAG)
+ACR_IMAGE_NAME_WITH_HASH := $(ACR_LOGIN_SERVER)/$(IMAGE_NAME):$(COMMIT_HASH)
 
 .PHONY: help install build dev server server-dev clean docker-build docker-run docker-push docker-login check-az-login check-acr docker-tag publish release test-local status
 
@@ -34,8 +37,10 @@ install: ## Install dependencies
 	yarn install
 	cd server && yarn install
 
-build: ## Build the frontend
+build: ## Build the frontend with version injection via Vite
+	@echo "Building frontend with version $(COMMIT_HASH)..."
 	yarn build
+	@echo "✅ Build complete with version $(COMMIT_HASH)"
 
 dev: ## Run development server with hot reload
 	yarn dev
@@ -52,10 +57,12 @@ clean: ## Clean build artifacts and node_modules
 	rm -rf server/node_modules/
 
 # Docker commands
-docker-build: ## Build Docker image
-	@echo "Building Docker image: $(FULL_IMAGE_NAME)"
-	docker build -t $(FULL_IMAGE_NAME) .
-	@echo "✅ Docker image built successfully: $(FULL_IMAGE_NAME)"
+docker-build: ## Build Docker image with latest and commit hash tags
+	@echo "Building Docker image with tags: $(FULL_IMAGE_NAME) and $(FULL_IMAGE_NAME_WITH_HASH)"
+	docker build -t $(FULL_IMAGE_NAME) -t $(FULL_IMAGE_NAME_WITH_HASH) .
+	@echo "✅ Docker images built successfully:"
+	@echo "  • $(FULL_IMAGE_NAME)"
+	@echo "  • $(FULL_IMAGE_NAME_WITH_HASH)"
 
 docker-run: ## Run Docker container locally
 	@echo "Running container locally on port 3000..."
@@ -90,20 +97,28 @@ docker-login: check-az-login check-acr ## Login to Azure Container Registry usin
 	fi
 	@echo "✅ Successfully logged in to $(ACR_LOGIN_SERVER)"
 
-docker-tag: docker-build ## Tag image for ACR
-	@echo "Tagging image for ACR: $(ACR_IMAGE_NAME)"
+docker-tag: docker-build ## Tag images for ACR with both latest and commit hash
+	@echo "Tagging images for ACR:"
+	@echo "  • $(ACR_IMAGE_NAME)"
+	@echo "  • $(ACR_IMAGE_NAME_WITH_HASH)"
 	docker tag $(FULL_IMAGE_NAME) $(ACR_IMAGE_NAME)
-	@echo "✅ Image tagged: $(ACR_IMAGE_NAME)"
+	docker tag $(FULL_IMAGE_NAME_WITH_HASH) $(ACR_IMAGE_NAME_WITH_HASH)
+	@echo "✅ Images tagged for ACR"
 
-docker-push: check-az-login check-acr docker-login docker-tag ## Push image to Azure Container Registry
-	@echo "Pushing image to Azure Container Registry..."
+docker-push: check-az-login check-acr docker-login docker-tag ## Push images to Azure Container Registry
+	@echo "Pushing images to Azure Container Registry..."
+	@echo "  • Pushing $(ACR_IMAGE_NAME)"
 	docker push $(ACR_IMAGE_NAME)
-	@echo "✅ Successfully pushed: $(ACR_IMAGE_NAME)"
+	@echo "  • Pushing $(ACR_IMAGE_NAME_WITH_HASH)"
+	docker push $(ACR_IMAGE_NAME_WITH_HASH)
+	@echo "✅ Successfully pushed both images to registry"
 
 # Combined workflows
-publish: docker-push ## Build, tag, and push image to ACR
-	@echo "📦 Image published to registry!"
-	@echo "Image available at: $(ACR_IMAGE_NAME)"
+publish: docker-push ## Build, tag, and push images to ACR
+	@echo "📦 Images published to registry!"
+	@echo "Images available at:"
+	@echo "  • $(ACR_IMAGE_NAME) (latest)"
+	@echo "  • $(ACR_IMAGE_NAME_WITH_HASH) (v$(COMMIT_HASH))"
 	@echo ""
 	@echo "To deploy to production, update the image reference in:"
 	@echo "  manifests/living-life-quiz/"
