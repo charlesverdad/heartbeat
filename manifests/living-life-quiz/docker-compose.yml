@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   living-life-quiz:
-    image: acrheartbeatterraformzi87.azurecr.io/living-life-quiz:latest
+    image: living-life-quiz:latest
     container_name: living-life-quiz
     restart: unless-stopped
     ports:
@@ -11,7 +11,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DB_PATH=/data/quiz_data.db
-      - TEACHER_PASSWORD_FILE=/secrets/teacher-password
+      - TEACHER_PASSWORD=supersecure
       - SESSION_SECRET_FILE=/secrets/session-secret
     volumes:
       - /data/living-life-quiz:/data
