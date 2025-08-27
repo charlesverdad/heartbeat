@@ -14,7 +14,7 @@ services:
       - TEACHER_PASSWORD_FILE=/secrets/teacher-password
       - SESSION_SECRET_FILE=/secrets/session-secret
     volumes:
-      - quiz-data:/data
+      - /data/living-life-quiz:/data
       - /secrets:/secrets:ro
     networks:
       - app-network
@@ -29,10 +29,6 @@ services:
     command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
     depends_on:
       - living-life-quiz
-
-volumes:
-  quiz-data:
-    driver: local
 
 networks:
   app-network:
