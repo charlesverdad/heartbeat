@@ -13,7 +13,9 @@
     "server:dev": "node --watch server.js",
     "init-db": "node init-db.js",
     "docker:build": "COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && docker build -t living-life-quiz:latest -t living-life-quiz:$COMMIT_HASH .",
-    "docker:run": "yarn docker:build && docker run --rm -it -p 3000:3000 -v $(pwd)/data:/data --name living-life-quiz-dev living-life-quiz:latest"
+    "docker:run": "yarn docker:build && docker run --rm -it -p 3000:3000 -v $(pwd)/data:/data --name living-life-quiz-dev living-life-quiz:latest",
+    "docker:login": "az acr login --name acrheartbeatterraformzi87",
+    "docker:publish": "yarn docker:build && COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && ACR_NAME=acrheartbeatterraformzi87.azurecr.io && docker tag living-life-quiz:latest $ACR_NAME/living-life-quiz:latest && docker tag living-life-quiz:$COMMIT_HASH $ACR_NAME/living-life-quiz:$COMMIT_HASH && docker push $ACR_NAME/living-life-quiz:latest && docker push $ACR_NAME/living-life-quiz:$COMMIT_HASH && echo '🚀 Published to ACR: $ACR_NAME/living-life-quiz:latest and $ACR_NAME/living-life-quiz:$COMMIT_HASH'"
   },
   "keywords": [
     "quiz",

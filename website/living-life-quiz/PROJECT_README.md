@@ -35,60 +35,53 @@ A modern, interactive quiz platform built for students to test their knowledge o
 ### Option 1: Docker Deployment (Recommended)
 
 ```bash
-# Build the Docker image
-./living-life-quiz
+# Login to Azure Container Registry (one-time setup)
+yarn docker:login
 
-# Run with Docker Compose
+# Build and run locally
+yarn docker:run
+
+# Or use Docker Compose
 docker-compose up -d
-
-# Or run manually
-docker run -d -p 3000:3000 -v $(pwd)/data:/data --name living-life-quiz living-life-quiz:latest
 ```
-
-See [DOCKER.md](DOCKER.md) for detailed Docker deployment instructions.
 
 ### Option 2: Local Development
 
 #### Prerequisites
 - Node.js (version 18 or higher)
-- npm package manager
+- yarn package manager
 
 #### Installation
 
-1. **Install frontend dependencies**:
+1. **Install dependencies**:
    ```bash
-   npm install
+   yarn install
    ```
 
-2. **Install server dependencies**:
+2. **Initialize database**:
    ```bash
-   cd server && npm install && cd ..
+   yarn init-db
    ```
 
-3. **Initialize database**:
+3. **Start development server**:
    ```bash
-   cd server && npm run init-db && cd ..
-   ```
-
-4. **Start development server**:
-   ```bash
-   # Terminal 1: Start frontend dev server
-   npm run dev
+   # For frontend development with hot reload
+   yarn dev
    
-   # Terminal 2: Start backend server
-   cd server && npm run dev
+   # For full application with server
+   yarn server:dev
    ```
 
-5. **Open your browser** to `http://localhost:5173` (frontend) or `http://localhost:3002` (full app)
+4. **Open your browser** to `http://localhost:5173` (dev) or `http://localhost:3000` (full app)
 
 ### Building for Production
 
 ```bash
 # Build frontend for production
-npm run build
+yarn build
 
 # Start production server
-cd server && npm start
+yarn server
 ```
 
 ## Project Structure
@@ -184,18 +177,19 @@ The application uses SQLite for data persistence:
 
 ### Available Scripts
 
-#### Frontend Scripts
-- `npm run dev` - Start frontend development server with hot reloading
-- `npm run build` - Build frontend for production
-- `npm run preview` - Preview production build locally
-
-#### Server Scripts
-- `cd server && npm run dev` - Start backend server with auto-restart
-- `cd server && npm start` - Start production backend server
-- `cd server && npm run init-db` - Initialize database tables
+#### Development Scripts
+- `yarn dev` - Start frontend development server with hot reloading
+- `yarn build` - Build frontend for production
+- `yarn preview` - Preview production build locally
+- `yarn server` - Start production server
+- `yarn server:dev` - Start server with auto-restart for development
+- `yarn init-db` - Initialize database tables
 
 #### Docker Scripts
-- `./living-life-quiz` - Build Docker image
+- `yarn docker:login` - Login to Azure Container Registry
+- `yarn docker:build` - Build Docker image locally
+- `yarn docker:run` - Build and run container locally for testing
+- `yarn docker:publish` - Build, tag, and push images to ACR
 - `docker-compose up -d` - Start application with Docker Compose
 - `docker-compose logs -f` - View application logs
 

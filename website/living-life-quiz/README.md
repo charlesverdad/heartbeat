@@ -33,8 +33,21 @@ An interactive quiz application for the Living Life Bible Study course with test
 
 - Node.js (version 18 or higher)
 - yarn package manager
+- Docker (for containerized deployment)
 
-### Installation
+### Quick Start with Docker (Recommended)
+
+```bash
+# Login to Azure Container Registry (one-time setup)
+yarn docker:login
+
+# Build and run locally
+yarn docker:run
+```
+
+The application will be available at `http://localhost:3000`
+
+### Local Development Setup
 
 1. Clone or download the project files
 2. Install dependencies:
@@ -71,6 +84,13 @@ For server development with auto-restart:
 ```bash
 yarn server:dev
 ```
+
+## Docker Commands
+
+- `yarn docker:login` - Login to Azure Container Registry
+- `yarn docker:build` - Build Docker image locally
+- `yarn docker:run` - Build and run container locally for testing
+- `yarn docker:publish` - Build, tag, and push images to ACR
 
 ## File Structure
 
