@@ -84,11 +84,22 @@ const calculateAutoScore = (question, userAnswer, correctAnswers) => {
 
     case 'SIMPLE_FILL_IN_THE_BLANK':
       if (Array.isArray(userAnswer)) {
-        // Multiple answers - partial credit possible
-        const correctCount = userAnswer.filter(answer => 
-          answer && answer.trim() && 
-          correctAnswers.correct_answers.some(correct => compareStrings(answer, correct))
-        ).length
+        // Multiple answers - flexible matching with uniqueness enforcement
+        const matchedCorrectAnswers = new Set() // Track which correct answers have been matched
+        let correctCount = 0
+        
+        for (const answer of userAnswer) {
+          if (!answer || !answer.trim()) continue // Skip empty answers
+          
+          // Find a correct answer that matches and hasn't been used yet
+          for (const correct of correctAnswers.correct_answers) {
+            if (!matchedCorrectAnswers.has(correct) && compareStrings(answer, correct)) {
+              matchedCorrectAnswers.add(correct)
+              correctCount++
+              break // Move to next user answer
+            }
+          }
+        }
         
         // Partial credit: points distributed across all expected answers
         const pointsPerAnswer = question.question_points / correctAnswers.correct_answers.length
@@ -168,10 +179,14 @@ app.post('/api/submit-test', async (req, res) => {
       )
       
       // Debug: Log scoring for problematic cases
-      if (question.type === 'TRUE_FALSE' || autoPoints === 0) {
+      if (question.type === 'TRUE_FALSE' || question.type === 'SIMPLE_FILL_IN_THE_BLANK' || autoPoints === 0) {
         console.log(`  📊 ${question.type} - ${answerData.questionId}:`)
         console.log(`     User answer: ${JSON.stringify(answerData.answer)} (${typeof answerData.answer})`)
-        console.log(`     Correct answer: ${JSON.stringify(question.correct_answer)}`)
+        if (question.type === 'SIMPLE_FILL_IN_THE_BLANK') {
+          console.log(`     Correct answers: ${JSON.stringify(question.correct_answers)}`)
+        } else {
+          console.log(`     Correct answer: ${JSON.stringify(question.correct_answer)}`)
+        }
         console.log(`     Points awarded: ${autoPoints}/${question.points}`)
       }
 
