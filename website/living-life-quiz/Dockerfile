@@ -38,26 +38,22 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --gid 1001 quiz
 
-# Copy questions and config files to app root
-COPY questions-master.json ./
-COPY test-config.json ./
+# Copy server dependencies first for better caching
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production && \
+    yarn cache clean
 
-# Copy built frontend assets from the builder stage to app root
+# Copy built frontend assets from the builder stage
 COPY --from=frontend-builder /app/dist ./dist
 COPY --from=frontend-builder /app/index.html ./
 COPY --from=frontend-builder /app/teacher.html ./
 COPY --from=frontend-builder /app/public ./public
 
-# Create server directory and set it as working directory
-WORKDIR /app/server
-
-# Copy server package files and install dependencies
-COPY server/package.json server/yarn.lock ./
-RUN yarn install --frozen-lockfile --production && \
-    yarn cache clean
-
-# Copy server source files
-COPY server/ ./
+# Copy application files
+COPY questions-master.json ./
+COPY test-config.json ./
+COPY server.js ./
+COPY init-db.js ./
 
 # Copy entrypoint script and make executable
 COPY docker-entrypoint.sh ./
