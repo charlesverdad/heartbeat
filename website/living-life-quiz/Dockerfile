@@ -1,86 +1,79 @@
-# Multi-stage build for Living Life Bible Study
-FROM node:22.14.0-slim AS frontend-builder
+# Multi-stage build for Living Life Bible Study Quiz
+FROM node:22-alpine AS builder
 
-# Set working directory for frontend build
+# Install build dependencies
+RUN apk add --no-cache git python3 make g++
+
+# Set working directory
 WORKDIR /app
 
-# Copy frontend package files
+# Copy package files for dependency installation
 COPY package.json yarn.lock ./
+
+# Install all dependencies (including dev dependencies for building)
+RUN yarn install --frozen-lockfile --network-timeout 600000
+
+# Copy build configuration files
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 
-# Install frontend dependencies
-RUN yarn install --frozen-lockfile
-
-# Copy frontend source files
+# Copy source files
 COPY src/ ./src/
-COPY index.html ./
-COPY teacher.html ./
 COPY public/ ./public/
-COPY questions-master.json ./
-COPY test-config.json ./
+COPY index.html teacher.html ./
+COPY questions-master.json test-config.json ./
 
 # Build the frontend
 RUN yarn build
 
 # Production stage
-FROM node:22.14.0-slim AS production
+FROM node:22-alpine AS production
 
-# Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install runtime dependencies
+RUN apk add --no-cache \
     dumb-init \
-    sqlite3 \
- && rm -rf /var/lib/apt/lists/*
+    sqlite \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S quiz -u 1001 -G nodejs
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 --gid 1001 quiz
-
-# Copy server dependencies first for better caching
+# Copy package files and install production dependencies only
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production && \
-    yarn cache clean
+RUN yarn install --frozen-lockfile --production --network-timeout 600000 \
+    && yarn cache clean
 
-# Copy built frontend assets from the builder stage
-COPY --from=frontend-builder /app/dist ./dist
-COPY --from=frontend-builder /app/index.html ./
-COPY --from=frontend-builder /app/teacher.html ./
-COPY --from=frontend-builder /app/public ./public
+# Copy built assets from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/index.html ./
+COPY --from=builder /app/teacher.html ./
 
 # Copy application files
-COPY questions-master.json ./
-COPY test-config.json ./
-COPY server.js ./
-COPY init-db.js ./
-
-# Copy entrypoint script and make executable
+COPY server.js init-db.js ./
+COPY questions-master.json test-config.json ./
 COPY docker-entrypoint.sh ./
+
+# Make entrypoint executable
 RUN chmod +x docker-entrypoint.sh
 
-# Create data directory and set permissions
-RUN mkdir -p /data && \
-    chown -R quiz:nodejs /app /data
+# Create data directory and set ownership
+RUN mkdir -p /data && chown -R quiz:nodejs /app /data
 
 # Switch to non-root user
 USER quiz
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV DB_PATH=/data/quiz_data.db
-ENV TEACHER_PASSWORD=admin123
+# Environment variables
+ENV NODE_ENV=production \
+    PORT=3000 \
+    DB_PATH=/data/quiz_data.db
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:$PORT/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Use dumb-init to handle signals properly
+# Use dumb-init and run entrypoint
 ENTRYPOINT ["dumb-init", "--"]
-
-# Run the entrypoint script
 CMD ["./docker-entrypoint.sh"]

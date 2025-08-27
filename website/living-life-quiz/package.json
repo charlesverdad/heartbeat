@@ -12,7 +12,8 @@
     "server": "node server.js",
     "server:dev": "node --watch server.js",
     "init-db": "node init-db.js",
-    "docker:build": "COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && docker build -t living-life-quiz:latest -t living-life-quiz:$COMMIT_HASH ."
+    "docker:build": "COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && docker build -t living-life-quiz:latest -t living-life-quiz:$COMMIT_HASH .",
+    "docker:run": "yarn docker:build && docker run --rm -it -p 3000:3000 -v $(pwd)/data:/data --name living-life-quiz-dev living-life-quiz:latest"
   },
   "keywords": [
     "quiz",
