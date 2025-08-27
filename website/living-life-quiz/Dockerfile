@@ -19,7 +19,7 @@ COPY vite.config.js tailwind.config.js postcss.config.js ./
 # Copy source files
 COPY src/ ./src/
 COPY public/ ./public/
-COPY index.html teacher.html ./
+COPY index.html teacher.html scoring-logic.js ./
 COPY questions-master.json test-config.json ./
 
 # Build the frontend

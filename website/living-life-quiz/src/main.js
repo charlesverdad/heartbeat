@@ -97,8 +97,10 @@ class QuizState {
     
     for (const question of this.questions) {
       const userAnswer = this.getAnswer(question.id)
-      if (userAnswer !== null && userAnswer !== undefined && this.isAnswerCorrect(question, userAnswer)) {
-        this.score += question.points
+      if (userAnswer !== null && userAnswer !== undefined) {
+        // Use shared scoring logic for consistency with backend
+        const points = window.ScoringLogic.calculateQuestionScore(question, userAnswer)
+        this.score += points
       }
     }
     
@@ -106,51 +108,13 @@ class QuizState {
   }
 
   isAnswerCorrect(question, userAnswer) {
-    switch (question.type) {
-      case 'TRUE_FALSE':
-        return userAnswer === question.correct_answer
-
-      case 'SIMPLE_FILL_IN_THE_BLANK':
-        // Check if correct_answers exists
-        if (!question.correct_answers || !Array.isArray(question.correct_answers)) {
-          return false
-        }
-        
-        // For multiple answers, check if user provided answers match any of the correct ones
-        if (Array.isArray(userAnswer)) {
-          // Multiple text boxes - check if any user answer matches any correct answer
-          return userAnswer.some(answer => 
-            answer && answer.trim() && 
-            question.correct_answers.some(correct => 
-              this.compareStrings(answer, correct)
-            )
-          )
-        } else {
-          // Single text box (legacy support)
-          return question.correct_answers.some(correct => 
-            this.compareStrings(userAnswer, correct)
-          )
-        }
-
-      case 'STRUCTURED_FILL_IN_THE_BLANK':
-        if (!Array.isArray(userAnswer) || !question.parts || !Array.isArray(question.parts)) {
-          return false
-        }
-        return question.parts.every((part, index) => 
-          userAnswer[index] && this.compareStrings(userAnswer[index], part.correct_answer)
-        )
-
-      case 'SHORT_ANSWER':
-        return userAnswer && userAnswer.trim().length > 0 // Any non-empty answer gets points
-
-      default:
-        return false
-    }
+    // Use shared scoring logic for consistency with backend
+    return window.ScoringLogic.isAnswerCorrect(question, userAnswer)
   }
 
+  // Legacy method - now uses shared logic
   compareStrings(str1, str2) {
-    if (!str1 || !str2) return false
-    return str1.toLowerCase().trim() === str2.toLowerCase().trim()
+    return window.ScoringLogic.compareStrings(str1, str2)
   }
 
   getProgress() {
