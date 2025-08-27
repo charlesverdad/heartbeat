@@ -174,17 +174,34 @@ class QuizState {
 
   // Submit test answers to server with retry logic
   async submitToServer(maxRetries = 3) {
+    // For test mode, ensure ALL questions are submitted, even if unanswered
+    const allAnswers = this.questions.map((question, index) => {
+      const existingAnswer = this.answers.get(question.id)
+      if (existingAnswer) {
+        // Use existing answer data
+        return {
+          questionId: question.id,
+          answer: existingAnswer.answer,
+          timestamp: existingAnswer.timestamp.toISOString(),
+          questionIndex: index
+        }
+      } else {
+        // Create placeholder for unanswered question
+        return {
+          questionId: question.id,
+          answer: this.getEmptyAnswerForQuestionType(question.type),
+          timestamp: new Date().toISOString(), // Current time as fallback
+          questionIndex: index
+        }
+      }
+    })
+
     const submissionData = {
       studentName: this.studentName,
       startTime: this.startTime.toISOString(),
       endTime: this.endTime.toISOString(),
       totalQuestions: this.questions.length,
-      answers: Array.from(this.answers.entries()).map(([questionId, answerData]) => ({
-        questionId,
-        answer: answerData.answer,
-        timestamp: answerData.timestamp.toISOString(),
-        questionIndex: answerData.questionIndex
-      }))
+      answers: allAnswers
     }
 
     let lastError = null
@@ -264,6 +281,22 @@ class QuizState {
   startOver() {
     this.clearStorage()
     location.reload()
+  }
+
+  // Helper method to get appropriate empty answer for different question types
+  getEmptyAnswerForQuestionType(questionType) {
+    switch (questionType) {
+      case 'TRUE_FALSE':
+        return null // No answer selected
+      case 'SIMPLE_FILL_IN_THE_BLANK':
+        return '' // Empty string
+      case 'STRUCTURED_FILL_IN_THE_BLANK':
+        return [] // Empty array
+      case 'SHORT_ANSWER':
+        return '' // Empty string
+      default:
+        return null
+    }
   }
 }
 
@@ -1050,6 +1083,9 @@ class UIController {
   }
 
   async finishQuiz() {
+    // CRITICAL: Save the current answer before finishing the quiz
+    this.saveCurrentAnswer()
+    
     // For test mode, show submission progress
     if (this.quiz.mode === 'test') {
       this.showSubmissionProgress()
@@ -1141,8 +1177,8 @@ class UIController {
               <h3 class="text-lg font-semibold text-blue-900">Test Completion Summary</h3>
               <div class="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p class="text-2xl font-bold text-blue-700">${this.quiz.answers.size}</p>
-                  <p class="text-sm text-blue-600">Questions Answered</p>
+                  <p class="text-2xl font-bold text-blue-700">${this.quiz.questions.length}</p>
+                  <p class="text-sm text-blue-600">Questions Submitted</p>
                 </div>
                 <div>
                   <p class="text-2xl font-bold text-blue-700">${timeTaken}</p>
