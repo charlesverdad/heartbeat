@@ -58,8 +58,18 @@ const initDatabase = () => {
 
 // Helper function to calculate automatic score for a question
 const calculateAutoScore = (question, userAnswer, correctAnswers) => {
-  if (!userAnswer || userAnswer === '' || (Array.isArray(userAnswer) && userAnswer.every(a => !a || !a.trim()))) {
-    return 0 // No answer provided
+  // Special handling for TRUE_FALSE questions - null means no answer, but false/true are valid
+  if (question.question_type === 'TRUE_FALSE') {
+    if (userAnswer === null || userAnswer === undefined) {
+      return 0 // No answer provided
+    }
+    // For TRUE_FALSE, both true and false are valid answers, proceed to scoring
+  } else {
+    // For other question types, check for empty values (excluding boolean false)
+    if (userAnswer === null || userAnswer === undefined || userAnswer === '' || 
+        (Array.isArray(userAnswer) && userAnswer.every(a => !a || !a.trim()))) {
+      return 0 // No answer provided
+    }
   }
 
   const compareStrings = (str1, str2) => {
@@ -131,6 +141,14 @@ app.post('/api/submit-test', async (req, res) => {
     let autoScore = 0
     const processedAnswers = []
 
+    // Debug: Log what we received from frontend
+    console.log(`\n🔍 DEBUGGING SUBMISSION for ${studentName}:`)
+    console.log(`Total answers received: ${answers.length}`)
+    console.log('First 5 answers:')
+    answers.slice(0, 5).forEach((ans, i) => {
+      console.log(`  ${i + 1}. ${ans.questionId}: ${JSON.stringify(ans.answer)} (type: ${typeof ans.answer})`)
+    })
+
     // Process each answer and calculate auto score
     for (const answerData of answers) {
       const question = questionMap.get(answerData.questionId)
@@ -148,6 +166,14 @@ app.post('/api/submit-test', async (req, res) => {
         answerData.answer,
         question
       )
+      
+      // Debug: Log scoring for problematic cases
+      if (question.type === 'TRUE_FALSE' || autoPoints === 0) {
+        console.log(`  📊 ${question.type} - ${answerData.questionId}:`)
+        console.log(`     User answer: ${JSON.stringify(answerData.answer)} (${typeof answerData.answer})`)
+        console.log(`     Correct answer: ${JSON.stringify(question.correct_answer)}`)
+        console.log(`     Points awarded: ${autoPoints}/${question.points}`)
+      }
 
       autoScore += autoPoints
 
@@ -172,39 +198,40 @@ app.post('/api/submit-test', async (req, res) => {
       })
     }
 
-    // Insert quiz submission
+    // Insert quiz submission and all answers in a single transaction for optimal performance
     await new Promise((resolve, reject) => {
-      const stmt = db.prepare(`
-        INSERT INTO quiz_submissions (
-          id, student_name, quiz_mode, start_time, end_time, 
-          total_questions, auto_score, final_score
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION', (err) => {
+          if (err) return reject(err)
+        })
 
-      stmt.run([
-        submissionId,
-        studentName,
-        'test', // Only test mode submissions come through this endpoint
-        startTime,
-        endTime,
-        totalQuestions,
-        autoScore,
-        autoScore // Initially final score equals auto score
-      ], function(err) {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(this.lastID)
-        }
-      })
+        // Insert quiz submission
+        const submissionStmt = db.prepare(`
+          INSERT INTO quiz_submissions (
+            id, student_name, quiz_mode, start_time, end_time, 
+            total_questions, auto_score, final_score
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
 
-      stmt.finalize()
-    })
+        submissionStmt.run([
+          submissionId,
+          studentName,
+          'test', // Only test mode submissions come through this endpoint
+          startTime,
+          endTime,
+          totalQuestions,
+          autoScore,
+          autoScore // Initially final score equals auto score
+        ], function(err) {
+          if (err) {
+            submissionStmt.finalize()
+            return db.run('ROLLBACK', () => reject(err))
+          }
+        })
+        submissionStmt.finalize()
 
-    // Insert student answers
-    for (const answer of processedAnswers) {
-      await new Promise((resolve, reject) => {
-        const stmt = db.prepare(`
+        // Insert all student answers using a prepared statement for efficiency
+        const answerStmt = db.prepare(`
           INSERT INTO student_answers (
             id, submission_id, question_id, question_index, question_type,
             question_text, question_points, user_answer, correct_answer,
@@ -212,30 +239,42 @@ app.post('/api/submit-test', async (req, res) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 
-        stmt.run([
-          answer.id,
-          answer.submission_id,
-          answer.question_id,
-          answer.question_index,
-          answer.question_type,
-          answer.question_text,
-          answer.question_points,
-          answer.user_answer,
-          answer.correct_answer,
-          answer.auto_points,
-          answer.final_points,
-          answer.answered_at
-        ], function(err) {
+        let errorOccurred = false
+        for (const answer of processedAnswers) {
+          answerStmt.run([
+            answer.id,
+            answer.submission_id,
+            answer.question_id,
+            answer.question_index,
+            answer.question_type,
+            answer.question_text,
+            answer.question_points,
+            answer.user_answer,
+            answer.correct_answer,
+            answer.auto_points,
+            answer.final_points,
+            answer.answered_at
+          ], function(err) {
+            if (err && !errorOccurred) {
+              errorOccurred = true
+              answerStmt.finalize()
+              return db.run('ROLLBACK', () => reject(err))
+            }
+          })
+        }
+        answerStmt.finalize()
+
+        // Commit the transaction
+        db.run('COMMIT', (err) => {
           if (err) {
-            reject(err)
-          } else {
-            resolve(this.lastID)
+            return db.run('ROLLBACK', () => reject(err))
+          }
+          if (!errorOccurred) {
+            resolve()
           }
         })
-
-        stmt.finalize()
       })
-    }
+    })
 
     // Return success response
     res.status(200).json({

@@ -748,10 +748,27 @@
                 this.elements.gradingSubtitle.textContent = `${submission.questions.length} questions • Submitted ${submittedDate}`
                 
                 const questionsHtml = submission.questions.map((question, index) => {
-                    const userAnswer = this.formatAnswer(question.user_answer, question.question_type)
+                    // Determine if the answer is correct based on points awarded
+                    const isCorrect = question.auto_points > 0 && question.auto_points === question.max_points
+                    const isEmpty = question.user_answer === null || question.user_answer === undefined ||
+                                   (question.question_type !== 'TRUE_FALSE' && 
+                                    (!question.user_answer || (Array.isArray(question.user_answer) && question.user_answer.every(a => !a || !a.trim()))))
+                    
+                    // For student answers: green if correct, red if wrong OR empty
+                    let answerColorCode = null
+                    if (isEmpty) {
+                        answerColorCode = false // Red for empty (technically wrong)
+                    } else {
+                        answerColorCode = isCorrect // Green if correct, red if wrong
+                    }
+                    
+                    const userAnswer = this.formatAnswer(question.user_answer, question.question_type, answerColorCode)
                     const correctAnswer = this.formatCorrectAnswer(question)
                     const isAutoGraded = question.question_type !== 'SHORT_ANSWER'
                     const hasChanged = question.points_awarded !== question.auto_points
+                    
+                    // Only show correct answer if the student got it wrong or didn't answer
+                    const showCorrectAnswer = isAutoGraded && correctAnswer && (!isCorrect || isEmpty)
                     
                     return `
                         <div class="question-review" style="${hasChanged ? 'border-left-color: #fbbf24;' : ''}">
@@ -768,8 +785,8 @@
                                 ${userAnswer}
                             </div>
                             
-                            ${isAutoGraded && correctAnswer ? `
-                                <div class="answer-display" style="background: #f0fdf4; border-color: #bbf7d0;">
+                            ${showCorrectAnswer ? `
+                                <div class="answer-display" style="background: #fefce8; border-color: #fde047;">
                                     <strong>Correct Answer:</strong><br>
                                     ${correctAnswer}
                                 </div>
@@ -958,27 +975,52 @@
                 this.loadSubmissions() // Refresh the table
             }
             
-            formatAnswer(answer, questionType) {
-                if (!answer) return '<em style="color: #6b7280;">(No answer provided)</em>'
+            formatAnswer(answer, questionType, isCorrect = null) {
+                // Handle null/undefined specifically, but not boolean false
+                if (answer === null || answer === undefined) {
+                    return '<em style="color: #dc2626; font-weight: 600; background: #fef2f2; padding: 0.25rem 0.5rem; border-radius: 4px;">(No answer provided)</em>'
+                }
+                
+                // For other types, check if empty
+                if (questionType !== 'TRUE_FALSE' && !answer && answer !== 0) {
+                    return '<em style="color: #dc2626; font-weight: 600; background: #fef2f2; padding: 0.25rem 0.5rem; border-radius: 4px;">(No answer provided)</em>'
+                }
+                
+                let formattedAnswer = ''
                 
                 switch (questionType) {
                     case 'TRUE_FALSE':
-                        return answer ? 'True' : 'False'
+                        formattedAnswer = answer ? 'True' : 'False'
+                        break
                     case 'SIMPLE_FILL_IN_THE_BLANK':
                         if (Array.isArray(answer)) {
-                            return answer.map((ans, i) => `${i + 1}. ${ans || '<em>(empty)</em>'}`).join('<br>')
+                            formattedAnswer = answer.map((ans, i) => `${i + 1}. ${ans || '<em>(empty)</em>'}`).join('<br>')
+                        } else {
+                            formattedAnswer = answer
                         }
-                        return answer
+                        break
                     case 'STRUCTURED_FILL_IN_THE_BLANK':
                         if (Array.isArray(answer)) {
-                            return answer.map((ans, i) => `Part ${i + 1}: ${ans || '<em>(empty)</em>'}`).join('<br>')
+                            formattedAnswer = answer.map((ans, i) => `Part ${i + 1}: ${ans || '<em>(empty)</em>'}`).join('<br>')
+                        } else {
+                            formattedAnswer = answer
                         }
-                        return answer
+                        break
                     case 'SHORT_ANSWER':
-                        return answer.replace(/\n/g, '<br>')
+                        formattedAnswer = String(answer).replace(/\n/g, '<br>')
+                        break
                     default:
-                        return String(answer)
+                        formattedAnswer = String(answer)
                 }
+                
+                // Apply color coding based on correctness
+                if (isCorrect === true) {
+                    return `<span style="color: #166534; font-weight: 600; background: #f0fdf4; padding: 0.25rem 0.5rem; border-radius: 4px;">${formattedAnswer}</span>`
+                } else if (isCorrect === false) {
+                    return `<span style="color: #dc2626; font-weight: 600; background: #fef2f2; padding: 0.25rem 0.5rem; border-radius: 4px;">${formattedAnswer}</span>`
+                }
+                
+                return formattedAnswer
             }
             
             formatCorrectAnswer(question) {

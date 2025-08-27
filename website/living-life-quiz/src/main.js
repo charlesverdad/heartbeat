@@ -203,6 +203,25 @@ class QuizState {
       totalQuestions: this.questions.length,
       answers: allAnswers
     }
+    
+    // Debug: Log what we're submitting
+    console.log('\n🚀 FRONTEND SUBMISSION DEBUG:')
+    console.log(`Student: ${this.studentName}`)
+    console.log(`Total questions: ${this.questions.length}`)
+    console.log(`Answers to submit: ${allAnswers.length}`)
+    console.log('First 5 answers being submitted:')
+    allAnswers.slice(0, 5).forEach((ans, i) => {
+      console.log(`  ${i + 1}. ${ans.questionId}: ${JSON.stringify(ans.answer)} (type: ${typeof ans.answer})`)
+    })
+    console.log('Answered questions in memory:', this.answers.size)
+    console.log('Sample of saved answers:')
+    let count = 0
+    for (const [questionId, answerData] of this.answers) {
+      if (count < 3) {
+        console.log(`  ${questionId}: ${JSON.stringify(answerData.answer)} (${typeof answerData.answer})`)
+        count++
+      }
+    }
 
     let lastError = null
     
