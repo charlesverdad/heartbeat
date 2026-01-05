@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  living-life-quiz:
+    image: living-life-quiz:latest
+    container_name: living-life-quiz
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/data/quiz_data.db
+      - TEACHER_PASSWORD=supersecure
+      - SESSION_SECRET_FILE=/secrets/session-secret
+    volumes:
+      - /data/living-life-quiz:/data
+      - /secrets:/secrets:ro
+    networks:
+      - app-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
+    depends_on:
+      - living-life-quiz
+
+networks:
+  app-network:
+    driver: bridge

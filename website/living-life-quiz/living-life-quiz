@@ -1,0 +1,51 @@
+#!/bin/bash
+set -e
+
+# Living Life Bible Study Docker Build Script
+# This script builds the Docker image for the quiz application
+
+IMAGE_NAME="living-life-quiz"
+VERSION=${1:-latest}
+BUILD_ARGS=""
+
+echo "🔨 Building Living Life Bible Study Docker Image"
+echo "📦 Image: $IMAGE_NAME:$VERSION"
+echo "📁 Context: $(pwd)"
+
+# Check if we're in the right directory
+if [ ! -f "package.json" ] || [ ! -f "Dockerfile" ]; then
+    echo "❌ Error: Please run this script from the project root directory"
+    echo "   Expected files: package.json, Dockerfile"
+    exit 1
+fi
+
+# Add build arguments if provided via environment variables
+if [ -n "$TEACHER_PASSWORD" ]; then
+    BUILD_ARGS="$BUILD_ARGS --build-arg TEACHER_PASSWORD=$TEACHER_PASSWORD"
+fi
+
+if [ -n "$SESSION_SECRET" ]; then
+    BUILD_ARGS="$BUILD_ARGS --build-arg SESSION_SECRET=$SESSION_SECRET"
+fi
+
+# Build the Docker image
+echo "🏗️  Building Docker image..."
+docker build --platform linux/amd64 $BUILD_ARGS -t "$IMAGE_NAME:$VERSION" -t "$IMAGE_NAME:latest" .
+
+echo "✅ Build completed successfully!"
+echo ""
+echo "🚀 To run the container:"
+echo "   docker run -d -p 3000:3000 -v \$(pwd)/data:/data --name living-life-quiz $IMAGE_NAME:$VERSION"
+echo ""
+echo "🔧 To run with custom environment variables:"
+echo "   docker run -d -p 3000:3000 -v \$(pwd)/data:/data \\"
+echo "     -e TEACHER_PASSWORD=your_password \\"
+echo "     -e DB_PATH=/data/quiz_data.db \\"
+echo "     --name living-life-quiz $IMAGE_NAME:$VERSION"
+echo ""
+echo "📊 To access the application:"
+echo "   Student Portal: http://localhost:3000"
+echo "   Teacher Portal: http://localhost:3000/teacher"
+echo "   Health Check:   http://localhost:3000/api/health"
+echo ""
+echo "🗄️  Database will be stored in the mounted /data volume"
