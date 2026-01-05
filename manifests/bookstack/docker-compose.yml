@@ -13,11 +13,14 @@ services:
       - DB_PORT=3306
       - DB_DATABASE=bookstackapp
       - DB_USERNAME=bookstack
+      - GOOGLE_AUTO_REGISTER=true
+      - GOOGLE_AUTO_CONFIRM_EMAIL=true
       - FILE__APP_KEY=/secrets/bookstack/app-key
       - FILE__DB_PASSWORD=/secrets/bookstack/db-password
       - FILE__GOOGLE_APP_ID=/secrets/bookstack/google-app-id
       - FILE__GOOGLE_APP_SECRET=/secrets/bookstack/google-app-secret
       - FILE__MAIL_PASSWORD=/secrets/bookstack/mail-password
+      - MAIL_DRIVER=smtp
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_HOST=smtp.gmail.com
       - MAIL_PORT=587
