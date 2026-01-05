@@ -29,7 +29,7 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Check if secrets directory exists
-if [[ ! -d "/secrets/bookstack" ]]; then
+if ! sudo test -d "/secrets/bookstack"; then
     error "Secrets directory /secrets/bookstack does not exist. Run mount-secrets.sh first."
 fi
 

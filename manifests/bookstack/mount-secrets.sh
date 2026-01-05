@@ -57,6 +57,8 @@ fi
 # Create secrets directory
 log "Creating secrets directory: $SECRETS_DIR"
 mkdir -p "$SECRETS_DIR"
+# Allow traversable access to /secrets, but 700 on the app subfolder
+chmod 755 /secrets || true
 chmod 700 "$SECRETS_DIR"
 
 # Login with managed identity
@@ -84,5 +86,13 @@ for secret_name in "${REQUIRED_SECRETS[@]}"; do
 done
 
 log "All secrets successfully mounted to $SECRETS_DIR"
+
+# Ensure the directory and files are accessible by the vmadmin user (PUID 1000)
+# so the containers can read them.
+log "Setting ownership to vmadmin (1000:1000)..."
+chown -R 1000:1000 "$SECRETS_DIR"
+chmod 700 "$SECRETS_DIR"
+find "$SECRETS_DIR" -type f -exec chmod 600 {} +
+
 log "Directory listing:"
 ls -la "$SECRETS_DIR"
