@@ -47,8 +47,8 @@ Copy the output (e.g., `base64:abcd1234...`) and use it for `app_key` in `prod.t
 6. Choose application type: **Web application**
 7. Add **Authorized redirect URIs**:
    ```
-   https://bookstack.heartbeatchurch.com.au/login/service/google/callback
-   https://bookstack.heartbeatchurch.com.au/register/service/google/callback
+   https://docs.heartbeatchurch.com.au/login/service/google/callback
+   https://docs.heartbeatchurch.com.au/register/service/google/callback
    ```
 8. Click **Create** and note the **Client ID** and **Client Secret**
 

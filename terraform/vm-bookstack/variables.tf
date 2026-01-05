@@ -33,7 +33,7 @@ variable "cloudflare_zone_id" {
 variable "domain_name" {
   description = "Domain name for the website"
   type        = string
-  default     = "bookstack.heartbeatchurch.com.au"
+  default     = "docs.heartbeatchurch.com.au"
 }
 
 # BookStack Application Secrets

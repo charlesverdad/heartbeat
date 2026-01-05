@@ -20,7 +20,7 @@ data "azurerm_user_assigned_identity" "vm" {
 
 # Azure Key Vault for storing secrets
 resource "azurerm_key_vault" "bookstack" {
-  name                = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  name                = "kv-bkstk-${var.environment}-${random_string.suffix.result}"
   location            = data.azurerm_resource_group.vm.location
   resource_group_name = data.azurerm_resource_group.vm.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
