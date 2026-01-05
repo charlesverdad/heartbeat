@@ -77,9 +77,9 @@ for secret_name in "${REQUIRED_SECRETS[@]}"; do
     # Try different naming conventions if needed, but for now assuming 1:1 mapping
     # Note: secrets in KV are kebab-case, files will be kebab-case
     
-    if az keyvault secret show --vault-name "$KEY_VAULT_NAME" --name "$secret_name" --query value -o tsv > "$secret_file"; then
+    if az keyvault secret show --vault-name "$KEY_VAULT_NAME" --name "$secret_name" --query value -o tsv | tr -d '\r\n' > "$secret_file"; then
         chmod 600 "$secret_file"
-        log "✓ Secret $secret_name mounted to $secret_file"
+        log "✓ Secret $secret_name mounted (and stripped) to $secret_file"
     else
         error "Failed to fetch secret: $secret_name"
     fi
