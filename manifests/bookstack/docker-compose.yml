@@ -3,7 +3,7 @@ version: '3.8'
 services:
   bookstack:
     image: lscr.io/linuxserver/bookstack:24.05.1
-    container_name: bookstack
+    container_name: bookstack_app
     environment:
       - PUID=1000
       - PGID=1000
@@ -13,11 +13,11 @@ services:
       - DB_PORT=3306
       - DB_DATABASE=bookstackapp
       - DB_USER=bookstack
-      - FILE__APP_KEY=/secrets/app-key
-      - FILE__DB_PASSWORD=/secrets/db-password
-      - FILE__GOOGLE_APP_ID=/secrets/google-app-id
-      - FILE__GOOGLE_APP_SECRET=/secrets/google-app-secret
-      - FILE__MAIL_PASSWORD=/secrets/mail-password
+      - FILE__APP_KEY=/secrets/bookstack/app-key
+      - FILE__DB_PASSWORD=/secrets/bookstack/db-password
+      - FILE__GOOGLE_APP_ID=/secrets/bookstack/google-app-id
+      - FILE__GOOGLE_APP_SECRET=/secrets/bookstack/google-app-secret
+      - FILE__MAIL_PASSWORD=/secrets/bookstack/mail-password
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_HOST=smtp.gmail.com
       - MAIL_PORT=587
@@ -26,7 +26,7 @@ services:
       - MAIL_FROM_NAME=BookStack
     volumes:
       - /data/bookstack_app_data:/config
-      - /secrets:/secrets:ro
+      - /secrets/bookstack:/secrets/bookstack:ro
     ports:
       - "6875:80"
     restart: unless-stopped
@@ -42,16 +42,16 @@ services:
       - TZ=Australia/Sydney
       - MYSQL_DATABASE=bookstackapp
       - MYSQL_USER=bookstack
-      - FILE__MYSQL_ROOT_PASSWORD=/secrets/mysql-root-password
-      - FILE__MYSQL_PASSWORD=/secrets/db-password
+      - FILE__MYSQL_ROOT_PASSWORD=/secrets/bookstack/mysql-root-password
+      - FILE__MYSQL_PASSWORD=/secrets/bookstack/db-password
     volumes:
       - /data/bookstack_db_data:/config
-      - /secrets:/secrets:ro
+      - /secrets/bookstack:/secrets/bookstack:ro
     restart: unless-stopped
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared-tunnel
+    container_name: bookstack_cloudflare_tunnel
     restart: unless-stopped
     network_mode: host
     environment:

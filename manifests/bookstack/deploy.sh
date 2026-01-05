@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Configuration
-APP_DOMAIN="bookstack.heartbeatchurch.com.au" # Default, maybe override
+APP_DOMAIN="docs.heartbeatchurch.com.au"
 APP_URL="https://${APP_DOMAIN}"
 
 # Colors for output
@@ -29,21 +29,21 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Check if secrets directory exists
-if [[ ! -d "/secrets" ]]; then
-    error "Secrets directory /secrets does not exist. Run mount-secrets.sh first."
+if [[ ! -d "/secrets/bookstack" ]]; then
+    error "Secrets directory /secrets/bookstack does not exist. Run mount-secrets.sh first."
 fi
 
 # Check variables
-if sudo test -f "/secrets/cloudflare-tunnel-token"; then
+if sudo test -f "/secrets/bookstack/cloudflare-tunnel-token"; then
     log "Reading tunnel token from secrets..."
-    export TUNNEL_TOKEN=$(sudo cat /secrets/cloudflare-tunnel-token)
+    export TUNNEL_TOKEN=$(sudo cat /secrets/bookstack/cloudflare-tunnel-token)
 else
-    error "Tunnel token not found in /secrets"
+    error "Tunnel token not found in /secrets/bookstack"
 fi
 
-if sudo test -f "/secrets/mail-username"; then
+if sudo test -f "/secrets/bookstack/mail-username"; then
     log "Reading mail username from secrets..."
-    export MAIL_USERNAME=$(sudo cat /secrets/mail-username)
+    export MAIL_USERNAME=$(sudo cat /secrets/bookstack/mail-username)
 else
     export MAIL_USERNAME="noreply@heartbeatchurch.com.au" # Fallback or error?
     log "Mail username not found, using default: $MAIL_USERNAME"

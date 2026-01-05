@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Configuration
-SECRETS_DIR="/secrets"
+SECRETS_DIR="/secrets/bookstack"
 KEY_VAULT_NAME="${KEY_VAULT_NAME:-}"
 REQUIRED_SECRETS=(
     "app-key"
