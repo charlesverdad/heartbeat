@@ -27,6 +27,10 @@ class User(UserBase):
     last_login: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    role_id: Optional[str] = None
+
 class FolderBase(BaseModel):
     name: str
     parent_id: Optional[UUID] = None

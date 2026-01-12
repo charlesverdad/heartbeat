@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import admin
 from app.api import auth
+from app.api import folders
 from app.api import pages
 from app.db import Base
 from app.db import engine
@@ -69,6 +70,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(folders.router)
 app.include_router(pages.router)
 
 @app.get("/")

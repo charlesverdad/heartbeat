@@ -19,6 +19,7 @@ from app.services import create_page
 from app.services import get_page
 from app.services import list_pages
 from app.services import update_page
+from app.search import search_pages
 
 router = APIRouter(prefix="/pages", tags=["pages"])
 
@@ -28,6 +29,14 @@ async def read_pages(
     current_user: User = Depends(get_current_user)
 ):
     return await list_pages(db, current_user)
+
+@router.get("/search", response_model=List[Page])
+async def search_wiki_pages(
+    q: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return await search_pages(db, q, current_user.id)
 
 @router.post("/", response_model=Page)
 async def create_new_page(

@@ -42,7 +42,7 @@
 
 .tableHeader {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
     padding: 1rem;
     background: #f9f9f9;
     font-weight: 600;
@@ -51,10 +51,48 @@
 
 .tableRow {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
     padding: 1rem;
     border-bottom: 1px solid #eee;
     align-items: center;
+}
+
+.roleSelect,
+.nameInput {
+    padding: 4px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 90%;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.editBtn,
+.saveBtn,
+.cancelBtn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.editBtn {
+    background: #f0f0f0;
+    color: #444;
+}
+
+.saveBtn {
+    background: #0070f3;
+    color: white;
+}
+
+.cancelBtn {
+    background: transparent;
+    border-color: #ddd;
 }
 
 .roleBadge {

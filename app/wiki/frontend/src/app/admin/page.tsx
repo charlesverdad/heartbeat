@@ -9,6 +9,7 @@ export default function AdminPanel() {
     const [roles, setRoles] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState("users");
     const [loading, setLoading] = useState(true);
+    const [editingUser, setEditingUser] = useState<any>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -48,6 +49,26 @@ export default function AdminPanel() {
         }
     };
 
+    const handleUpdateUser = async (userId: string, updatedData: any) => {
+        const token = localStorage.getItem("wiki_token");
+        try {
+            const res = await fetch(`http://localhost:8000/admin/users/${userId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(updatedData)
+            });
+            if (res.ok) {
+                setEditingUser(null);
+                fetchAdminData(token!);
+            }
+        } catch (error) {
+            console.error("Update error:", error);
+        }
+    };
+
     if (loading) return <div className={styles.adminContainer}>Loading...</div>;
 
     return (
@@ -81,12 +102,45 @@ export default function AdminPanel() {
                             <span>Email</span>
                             <span>Full Name</span>
                             <span>Role</span>
+                            <span>Actions</span>
                         </div>
                         {users.map(user => (
                             <div key={user.id} className={styles.tableRow}>
                                 <span>{user.email}</span>
-                                <span>{user.full_name}</span>
-                                <span className={styles.roleBadge}>{user.role_id}</span>
+                                <div className={styles.nameColumn}>
+                                    {editingUser?.id === user.id ? (
+                                        <input
+                                            value={editingUser.full_name || ""}
+                                            onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                                            className={styles.nameInput}
+                                        />
+                                    ) : (
+                                        <span>{user.full_name}</span>
+                                    )}
+                                </div>
+                                <div className={styles.roleColumn}>
+                                    {editingUser?.id === user.id ? (
+                                        <select
+                                            value={editingUser.role_id}
+                                            onChange={(e) => setEditingUser({ ...editingUser, role_id: e.target.value })}
+                                            className={styles.roleSelect}
+                                        >
+                                            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                        </select>
+                                    ) : (
+                                        <span className={styles.roleBadge}>{user.role_id}</span>
+                                    )}
+                                </div>
+                                <div className={styles.actions}>
+                                    {editingUser?.id === user.id ? (
+                                        <>
+                                            <button onClick={() => handleUpdateUser(user.id, editingUser)} className={styles.saveBtn}>Save</button>
+                                            <button onClick={() => setEditingUser(null)} className={styles.cancelBtn}>Cancel</button>
+                                        </>
+                                    ) : (
+                                        <button onClick={() => setEditingUser(user)} className={styles.editBtn}>Edit</button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
