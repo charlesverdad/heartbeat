@@ -1,4 +1,10 @@
 .pageContainer {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.mainContent {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
@@ -66,4 +72,65 @@
 .content {
     line-height: 1.6;
     color: #333;
+}
+
+.bannerWrapper {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bannerImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bannerActions {
+    position: absolute;
+    bottom: 1rem;
+    right: 50%;
+    transform: translateX(50%);
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.bannerWrapper:hover .bannerActions {
+    opacity: 1;
+}
+
+.changeBannerBtn,
+.removeBannerBtn,
+.addBannerBtn {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.removeBannerBtn {
+    color: #ff4d4f;
+}
+
+.addBannerBtn {
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #999;
+    padding: 0;
+    font-size: 0.85rem;
+    box-shadow: none;
+}
+
+.addBannerBtn:hover {
+    color: #666;
 }

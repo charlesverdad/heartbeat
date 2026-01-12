@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Fuse from "fuse.js";
 import styles from "./layout.module.css";
 
 interface Folder {
@@ -84,6 +85,8 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<Page[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const pathname = usePathname();
     const router = useRouter();
 
@@ -103,24 +106,28 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
 
     const fetchData = async (token: string) => {
         try {
-            const [pagesRes, foldersRes] = await Promise.all([
+            const [pagesRes, foldersRes, userRes] = await Promise.all([
                 fetch("http://localhost:8000/pages", {
                     headers: { "Authorization": `Bearer ${token}` }
                 }),
                 fetch("http://localhost:8000/folders", {
                     headers: { "Authorization": `Bearer ${token}` }
+                }),
+                fetch("http://localhost:8000/me", {
+                    headers: { "Authorization": `Bearer ${token}` }
                 })
             ]);
 
-            if (pagesRes.status === 401 || foldersRes.status === 401) {
+            if (pagesRes.status === 401 || foldersRes.status === 401 || userRes.status === 401) {
                 localStorage.removeItem("wiki_token");
                 router.push("/login");
                 return;
             }
 
-            if (pagesRes.ok && foldersRes.ok) {
+            if (pagesRes.ok && foldersRes.ok && userRes.ok) {
                 setPages(await pagesRes.json());
                 setFolders(await foldersRes.json());
+                setCurrentUser(await userRes.json());
             }
         } catch (error) {
             console.error("Fetch error:", error);
@@ -159,32 +166,29 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         }
     };
 
+    const fuse = useMemo(() => new Fuse(pages, {
+        keys: ["title", "content"],
+        threshold: 0.3,
+        distance: 100,
+    }), [pages]);
+
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
         if (query.length < 2) {
             setSearchResults([]);
-            setIsSearching(false);
             return;
         }
 
-        setIsSearching(true);
-        const token = localStorage.getItem("wiki_token");
-        try {
-            const res = await fetch(`http://localhost:8000/pages/search?q=${encodeURIComponent(query)}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setSearchResults(await res.json());
-            }
-        } catch (error) {
-            console.error("Search error:", error);
-        } finally {
-            setIsSearching(false);
-        }
+        const results = fuse.search(query).map(r => r.item);
+        setSearchResults(results);
     };
 
     if (!isAuthenticated && pathname !== "/login") {
         return <div className={styles.loading}>Redirecting...</div>;
+    }
+
+    if (pathname === "/login") {
+        return <div className={styles.loginContainer}>{children}</div>;
     }
 
     return (
@@ -243,8 +247,18 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                             <button className={styles.addBtn} onClick={handleCreateFolder}>+</button>
                         </div>
                         <ul className={styles.folderList}>
+                            <li
+                                className={`${styles.navItem} ${activeFolderId === null ? styles.activeSpace : ""}`}
+                                onClick={() => setActiveFolderId(null)}
+                            >
+                                🏠 All Pages
+                            </li>
                             {folders.map(folder => (
-                                <li key={folder.id} className={styles.navItem}>
+                                <li
+                                    key={folder.id}
+                                    className={`${styles.navItem} ${activeFolderId === folder.id ? styles.activeSpace : ""}`}
+                                    onClick={() => setActiveFolderId(folder.id)}
+                                >
                                     📁 {folder.name}
                                 </li>
                             ))}
@@ -257,13 +271,16 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                             <Link href="/page/new" className={styles.addBtn}>+</Link>
                         </div>
                         <ul className={styles.pageList}>
-                            {buildTree(pages).map(node => (
+                            {buildTree(pages.filter(p => !activeFolderId || p.folder_id === activeFolderId)).map(node => (
                                 <SidebarItem key={node.id} node={node} pathname={pathname} />
                             ))}
                         </ul>
                     </div>
                 </nav>
                 <div className={styles.footer}>
+                    {currentUser?.role_id === "superadmin" && (
+                        <Link href="/admin" className={styles.adminBtn}>⚙️ Admin Panel</Link>
+                    )}
                     <button className={styles.exportBtn}>Export .zip</button>
                     <button
                         className={styles.logoutBtn}

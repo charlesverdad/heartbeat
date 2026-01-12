@@ -148,10 +148,12 @@
 .navItem {
     display: flex;
     align-items: center;
-    padding: 4px 8px;
+    padding: 6px 12px;
     border-radius: 4px;
     font-size: 0.9rem;
+    cursor: pointer;
     transition: background 0.2s;
+    color: #444;
 }
 
 .navItem:hover {
@@ -161,6 +163,12 @@
 .navItem.active {
     background: #e6f7ff;
     color: #0070f3;
+}
+
+.activeSpace {
+    background: rgba(55, 53, 47, 0.08);
+    font-weight: 600;
+    color: #000 !important;
 }
 
 .collapseToggle {
@@ -308,4 +316,32 @@
 
 .exportBtn:hover {
     background-color: rgba(55, 53, 47, 0.08);
+}
+
+.adminBtn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #f0f0f0;
+    border: 1px solid rgba(55, 53, 47, 0.1);
+    border-radius: 4px;
+    text-align: center;
+    text-decoration: none;
+    color: #37352f;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.adminBtn:hover {
+    background-color: #e0e0e0;
+}
+
+.loginContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f7f6f3;
+    width: 100%;
 }

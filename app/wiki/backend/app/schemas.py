@@ -46,6 +46,7 @@ class PageBase(BaseModel):
     folder_id: Optional[UUID] = None
     parent_id: Optional[UUID] = None
     order: int = 0
+    banner_url: Optional[str] = None
 
 class PageCreate(PageBase):
     pass

@@ -52,6 +52,7 @@ class Page(Base):
     folder_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("folders.id"), nullable=True)
     title: Mapped[str] = mapped_column(String)
     content: Mapped[str] = mapped_column(Text)
+    banner_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("pages.id"), nullable=True)
     author_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"))
     order: Mapped[int] = mapped_column(Integer, default=0)
