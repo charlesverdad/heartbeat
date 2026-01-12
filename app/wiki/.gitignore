@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env
+
+# Node
+node_modules/
+.next/
+out/
+build/
+.npm
+yarn-error.log
+
+# Databases
+*.sqlite3
+data/
+
+# OS
+.DS_Store
