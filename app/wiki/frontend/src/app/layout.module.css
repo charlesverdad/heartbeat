@@ -345,3 +345,61 @@
     background: #f7f6f3;
     width: 100%;
 }
+
+.logoutBtn {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    background: none;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    color: #cc0000;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.logoutBtn:hover {
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.renameInput {
+    flex: 1;
+    padding: 2px 4px;
+    font-size: 0.9rem;
+    border: 1px solid #0070f3;
+    border-radius: 4px;
+    outline: none;
+    background: white;
+}
+
+.renameBtn {
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: auto;
+    padding: 2px;
+    transition: opacity 0.2s;
+}
+
+.navItem:hover .renameBtn {
+    opacity: 1;
+}
+
+.deleteFolderBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #ff4d4f;
+    margin-left: 0.5rem;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.deleteFolderBtn:hover {
+    color: #ff7875;
+}

@@ -17,13 +17,29 @@ from app.schemas import PageUpdate
 
 async def check_permission(
     db: AsyncSession,
-    user: User,
+    user: Optional[User],
     object_id: UUID,
     object_type: str,  # FOLDER or PAGE
     required_level: str # MANAGE, EDIT, VIEW
 ) -> bool:
+    # Public objects are viewable by everyone
+    if required_level == "VIEW":
+        if object_type == "PAGE":
+            page_result = await db.execute(select(Page).where(Page.id == object_id))
+            page = page_result.scalar_one_or_none()
+            if page and page.is_public:
+                return True
+        elif object_type == "FOLDER":
+            folder_result = await db.execute(select(Folder).where(Folder.id == object_id))
+            folder = folder_result.scalar_one_or_none()
+            if folder and folder.is_public:
+                return True
+
+    if not user:
+        return False
+
     # SuperAdmin has all permissions
-    if user.role_id == "superadmin":
+    if user and user.role_id == "superadmin":
         return True
         
     # Check for direct permission
@@ -61,7 +77,7 @@ async def check_permission(
             
     return False
 
-async def get_page(db: AsyncSession, page_id: UUID, user: User) -> Optional[Page]:
+async def get_page(db: AsyncSession, page_id: UUID, user: Optional[User]) -> Optional[Page]:
     if not await check_permission(db, user, page_id, "PAGE", "VIEW"):
         return None
     result = await db.execute(select(Page).where(Page.id == page_id))
@@ -93,7 +109,7 @@ async def update_page(db: AsyncSession, page_id: UUID, page_data: PageUpdate, us
     await db.refresh(page)
     return page
 
-async def list_pages(db: AsyncSession, user: User) -> List[Page]:
+async def list_pages(db: AsyncSession, user: Optional[User]) -> List[Page]:
     # This is a naive implementation; in a real app, you'd filter in the query
     # However, for MVP, we'll fetch and filter if necessary, OR better:
     # Use a CTE or join to filter efficiently.
@@ -110,3 +126,19 @@ async def list_pages(db: AsyncSession, user: User) -> List[Page]:
         if await check_permission(db, user, page.id, "PAGE", "VIEW"):
             accessible_pages.append(page)
     return accessible_pages
+async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
+    if not await check_permission(db, user, folder_id, "FOLDER", "MANAGE"):
+        return False
+        
+    result = await db.execute(select(Folder).where(Folder.id == folder_id))
+    folder = result.scalar_one_or_none()
+    if not folder:
+        return False
+        
+    # Un-folder all pages first
+    from sqlalchemy import update
+    await db.execute(update(Page).where(Page.folder_id == folder_id).values(folder_id=None))
+    
+    await db.delete(folder)
+    await db.commit()
+    return True

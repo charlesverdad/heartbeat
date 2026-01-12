@@ -21,7 +21,7 @@ export default function Editor({ initialContent, onChange, editable = true }: Ed
             const blocks = editor.tryParseHTMLToBlocks(initialContent);
             editor.replaceBlocks(editor.document, blocks);
         }
-    }, [editor]); // Run once on mount/editor init
+    }, [editor, initialContent]); // Run on mount/editor init/initialContent change
 
     return (
         <div style={{ minHeight: "200px" }}>
@@ -33,9 +33,7 @@ export default function Editor({ initialContent, onChange, editable = true }: Ed
                         // Get HTML representation
                         const html = editor.blocksToFullHTML(editor.document);
                         // blocksToFullHTML might return a Promise in some versions, but if it's a string synchronously:
-                        if (typeof html === "string") {
-                            onChange(html);
-                        } else {
+                        if (html && typeof (html as any).then === "function") {
                             (html as any).then(onChange);
                         }
                     }

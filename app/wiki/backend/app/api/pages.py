@@ -1,6 +1,6 @@
 """API endpoints for Page management."""
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_current_user_optional
 from app.db import get_db
 from app.models import User
 from app.schemas import Page
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/pages", tags=["pages"])
 @router.get("/", response_model=List[Page])
 async def read_pages(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     return await list_pages(db, current_user)
 
@@ -34,9 +34,9 @@ async def read_pages(
 async def search_wiki_pages(
     q: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    return await search_pages(db, q, current_user.id)
+    return await search_pages(db, q, current_user.id if current_user else None)
 
 @router.post("/", response_model=Page)
 async def create_new_page(
@@ -56,7 +56,7 @@ async def create_new_page(
 async def read_page(
     page_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     page = await get_page(db, page_id, current_user)
     if not page:

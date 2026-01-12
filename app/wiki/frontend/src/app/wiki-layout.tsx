@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Fuse from "fuse.js";
@@ -14,6 +14,7 @@ interface Folder {
 interface Page {
     id: string;
     title: string;
+    content: string;
     folder_id: string | null;
     parent_id: string | null;
     order: number;
@@ -21,6 +22,13 @@ interface Page {
 
 interface TreeNode extends Page {
     children: TreeNode[];
+}
+
+interface UserDetail {
+    id: string;
+    email: string;
+    full_name: string;
+    role_id: string;
 }
 
 function buildTree(items: Page[]): TreeNode[] {
@@ -64,7 +72,7 @@ function SidebarItem({ node, pathname }: { node: TreeNode, pathname: string }) {
                 <Link href={`/page/${node.id}`} className={styles.pageLink}>
                     {node.title}
                 </Link>
-                <Link href={`/page/new?parent_id=${node.id}`} className={styles.addChildBtn}>+</Link>
+                <Link href={`/page/new?parent_id=${node.id}&folder_id=${node.folder_id || ""}`} className={styles.addChildBtn}>+</Link>
             </div>
             {!isCollapsed && hasChildren && (
                 <ul className={styles.childList}>
@@ -86,9 +94,62 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [searchResults, setSearchResults] = useState<Page[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
-    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [currentUser, setCurrentUser] = useState<UserDetail | null>(null);
+    const [settings, setSettings] = useState<Record<string, string>>({});
+    const [tempFolderName, setTempFolderName] = useState("");
+    const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const router = useRouter();
+
+    const fetchData = useCallback(async (token: string | null) => {
+        try {
+            const headers: Record<string, string> = {};
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
+            const [pagesRes, foldersRes, userRes, settingsRes] = await Promise.all([
+                fetch("http://localhost:8000/pages", { headers }),
+                fetch("http://localhost:8000/folders", { headers }),
+                fetch(token ? "http://localhost:8000/me" : "data:application/json,{}", { headers }),
+                fetch("http://localhost:8000/settings")
+            ]);
+
+            if (token && (pagesRes.status === 401 || foldersRes.status === 401 || userRes.status === 401)) {
+                localStorage.removeItem("wiki_token");
+                router.push("/login");
+                return;
+            }
+
+            if (pagesRes.ok && foldersRes.ok && userRes.ok) {
+                const pagesData = await pagesRes.json();
+                setPages(pagesData);
+                setFolders(await foldersRes.json());
+                setCurrentUser(await userRes.json());
+
+                // Process settings
+                const settingsData = await settingsRes.json();
+                const settingsMap: Record<string, string> = {};
+                settingsData.forEach((s: any) => settingsMap[s.key] = s.value);
+                setSettings(settingsMap);
+
+                // Site Name logic
+                if (settingsMap.site_name) {
+                    document.title = settingsMap.site_name;
+                }
+
+                // Home Page logic
+                if (pathname === "/" && settingsMap.home_page_id) {
+                    const homePage = pagesData.find((p: any) => p.id === settingsMap.home_page_id);
+                    if (homePage) {
+                        if (homePage.folder_id) setActiveFolderId(homePage.folder_id);
+                        router.push(`/page/${homePage.id}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+        }
+    }, [pathname, router]);
 
     useEffect(() => {
         setIsMobileMenuOpen(false); // Close mobile menu on navigation
@@ -101,43 +162,26 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         if (token) {
             setIsAuthenticated(true);
             fetchData(token);
+        } else if (pathname !== "/login") {
+            // Allow unauthenticated fetch for public pages
+            fetchData(null);
         }
-    }, [pathname, router]);
+    }, [pathname, router, fetchData]);
 
-    const fetchData = async (token: string) => {
-        try {
-            const [pagesRes, foldersRes, userRes] = await Promise.all([
-                fetch("http://localhost:8000/pages", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                }),
-                fetch("http://localhost:8000/folders", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                }),
-                fetch("http://localhost:8000/me", {
-                    headers: { "Authorization": `Bearer ${token}` }
-                })
-            ]);
-
-            if (pagesRes.status === 401 || foldersRes.status === 401 || userRes.status === 401) {
-                localStorage.removeItem("wiki_token");
-                router.push("/login");
-                return;
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setSearchQuery("");
+                setSearchResults([]);
             }
+        };
 
-            if (pagesRes.ok && foldersRes.ok && userRes.ok) {
-                setPages(await pagesRes.json());
-                setFolders(await foldersRes.json());
-                setCurrentUser(await userRes.json());
-            }
-        } catch (error) {
-            console.error("Fetch error:", error);
-        }
-    };
-
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
     const handleCreateFolder = async () => {
-        const name = prompt("Enter folder name:");
-        if (!name) return;
-
         const token = localStorage.getItem("wiki_token");
         if (!token) {
             router.push("/login");
@@ -151,18 +195,66 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ name })
+                body: JSON.stringify({ name: "New Folder" })
             });
             if (res.ok) {
-                fetchData(token);
+                const newFolder = await res.json();
+                await fetchData(token);
+                setRenamingFolderId(newFolder.id);
+                setTempFolderName("New Folder");
             } else if (res.status === 401) {
                 localStorage.removeItem("wiki_token");
                 router.push("/login");
-            } else {
-                console.error("Failed to create folder:", await res.text());
             }
         } catch (error) {
             console.error("Create folder error:", error);
+        }
+    };
+
+    const handleRenameFolder = async (folderId: string) => {
+        if (!tempFolderName.trim()) {
+            setRenamingFolderId(null);
+            return;
+        }
+
+        const token = localStorage.getItem("wiki_token");
+        if (!token) return;
+
+        try {
+            const res = await fetch(`http://localhost:8000/folders/${folderId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ name: tempFolderName })
+            });
+            if (res.ok) {
+                await fetchData(token);
+                setRenamingFolderId(null);
+            }
+        } catch (error) {
+            console.error("Rename folder error:", error);
+        }
+    };
+
+    const handleDeleteFolder = async (folderId: string) => {
+        if (!confirm("Are you sure you want to delete this folder? Pages inside will be moved to root.")) return;
+
+        const token = localStorage.getItem("wiki_token");
+        if (!token) return;
+
+        try {
+            const res = await fetch(`http://localhost:8000/folders/${folderId}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                await fetchData(token);
+                setRenamingFolderId(null);
+            }
+        } catch (error) {
+            console.error("Delete folder error:", error);
         }
     };
 
@@ -202,7 +294,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <div className={styles.logo}>
-                        <Link href="/">Wiki</Link>
+                        <Link href="/">{settings.site_name || "Wiki"}</Link>
                     </div>
                     <button
                         className={styles.sidebarCollapseBtn}
@@ -211,7 +303,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                         {isSidebarCollapsed ? "→" : "←"}
                     </button>
                 </div>
-                <div className={styles.searchContainer}>
+                <div className={styles.searchContainer} ref={searchRef}>
                     <input
                         type="text"
                         placeholder="Search pages..."
@@ -259,7 +351,44 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                                     className={`${styles.navItem} ${activeFolderId === folder.id ? styles.activeSpace : ""}`}
                                     onClick={() => setActiveFolderId(folder.id)}
                                 >
-                                    📁 {folder.name}
+                                    {renamingFolderId === folder.id ? (
+                                        <>
+                                            <input
+                                                value={tempFolderName}
+                                                onChange={(e) => setTempFolderName(e.target.value)}
+                                                onBlur={() => handleRenameFolder(folder.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") handleRenameFolder(folder.id);
+                                                    if (e.key === "Escape") setRenamingFolderId(null);
+                                                }}
+                                                className={styles.renameInput}
+                                                autoFocus
+                                            />
+                                            <button
+                                                className={styles.deleteFolderBtn}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteFolder(folder.id);
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            📁 {folder.name}
+                                            <button
+                                                className={styles.renameBtn}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setRenamingFolderId(folder.id);
+                                                    setTempFolderName(folder.name);
+                                                }}
+                                            >
+                                                ✏️
+                                            </button>
+                                        </>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -268,7 +397,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                     <div className={styles.navSection}>
                         <div className={styles.sectionHeader}>
                             <span>PAGES</span>
-                            <Link href="/page/new" className={styles.addBtn}>+</Link>
+                            <Link href={`/page/new${activeFolderId ? `?folder_id=${activeFolderId}` : ""}`} className={styles.addBtn}>+</Link>
                         </div>
                         <ul className={styles.pageList}>
                             {buildTree(pages.filter(p => !activeFolderId || p.folder_id === activeFolderId)).map(node => (

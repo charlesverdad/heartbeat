@@ -1,6 +1,6 @@
 """Search services for the Wiki using generic SQL."""
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -11,7 +11,7 @@ from app.models import Page
 from app.schemas import Page as PageSchema
 
 
-async def search_pages(db: AsyncSession, query: str, user_id: UUID) -> List[Page]:
+async def search_pages(db: AsyncSession, query: str, user_id: Optional[UUID]) -> List[Page]:
     """Search pages using generic SQL LIKE.
     
     Note: Full-text search with SQLite FTS5 could be implemented later.
@@ -31,11 +31,10 @@ async def search_pages(db: AsyncSession, query: str, user_id: UUID) -> List[Page
     from app.services import check_permission
     from app.models import User
     
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-    
-    if not user:
-        return []
+    user = None
+    if user_id:
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
     
     accessible_pages = []
     for page in pages:

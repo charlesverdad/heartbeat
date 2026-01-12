@@ -16,26 +16,28 @@ export default function PageDetail({ params }: { params: Promise<{ id: string }>
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState("");
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+    const [isPublic, setIsPublic] = useState(false);
+    const [showBannerInput, setShowBannerInput] = useState(false);
+    const [tempBannerUrl, setTempBannerUrl] = useState("");
     const router = useRouter();
 
     const fetchPage = useCallback(async () => {
         const token = localStorage.getItem("wiki_token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
+        // No redirect for public pages
 
         try {
+            const headers: any = {};
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
             const response = await fetch(`http://localhost:8000/pages/${id}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
+                headers: headers
             });
             if (response.ok) {
                 const data = await response.json();
                 setPage(data);
                 setTitle(data.title);
                 setBannerUrl(data.banner_url);
+                setIsPublic(data.is_public);
             } else if (response.status === 401) {
                 router.push("/login");
             } else {
@@ -54,7 +56,7 @@ export default function PageDetail({ params }: { params: Promise<{ id: string }>
 
     // Debounced save function
     const debouncedSave = useCallback(
-        debounce(async (updatedData: { title?: string, content?: string, banner_url?: string | null }) => {
+        debounce(async (updatedData: { title?: string, content?: string, banner_url?: string | null, is_public?: boolean }) => {
             const token = localStorage.getItem("wiki_token");
             if (!token) return;
 
@@ -89,11 +91,18 @@ export default function PageDetail({ params }: { params: Promise<{ id: string }>
     };
 
     const handleAddBanner = () => {
-        const url = prompt("Enter banner image URL:");
-        if (url !== null) {
-            setBannerUrl(url);
-            debouncedSave({ banner_url: url });
+        if (tempBannerUrl) {
+            setBannerUrl(tempBannerUrl);
+            debouncedSave({ banner_url: tempBannerUrl });
+            setShowBannerInput(false);
+            setTempBannerUrl("");
         }
+    };
+
+    const handleTogglePublic = () => {
+        const newVal = !isPublic;
+        setIsPublic(newVal);
+        debouncedSave({ is_public: newVal });
     };
 
     const handleRemoveBanner = () => {
@@ -111,26 +120,51 @@ export default function PageDetail({ params }: { params: Promise<{ id: string }>
                     <img src={bannerUrl} alt="Banner" className={styles.bannerImage} />
                     {isEditing && (
                         <div className={styles.bannerActions}>
-                            <button onClick={handleAddBanner} className={styles.changeBannerBtn}>Change</button>
+                            <button onClick={() => setShowBannerInput(true)} className={styles.changeBannerBtn}>Change</button>
                             <button onClick={handleRemoveBanner} className={styles.removeBannerBtn}>Remove</button>
                         </div>
                     )}
                 </div>
             )}
             <div className={styles.mainContent}>
-                {!bannerUrl && isEditing && (
-                    <button onClick={handleAddBanner} className={styles.addBannerBtn}>🖼️ Add Banner</button>
+                {isEditing && showBannerInput && (
+                    <div className={styles.bannerInputOverlay}>
+                        <input
+                            value={tempBannerUrl}
+                            onChange={(e) => setTempBannerUrl(e.target.value)}
+                            placeholder="Paste banner image URL..."
+                            className={styles.bannerUrlInput}
+                            autoFocus
+                        />
+                        <button onClick={handleAddBanner} className={styles.saveBannerBtn}>Set Banner</button>
+                        <button onClick={() => setShowBannerInput(false)} className={styles.cancelBannerBtn}>Cancel</button>
+                    </div>
+                )}
+                {!bannerUrl && isEditing && !showBannerInput && (
+                    <button onClick={() => setShowBannerInput(true)} className={styles.addBannerBtn}>🖼️ Add Banner</button>
                 )}
                 <header className={styles.header}>
-                    {isEditing ? (
-                        <input
-                            className={styles.titleInput}
-                            value={title}
-                            onChange={(e) => handleTitleChange(e.target.value)}
-                        />
-                    ) : (
-                        <h1 className={styles.title}>{title}</h1>
-                    )}
+                    <div className={styles.titleSection}>
+                        {isEditing ? (
+                            <input
+                                className={styles.titleInput}
+                                value={title}
+                                onChange={(e) => handleTitleChange(e.target.value)}
+                            />
+                        ) : (
+                            <h1 className={styles.title}>{title}</h1>
+                        )}
+                        {isEditing && (
+                            <label className={styles.publicToggle}>
+                                <input
+                                    type="checkbox"
+                                    checked={isPublic}
+                                    onChange={handleTogglePublic}
+                                />
+                                🌍 Public
+                            </label>
+                        )}
+                    </div>
                     <div className={styles.actions}>
                         <button
                             onClick={() => setIsEditing(!isEditing)}

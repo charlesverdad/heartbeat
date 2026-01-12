@@ -27,6 +27,14 @@ class User(UserBase):
     last_login: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
+class Setting(BaseModel):
+    key: str
+    value: str
+    model_config = ConfigDict(from_attributes=True)
+
+class SettingUpdate(BaseModel):
+    value: str
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role_id: Optional[str] = None
@@ -34,6 +42,7 @@ class UserUpdate(BaseModel):
 class FolderBase(BaseModel):
     name: str
     parent_id: Optional[UUID] = None
+    is_public: bool = False
 
 class Folder(FolderBase):
     id: UUID
@@ -46,6 +55,7 @@ class PageBase(BaseModel):
     folder_id: Optional[UUID] = None
     parent_id: Optional[UUID] = None
     order: int = 0
+    is_public: bool = False
     banner_url: Optional[str] = None
 
 class PageCreate(PageBase):

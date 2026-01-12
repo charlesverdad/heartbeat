@@ -11,6 +11,7 @@ function NewPageForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const parentId = searchParams.get("parent_id");
+    const folderId = searchParams.get("folder_id");
 
     useEffect(() => {
         const token = localStorage.getItem("wiki_token");
@@ -35,7 +36,8 @@ function NewPageForm() {
                 body: JSON.stringify({
                     title: title,
                     content: "<h1>" + title + "</h1><p>Start writing here...</p>",
-                    parent_id: parentId || null
+                    parent_id: parentId || null,
+                    folder_id: folderId || null
                 })
             });
 

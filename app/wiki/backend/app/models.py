@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import String, ForeignKey, Text, DateTime, Index, Uuid, Integer
+from sqlalchemy import String, ForeignKey, Text, DateTime, Index, Uuid, Integer, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -33,6 +33,11 @@ class User(Base):
     role: Mapped["Role"] = relationship(back_populates="users")
     pages: Mapped[List["Page"]] = relationship(back_populates="author")
 
+class Setting(Base):
+    __tablename__ = "settings"
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    value: Mapped[str] = mapped_column(String)
+
 class Folder(Base):
     """Folder model for organizing pages."""
     __tablename__ = "folders"
@@ -40,6 +45,7 @@ class Folder(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String)
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("folders.id"), nullable=True)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)
     order: Mapped[int] = mapped_column(Integer, default=0)
     
     parent: Mapped[Optional["Folder"]] = relationship("Folder", remote_side=[id], backref="children")
@@ -54,6 +60,7 @@ class Page(Base):
     content: Mapped[str] = mapped_column(Text)
     banner_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("pages.id"), nullable=True)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)
     author_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"))
     order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -15,6 +15,7 @@ from app.api import admin
 from app.api import auth
 from app.api import folders
 from app.api import pages
+from app.api import settings # Added this line to import settings
 from app.db import Base
 from app.db import engine
 from app.db import get_db
@@ -71,6 +72,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(folders.router)
+app.include_router(settings.router)
 app.include_router(pages.router)
 
 @app.get("/")

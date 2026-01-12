@@ -13,10 +13,26 @@
 .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 2rem;
     border-bottom: 1px solid #eee;
     padding-bottom: 1rem;
+}
+
+.titleSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.publicToggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #666;
+    cursor: pointer;
 }
 
 .title {
@@ -132,5 +148,43 @@
 }
 
 .addBannerBtn:hover {
+    color: #666;
+}
+
+.bannerInputOverlay {
+    background: #f9f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.bannerUrlInput {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+}
+
+.saveBannerBtn,
+.cancelBannerBtn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.saveBannerBtn {
+    background: #0070f3;
+    color: white;
+    border: none;
+}
+
+.cancelBannerBtn {
+    background: transparent;
+    border: 1px solid #ddd;
     color: #666;
 }

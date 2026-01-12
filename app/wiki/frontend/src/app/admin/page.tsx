@@ -1,35 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./admin.module.css";
 
+interface UserDetail {
+    id: string;
+    email: string;
+    full_name: string;
+    role_id: string;
+}
+
 export default function AdminPanel() {
-    const [users, setUsers] = useState<any[]>([]);
+    const [users, setUsers] = useState<UserDetail[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
+    const [pages, setPages] = useState<any[]>([]);
+    const [settings, setSettings] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState("users");
     const [loading, setLoading] = useState(true);
-    const [editingUser, setEditingUser] = useState<any>(null);
+    const [editingUser, setEditingUser] = useState<UserDetail | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem("wiki_token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-        fetchAdminData(token);
-    }, [router]);
-
-    const fetchAdminData = async (token: string) => {
+    const fetchAdminData = useCallback(async (token: string) => {
         try {
-            const [usersRes, rolesRes] = await Promise.all([
+            const [usersRes, rolesRes, pagesRes, settingsRes] = await Promise.all([
                 fetch("http://localhost:8000/admin/users", {
                     headers: { "Authorization": `Bearer ${token}` }
                 }),
                 fetch("http://localhost:8000/admin/roles", {
                     headers: { "Authorization": `Bearer ${token}` }
-                })
+                }),
+                fetch("http://localhost:8000/pages", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                }),
+                fetch("http://localhost:8000/settings")
             ]);
 
             if (usersRes.status === 403) {
@@ -38,16 +42,27 @@ export default function AdminPanel() {
                 return;
             }
 
-            if (usersRes.ok && rolesRes.ok) {
+            if (usersRes.ok && rolesRes.ok && pagesRes.ok && settingsRes.ok) {
                 setUsers(await usersRes.json());
                 setRoles(await rolesRes.json());
+                setPages(await pagesRes.json());
+                setSettings(await settingsRes.json());
             }
         } catch (error) {
             console.error("Fetch error:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        const token = localStorage.getItem("wiki_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+        fetchAdminData(token);
+    }, [router, fetchAdminData]);
 
     const handleUpdateUser = async (userId: string, updatedData: any) => {
         const token = localStorage.getItem("wiki_token");
@@ -66,6 +81,25 @@ export default function AdminPanel() {
             }
         } catch (error) {
             console.error("Update error:", error);
+        }
+    };
+
+    const handleUpdateSetting = async (key: string, value: string) => {
+        const token = localStorage.getItem("wiki_token");
+        try {
+            const res = await fetch(`http://localhost:8000/settings/${key}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ value })
+            });
+            if (res.ok) {
+                fetchAdminData(token!);
+            }
+        } catch (error) {
+            console.error("Setting update error:", error);
         }
     };
 
@@ -164,14 +198,32 @@ export default function AdminPanel() {
                 {activeTab === "settings" && (
                     <div className={styles.settingsPanel}>
                         <div className={styles.settingItem}>
-                            <h3>Theme</h3>
-                            <p>Current Theme: Light (Minimalist)</p>
-                            <button className={styles.toggleBtn}>Toggle Dark Mode (Preview)</button>
+                            <h3>Site Identity</h3>
+                            <div className={styles.inputGroup}>
+                                <label>Site Name</label>
+                                <input
+                                    value={settings.find(s => s.key === "site_name")?.value || ""}
+                                    onChange={(e) => handleUpdateSetting("site_name", e.target.value)}
+                                    placeholder="Wiki"
+                                />
+                            </div>
                         </div>
                         <div className={styles.settingItem}>
-                            <h3>Layout</h3>
-                            <p>Sidebar Position: Left</p>
-                            <button className={styles.toggleBtn}>Change to Right</button>
+                            <h3>Navigation</h3>
+                            <div className={styles.inputGroup}>
+                                <label>Home Page</label>
+                                <select
+                                    value={settings.find(s => s.key === "home_page_id")?.value || ""}
+                                    onChange={(e) => handleUpdateSetting("home_page_id", e.target.value)}
+                                >
+                                    <option value="">Default (Welcome)</option>
+                                    {pages.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className={styles.settingItem}>
+                            <h3>Access Control</h3>
+                            <p>Global public access settings can be managed here. Individually mark pages/folders as public to allow unauthenticated view.</p>
                         </div>
                     </div>
                 )}
