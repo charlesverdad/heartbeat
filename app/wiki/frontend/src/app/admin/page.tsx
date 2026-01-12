@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Fuse from "fuse.js";
 import styles from "./admin.module.css";
 
 interface UserDetail {
@@ -19,6 +20,10 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState("users");
     const [loading, setLoading] = useState(true);
     const [editingUser, setEditingUser] = useState<UserDetail | null>(null);
+    const [savedSettings, setSavedSettings] = useState<Set<string>>(new Set());
+    const [homePageSearch, setHomePageSearch] = useState("");
+    const [isHomePageDropdownOpen, setIsHomePageDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
     const fetchAdminData = useCallback(async (token: string) => {
@@ -96,12 +101,40 @@ export default function AdminPanel() {
                 body: JSON.stringify({ value })
             });
             if (res.ok) {
-                fetchAdminData(token!);
+                await fetchAdminData(token!);
+                setSavedSettings(prev => new Set(prev).add(key));
+                setTimeout(() => {
+                    setSavedSettings(prev => {
+                        const next = new Set(prev);
+                        next.delete(key);
+                        return next;
+                    });
+                }, 2000);
             }
         } catch (error) {
             console.error("Setting update error:", error);
         }
     };
+
+    const fuse = useMemo(() => new Fuse(pages, {
+        keys: ["title"],
+        threshold: 0.3
+    }), [pages]);
+
+    const filteredPages = useMemo(() => {
+        if (!homePageSearch) return pages;
+        return fuse.search(homePageSearch).map(r => r.item);
+    }, [pages, homePageSearch, fuse]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsHomePageDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     if (loading) return <div className={styles.adminContainer}>Loading...</div>;
 
@@ -205,6 +238,7 @@ export default function AdminPanel() {
                                     value={settings.find(s => s.key === "site_name")?.value || ""}
                                     onChange={(e) => handleUpdateSetting("site_name", e.target.value)}
                                     placeholder="Wiki"
+                                    className={savedSettings.has("site_name") ? styles.saved : ""}
                                 />
                             </div>
                         </div>
@@ -212,13 +246,50 @@ export default function AdminPanel() {
                             <h3>Navigation</h3>
                             <div className={styles.inputGroup}>
                                 <label>Home Page</label>
-                                <select
-                                    value={settings.find(s => s.key === "home_page_id")?.value || ""}
-                                    onChange={(e) => handleUpdateSetting("home_page_id", e.target.value)}
-                                >
-                                    <option value="">Default (Welcome)</option>
-                                    {pages.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                                </select>
+                                <div className={styles.searchableWrapper} ref={dropdownRef}>
+                                    <input
+                                        value={isHomePageDropdownOpen ? homePageSearch : (pages.find(p => p.id === settings.find(s => s.key === "home_page_id")?.value)?.title || "Default (Welcome)")}
+                                        onChange={(e) => {
+                                            setHomePageSearch(e.target.value);
+                                            setIsHomePageDropdownOpen(true);
+                                        }}
+                                        onFocus={() => {
+                                            setHomePageSearch("");
+                                            setIsHomePageDropdownOpen(true);
+                                        }}
+                                        placeholder="Search for a page..."
+                                        className={savedSettings.has("home_page_id") ? styles.saved : ""}
+                                    />
+                                    {isHomePageDropdownOpen && (
+                                        <div className={styles.dropdownResults}>
+                                            <div
+                                                className={styles.dropdownItem}
+                                                onClick={() => {
+                                                    handleUpdateSetting("home_page_id", "");
+                                                    setIsHomePageDropdownOpen(false);
+                                                }}
+                                            >
+                                                Default (Welcome)
+                                            </div>
+                                            {filteredPages.length > 0 ? (
+                                                filteredPages.map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        className={styles.dropdownItem}
+                                                        onClick={() => {
+                                                            handleUpdateSetting("home_page_id", p.id);
+                                                            setIsHomePageDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        📄 {p.title}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className={styles.noResults}>No pages found.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className={styles.settingItem}>

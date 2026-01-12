@@ -98,6 +98,8 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [tempFolderName, setTempFolderName] = useState("");
     const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+    const [savedFolderId, setSavedFolderId] = useState<string | null>(null);
+    const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
     const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const router = useRouter();
@@ -232,6 +234,8 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             if (res.ok) {
                 await fetchData(token);
                 setRenamingFolderId(null);
+                setSavedFolderId(folderId);
+                setTimeout(() => setSavedFolderId(null), 2000);
             }
         } catch (error) {
             console.error("Rename folder error:", error);
@@ -239,8 +243,6 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     };
 
     const handleDeleteFolder = async (folderId: string) => {
-        if (!confirm("Are you sure you want to delete this folder? Pages inside will be moved to root.")) return;
-
         const token = localStorage.getItem("wiki_token");
         if (!token) return;
 
@@ -252,6 +254,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             if (res.ok) {
                 await fetchData(token);
                 setRenamingFolderId(null);
+                setDeletingFolderId(null);
             }
         } catch (error) {
             console.error("Delete folder error:", error);
@@ -361,21 +364,44 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                                                     if (e.key === "Enter") handleRenameFolder(folder.id);
                                                     if (e.key === "Escape") setRenamingFolderId(null);
                                                 }}
-                                                className={styles.renameInput}
+                                                className={`${styles.renameInput} ${savedFolderId === folder.id ? styles.saved : ""}`}
                                                 autoFocus
                                             />
-                                            <button
-                                                className={styles.deleteFolderBtn}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteFolder(folder.id);
-                                                }}
-                                            >
-                                                ×
-                                            </button>
+                                            {deletingFolderId === folder.id ? (
+                                                <div className={styles.confirmDeleteWrapper}>
+                                                    <button
+                                                        className={styles.confirmDeleteBtn}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteFolder(folder.id);
+                                                        }}
+                                                    >
+                                                        Delete?
+                                                    </button>
+                                                    <button
+                                                        className={styles.cancelDeleteBtn}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeletingFolderId(null);
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    className={styles.deleteFolderBtn}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeletingFolderId(folder.id);
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
                                         </>
                                     ) : (
-                                        <>
+                                        <div className={`${styles.folderItemContent} ${savedFolderId === folder.id ? styles.saved : ""}`}>
                                             📁 {folder.name}
                                             <button
                                                 className={styles.renameBtn}
@@ -387,7 +413,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                                             >
                                                 ✏️
                                             </button>
-                                        </>
+                                        </div>
                                     )}
                                 </li>
                             ))}

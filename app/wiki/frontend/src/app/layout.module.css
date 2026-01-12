@@ -387,6 +387,49 @@
     opacity: 1;
 }
 
+.saved {
+    border-color: #52c41a !important;
+    box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+    transition: all 0.3s ease;
+}
+
+.confirmDeleteWrapper {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.confirmDeleteBtn {
+    background: #ff4d4f;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+.confirmDeleteBtn:hover {
+    background: #ff7875;
+}
+
+.cancelDeleteBtn {
+    background: white;
+    color: #666;
+    border: 1px solid #d9d9d9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+.folderItemContent {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 2px 0;
+}
+
 .deleteFolderBtn {
     background: none;
     border: none;
