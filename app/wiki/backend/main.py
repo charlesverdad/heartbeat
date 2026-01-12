@@ -1,8 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException
+"""Main entry point for the Wiki API application."""
+
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from .db import engine, Base, get_db
-from .api import pages
+
+from app.api import pages
+from app.db import Base
+from app.db import engine
+from app.db import get_db
 
 app = FastAPI(title="Wiki API")
 

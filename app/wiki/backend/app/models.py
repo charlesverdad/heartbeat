@@ -1,13 +1,25 @@
+"""SQLAlchemy models for the Wiki application."""
+
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Text, DateTime, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, TSVECTOR
-from .db import Base
+
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Index
+from sqlalchemy import String
+from sqlalchemy import Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
+from app.db import Base
+
 
 class Role(Base):
-    __tablename__ = "roles"
+    """Represents a user role (e.g., admin, member, public)."""
     
     id: Mapped[str] = mapped_column(String, primary_key=True)  # admin, member, public
     name: Mapped[str] = mapped_column(String)

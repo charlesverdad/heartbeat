@@ -1,13 +1,19 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+"""Database configuration and session management."""
+
 from pydantic_settings import BaseSettings
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import DeclarativeBase
+
 
 class Settings(BaseSettings):
+    """Application settings and environment variables."""
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/wiki"
     SECRET_KEY: str = "secret-key-for-dev-only"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    
+
     class Config:
         env_file = ".env"
 

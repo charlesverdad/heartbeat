@@ -1,9 +1,19 @@
+"""Core business logic and permission services."""
+
 from typing import List, Optional
 from uuid import UUID
+
+from sqlalchemy import and_
+from sqlalchemy import or_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
-from .models import Page, Folder, Permission, User
-from .schemas import PageCreate, PageUpdate
+
+from app.models import Folder
+from app.models import Page
+from app.models import Permission
+from app.models import User
+from app.schemas import PageCreate
+from app.schemas import PageUpdate
 
 async def check_permission(
     db: AsyncSession,

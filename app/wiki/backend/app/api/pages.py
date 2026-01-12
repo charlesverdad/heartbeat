@@ -1,12 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+"""API endpoints for Page management."""
+
 from typing import List
 from uuid import UUID
-from .db import get_db
-from .auth import get_current_user
-from .models import User
-from .schemas import Page, PageCreate, PageUpdate
-from .services import get_page, create_page, list_pages
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth import get_current_user
+from app.db import get_db
+from app.models import User
+from app.schemas import Page
+from app.schemas import PageCreate
+from app.schemas import PageUpdate
+from app.services import create_page
+from app.services import get_page
+from app.services import list_pages
 
 router = APIRouter(prefix="/pages", tags=["pages"])
 
@@ -25,7 +36,7 @@ async def create_new_page(
 ):
     # Check if user has permission to create in the specified folder
     if page_in.folder_id:
-        from .services import check_permission
+        from app.services import check_permission
         if not await check_permission(db, current_user, page_in.folder_id, "FOLDER", "EDIT"):
             raise HTTPException(status_code=403, detail="Not enough permissions for this folder")
             

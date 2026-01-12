@@ -1,9 +1,16 @@
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr
-from uuid import UUID
+"""Pydantic schemas for the Wiki API."""
+
 from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import EmailStr
+
 
 class RoleBase(BaseModel):
+    """Base schema for roles."""
     id: str
     name: str
 

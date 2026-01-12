@@ -1,9 +1,14 @@
+"""Full-text search services for the Wiki."""
+
 from typing import List
 from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from .models import Page
-from .schemas import Page as PageSchema
+
+from app.models import Page
+from app.schemas import Page as PageSchema
 
 async def search_pages(db: AsyncSession, query: str, user_id: UUID) -> List[Page]:
     # This query uses PostgreSQL Full-Text Search and filters by user permissions
@@ -21,8 +26,8 @@ async def search_pages(db: AsyncSession, query: str, user_id: UUID) -> List[Page
     
     # TODO: Refined permission filtering in SQL
     # For MVP, we'll filter in Python for now (not ideal for large datasets)
-    from .services import check_permission
-    from .models import User
+    from app.services import check_permission
+    from app.models import User
     
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one()
