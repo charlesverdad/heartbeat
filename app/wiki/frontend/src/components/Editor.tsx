@@ -4,6 +4,7 @@ import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
+import { useEffect } from "react";
 
 interface EditorProps {
     initialContent?: string;
@@ -14,6 +15,13 @@ interface EditorProps {
 export default function Editor({ initialContent, onChange, editable = true }: EditorProps) {
     // Initialize the editor
     const editor = useCreateBlockNote();
+
+    useEffect(() => {
+        if (initialContent && editor) {
+            const blocks = editor.tryParseHTMLToBlocks(initialContent);
+            editor.replaceBlocks(editor.document, blocks);
+        }
+    }, [editor]); // Run once on mount/editor init
 
     return (
         <div style={{ minHeight: "200px" }}>

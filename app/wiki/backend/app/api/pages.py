@@ -18,6 +18,7 @@ from app.schemas import PageUpdate
 from app.services import create_page
 from app.services import get_page
 from app.services import list_pages
+from app.services import update_page
 
 router = APIRouter(prefix="/pages", tags=["pages"])
 
@@ -49,6 +50,18 @@ async def read_page(
     current_user: User = Depends(get_current_user)
 ):
     page = await get_page(db, page_id, current_user)
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found or access denied")
+    return page
+
+@router.put("/{page_id}", response_model=Page)
+async def update_page_endpoint(
+    page_id: UUID,
+    page_in: PageUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    page = await update_page(db, page_id, page_in, current_user)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found or access denied")
     return page

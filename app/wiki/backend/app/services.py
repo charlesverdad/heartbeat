@@ -77,6 +77,22 @@ async def create_page(db: AsyncSession, page_data: PageCreate, author_id: UUID) 
     await db.refresh(db_page)
     return db_page
 
+async def update_page(db: AsyncSession, page_id: UUID, page_data: PageUpdate, user: User) -> Optional[Page]:
+    if not await check_permission(db, user, page_id, "PAGE", "EDIT"):
+        return None
+    result = await db.execute(select(Page).where(Page.id == page_id))
+    page = result.scalar_one_or_none()
+    if not page:
+        return None
+    
+    update_data = page_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(page, key, value)
+    
+    await db.commit()
+    await db.refresh(page)
+    return page
+
 async def list_pages(db: AsyncSession, user: User) -> List[Page]:
     # This is a naive implementation; in a real app, you'd filter in the query
     # However, for MVP, we'll fetch and filter if necessary, OR better:

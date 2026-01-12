@@ -33,12 +33,15 @@ class FolderBase(BaseModel):
 
 class Folder(FolderBase):
     id: UUID
+    order: int
     model_config = ConfigDict(from_attributes=True)
 
 class PageBase(BaseModel):
     title: str
     content: str
     folder_id: Optional[UUID] = None
+    parent_id: Optional[UUID] = None
+    order: int = 0
 
 class PageCreate(PageBase):
     pass
@@ -47,7 +50,9 @@ class PageUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     folder_id: Optional[UUID] = None
-
+    parent_id: Optional[UUID] = None
+    order: Optional[int] = None
+    
 class Page(PageBase):
     id: UUID
     author_id: UUID

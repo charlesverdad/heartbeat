@@ -1,34 +1,69 @@
 .pageContainer {
     max-width: 800px;
     margin: 0 auto;
+    padding: 2rem;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
 }
 
 .title {
     font-size: 2.5rem;
     font-weight: 700;
     margin: 0;
+    color: #1a1a1a;
 }
 
-.actions button {
-    padding: 6px 12px;
-    background: none;
-    border: 1px solid rgba(55, 53, 47, 0.16);
-    border-radius: 4px;
+.titleInput {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a1a;
+    border: none;
+    border-bottom: 1px dashed #ccc;
+    outline: none;
+    width: 70%;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.editBtn,
+.saveBtn,
+.doneBtn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
-    font-size: 0.9rem;
+    transition: all 0.2s;
 }
 
-.actions button:hover {
-    background-color: rgba(55, 53, 47, 0.08);
+.editBtn {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.editBtn:hover {
+    background: #f5f5f5;
+}
+
+.doneBtn {
+    background: #0070f3;
+    color: white;
+    border: 1px solid #0070f3;
 }
 
 .content {
     line-height: 1.6;
+    color: #333;
 }
