@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:25.12.1
+    container_name: bookstack_app
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Sydney
+      - APP_URL=${APP_URL}
+      - DB_HOST=bookstack_db
+      - DB_PORT=3306
+      - DB_DATABASE=bookstackapp
+      - DB_USERNAME=bookstack
+      - GOOGLE_AUTO_REGISTER=true
+      - GOOGLE_AUTO_CONFIRM_EMAIL=true
+      - FILE__APP_KEY=/secrets/bookstack/app-key
+      - FILE__DB_PASSWORD=/secrets/bookstack/db-password
+      - FILE__GOOGLE_APP_ID=/secrets/bookstack/google-app-id
+      - FILE__GOOGLE_APP_SECRET=/secrets/bookstack/google-app-secret
+      - FILE__MAIL_PASSWORD=/secrets/bookstack/mail-password
+      - MAIL_DRIVER=smtp
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_ENCRYPTION=tls
+      - MAIL_FROM=${MAIL_USERNAME}
+      - MAIL_FROM_NAME=BookStack
+    volumes:
+      - /data/bookstack_app_data:/config
+      - /secrets/bookstack:/secrets/bookstack:ro
+    ports:
+      - "6875:80"
+    restart: unless-stopped
+    depends_on:
+      - bookstack_db
+
+  bookstack_db:
+    image: lscr.io/linuxserver/mariadb:10.11.8
+    container_name: bookstack_db
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Sydney
+      - MYSQL_DATABASE=bookstackapp
+      - MYSQL_USER=bookstack
+      - FILE__MYSQL_ROOT_PASSWORD=/secrets/bookstack/mysql-root-password
+      - FILE__MYSQL_PASSWORD=/secrets/bookstack/db-password
+    volumes:
+      - /data/bookstack_db_data:/config
+      - /secrets/bookstack:/secrets/bookstack:ro
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bookstack_cloudflare_tunnel
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
+    depends_on:
+      - bookstack
+
+networks:
+  default:
+    driver: bridge
