@@ -16,6 +16,7 @@ yarn-error.log
 
 # Databases
 *.sqlite3
+*.db
 data/
 
 # OS

@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 class Settings(BaseSettings):
     """Application settings and environment variables."""
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/wiki"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./wiki.db"
     SECRET_KEY: str = "secret-key-for-dev-only"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
