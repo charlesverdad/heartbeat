@@ -142,6 +142,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [tempFolderName, setTempFolderName] = useState("");
     const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
     const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
+    const [isNewPageCreation, setIsNewPageCreation] = useState(false);
     const [savedFolderId, setSavedFolderId] = useState<string | null>(null);
     const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: "folder" | "page"; id: string } | null>(null);
@@ -293,6 +294,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                 await fetchData(token);
                 setRenamingPageId(newPage.id);
                 setTempPageTitle("New Page");
+                setIsNewPageCreation(true); // Mark as new page creation
 
                 // Wait for DOM to update, then set anchor to trigger rename modal
                 setTimeout(() => {
@@ -362,6 +364,11 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             if (res.ok) {
                 await fetchData(token);
                 setRenamingPageId(null);
+                // Only navigate if this was a new page creation
+                if (isNewPageCreation) {
+                    router.push(`/page/${pageId}`);
+                    setIsNewPageCreation(false);
+                }
             }
         } catch (error) {
             console.error("Rename page error:", error);
