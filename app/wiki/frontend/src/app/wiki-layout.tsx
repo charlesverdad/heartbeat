@@ -100,10 +100,12 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [tempFolderName, setTempFolderName] = useState("");
     const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+    const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
     const [savedFolderId, setSavedFolderId] = useState<string | null>(null);
     const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: "folder" | "page"; id: string } | null>(null);
     const [renamingAnchor, setRenamingAnchor] = useState<HTMLElement | null>(null);
+    const [tempPageTitle, setTempPageTitle] = useState("");
     const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const router = useRouter();
@@ -220,6 +222,48 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             }
         } catch (error) {
             console.error("Create folder error:", error);
+        }
+    };
+
+
+    const handleCreatePage = async (folderId?: string, parentId?: string) => {
+        const token = localStorage.getItem("wiki_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        try {
+            const res = await fetch("http://localhost:8000/pages/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: "New Page",
+                    content: "",
+                    folder_id: folderId || null,
+                    parent_id: parentId || null
+                })
+            });
+            if (res.ok) {
+                const newPage = await res.json();
+                await fetchData(token);
+                setRenamingPageId(newPage.id);
+                setTempPageTitle("New Page");
+
+                // Wait for DOM to update, then set anchor to trigger rename modal
+                setTimeout(() => {
+                    const pageElement = document.querySelector(`[data-page-id="${newPage.id}"]`);
+                    setRenamingAnchor(pageElement as HTMLElement);
+                }, 100);
+            } else if (res.status === 401) {
+                localStorage.removeItem("wiki_token");
+                router.push("/login");
+            }
+        } catch (error) {
+            console.error("Create page error:", error);
         }
     };
 
@@ -464,7 +508,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                     <div className={styles.navSection}>
                         <div className={styles.sectionHeader}>
                             <span>PAGES</span>
-                            <Link href={`/page/new${activeFolderId ? `?folder_id=${activeFolderId}` : ""}`} className={styles.addBtn}>+</Link>
+                            <button className={styles.addBtn} onClick={() => handleCreatePage(activeFolderId || undefined)}>+</button>
                         </div>
                         <ul className={styles.pageList}>
                             {buildTree(pages.filter(p => !activeFolderId || p.folder_id === activeFolderId)).map(node => (
