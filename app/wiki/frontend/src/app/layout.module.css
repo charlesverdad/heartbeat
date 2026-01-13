@@ -258,6 +258,20 @@
     color: #999;
 }
 
+.addBtn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.addBtn:hover {
+    color: #0070f3;
+}
+
 .folderList,
 .pageList {
     padding: 0;

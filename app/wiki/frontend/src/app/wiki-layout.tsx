@@ -208,6 +208,12 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                 await fetchData(token);
                 setRenamingFolderId(newFolder.id);
                 setTempFolderName("New Folder");
+
+                // Wait for DOM to update, then set anchor to trigger rename modal
+                setTimeout(() => {
+                    const folderElement = document.querySelector(`[data-folder-id="${newFolder.id}"]`);
+                    setRenamingAnchor(folderElement as HTMLElement);
+                }, 100);
             } else if (res.status === 401) {
                 localStorage.removeItem("wiki_token");
                 router.push("/login");
