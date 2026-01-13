@@ -430,6 +430,28 @@
     padding: 2px 0;
 }
 
+.contextMenuBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #999;
+    margin-left: auto;
+    padding: 0 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.navItem:hover .contextMenuBtn {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .contextMenuBtn {
+        opacity: 1;
+    }
+}
+
 .deleteFolderBtn {
     background: none;
     border: none;

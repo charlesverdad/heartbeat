@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Fuse from "fuse.js";
 import styles from "./layout.module.css";
+import ContextMenu from "@/components/ContextMenu";
+import RenameModal from "@/components/RenameModal";
 
 interface Folder {
     id: string;
@@ -100,6 +102,8 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
     const [savedFolderId, setSavedFolderId] = useState<string | null>(null);
     const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: "folder" | "page"; id: string } | null>(null);
+    const [renamingAnchor, setRenamingAnchor] = useState<HTMLElement | null>(null);
     const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const router = useRouter();
@@ -213,8 +217,10 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const handleRenameFolder = async (folderId: string) => {
-        if (!tempFolderName.trim()) {
+    const handleRenameFolder = async (folderId: string, newName?: string) => {
+        const nameToUse = newName || tempFolderName;
+
+        if (!nameToUse.trim()) {
             setRenamingFolderId(null);
             return;
         }
@@ -229,7 +235,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ name: tempFolderName })
+                body: JSON.stringify({ name: nameToUse.trim() })
             });
             if (res.ok) {
                 await fetchData(token);
@@ -258,6 +264,44 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             }
         } catch (error) {
             console.error("Delete folder error:", error);
+        }
+    };
+
+    const handleContextMenu = (e: React.MouseEvent, type: "folder" | "page", id: string) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, type, id });
+    };
+
+    const handleCopyLink = (id: string, type: "folder" | "page") => {
+        const url = type === "page" ? `${window.location.origin}/page/${id}` : `${window.location.origin}/?folder=${id}`;
+        navigator.clipboard.writeText(url);
+    };
+
+    const getContextMenuOptions = (type: "folder" | "page", id: string) => {
+        if (type === "folder") {
+            return [
+                {
+                    label: "Rename",
+                    icon: "✏️",
+                    onClick: () => {
+                        setRenamingFolderId(id);
+                        setTempFolderName(folders.find(f => f.id === id)?.name || "");
+                        // Set anchor to the folder element
+                        const folderElement = document.querySelector(`[data-folder-id="${id}"]`);
+                        setRenamingAnchor(folderElement as HTMLElement);
+                    }
+                },
+                { label: "Share", icon: "👥", onClick: () => console.log("Share folder", id) },
+                { label: "Copy Link", icon: "🔗", onClick: () => handleCopyLink(id, "folder") },
+                { label: "Delete", icon: "🗑️", onClick: () => setDeletingFolderId(id), danger: true }
+            ];
+        } else {
+            return [
+                { label: "Rename", icon: "✏️", onClick: () => console.log("Rename page", id) },
+                { label: "Share", icon: "👥", onClick: () => console.log("Share page", id) },
+                { label: "Copy Link", icon: "🔗", onClick: () => handleCopyLink(id, "page") },
+                { label: "Delete", icon: "🗑️", onClick: () => console.log("Delete page", id), danger: true }
+            ];
         }
     };
 
@@ -354,67 +398,22 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                                     className={`${styles.navItem} ${activeFolderId === folder.id ? styles.activeSpace : ""}`}
                                     onClick={() => setActiveFolderId(folder.id)}
                                 >
-                                    {renamingFolderId === folder.id ? (
-                                        <>
-                                            <input
-                                                value={tempFolderName}
-                                                onChange={(e) => setTempFolderName(e.target.value)}
-                                                onBlur={() => handleRenameFolder(folder.id)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") handleRenameFolder(folder.id);
-                                                    if (e.key === "Escape") setRenamingFolderId(null);
-                                                }}
-                                                className={`${styles.renameInput} ${savedFolderId === folder.id ? styles.saved : ""}`}
-                                                autoFocus
-                                            />
-                                            {deletingFolderId === folder.id ? (
-                                                <div className={styles.confirmDeleteWrapper}>
-                                                    <button
-                                                        className={styles.confirmDeleteBtn}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteFolder(folder.id);
-                                                        }}
-                                                    >
-                                                        Delete?
-                                                    </button>
-                                                    <button
-                                                        className={styles.cancelDeleteBtn}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeletingFolderId(null);
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    className={styles.deleteFolderBtn}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeletingFolderId(folder.id);
-                                                    }}
-                                                >
-                                                    ×
-                                                </button>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className={`${styles.folderItemContent} ${savedFolderId === folder.id ? styles.saved : ""}`}>
-                                            📁 {folder.name}
-                                            <button
-                                                className={styles.renameBtn}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setRenamingFolderId(folder.id);
-                                                    setTempFolderName(folder.name);
-                                                }}
-                                            >
-                                                ✏️
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div
+                                        className={`${styles.folderItemContent} ${savedFolderId === folder.id ? styles.saved : ""}`}
+                                        onContextMenu={(e) => handleContextMenu(e, "folder", folder.id)}
+                                        data-folder-id={folder.id}
+                                    >
+                                        📁 {folder.name}
+                                        <button
+                                            className={styles.contextMenuBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleContextMenu(e, "folder", folder.id);
+                                            }}
+                                        >
+                                            ⋯
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -451,6 +450,28 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             <main className={styles.main}>
                 {children}
             </main>
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    options={getContextMenuOptions(contextMenu.type, contextMenu.id)}
+                />
+            )}
+            {renamingFolderId && renamingAnchor && (
+                <RenameModal
+                    initialValue={tempFolderName}
+                    onSave={(newName) => {
+                        handleRenameFolder(renamingFolderId, newName);
+                        setRenamingAnchor(null);
+                    }}
+                    onCancel={() => {
+                        setRenamingFolderId(null);
+                        setRenamingAnchor(null);
+                    }}
+                    anchorElement={renamingAnchor}
+                />
+            )}
         </div>
     );
 }

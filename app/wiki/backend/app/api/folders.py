@@ -56,6 +56,37 @@ async def create_folder(
     await db.commit()
     await db.refresh(folder)
     return folder
+
+@router.patch("/{folder_id}", response_model=FolderSchema)
+async def update_folder(
+    folder_id: UUID,
+    folder_in: FolderCreateSchema,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    from app.services import check_permission
+    
+    # Check if user has MANAGE permission on this folder
+    if not await check_permission(db, current_user, folder_id, "FOLDER", "MANAGE"):
+        raise HTTPException(status_code=403, detail="Not authorized to update this folder")
+    
+    # Get the folder
+    result = await db.execute(select(FolderModel).where(FolderModel.id == folder_id))
+    folder = result.scalar_one_or_none()
+    
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    # Update the folder name
+    if folder_in.name:
+        folder.name = folder_in.name
+    if folder_in.parent_id is not None:
+        folder.parent_id = folder_in.parent_id
+    
+    await db.commit()
+    await db.refresh(folder)
+    return folder
+
 @router.delete("/{folder_id}", status_code=204)
 async def remove_folder(
     folder_id: UUID,
