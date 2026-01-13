@@ -188,17 +188,17 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         return expanded;
     }, [pathname, pages]);
 
-    // Auto-select folder when viewing a page
+    // Auto-select folder when viewing a page (only on pathname change)
     useEffect(() => {
         const match = pathname.match(/^\/page\/([^\/]+)/);
         if (match) {
             const currentPageId = match[1];
             const currentPage = pages.find(p => p.id === currentPageId);
-            if (currentPage?.folder_id && activeFolderId !== currentPage.folder_id) {
+            if (currentPage?.folder_id) {
                 setActiveFolderId(currentPage.folder_id);
             }
         }
-    }, [pathname, pages, activeFolderId]);
+    }, [pathname, pages]); // Removed activeFolderId to prevent loop
 
     const fetchData = useCallback(async (token: string | null) => {
         try {
