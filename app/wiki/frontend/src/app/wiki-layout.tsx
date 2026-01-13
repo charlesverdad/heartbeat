@@ -467,7 +467,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                 if (res.ok) {
                     const data = await res.json();
                     if (data.count > 0) {
-                        confirmed = window.confirm(`This folder contains ${data.count} page(s). Move to trash?`);
+                        confirmed = window.confirm(`This folder contains (${data.count}) pages. Move to trash?`);
                     }
                 }
             } else if (type === "page") {
@@ -477,7 +477,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                 if (res.ok) {
                     const data = await res.json();
                     if (data.count > 0) {
-                        confirmed = window.confirm(`This page contains ${data.count} subpage(s). Move to trash?`);
+                        confirmed = window.confirm(`This page contains (${data.count}) subpages. Move to trash?`);
                     }
                 }
             }
