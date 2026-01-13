@@ -75,6 +75,24 @@ async def update_page_endpoint(
         raise HTTPException(status_code=404, detail="Page not found or access denied")
     return page
 
+@router.get("/{page_id}/subpage-count")
+async def get_page_subpage_count(
+    page_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get the count of non-deleted subpages for a page."""
+    from sqlalchemy import func
+    from app.models import Page as PageModel
+    
+    result = await db.execute(
+        select(func.count(PageModel.id))
+        .where(PageModel.parent_id == page_id)
+        .where(PageModel.deleted_at.is_(None))
+    )
+    count = result.scalar()
+    return {"count": count}
+
 @router.patch("/{page_id}", response_model=Page)
 async def patch_page_endpoint(
     page_id: UUID,

@@ -471,6 +471,20 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             } catch (error) {
                 console.error("Error checking page count:", error);
             }
+        } else if (type === "page") {
+            try {
+                const res = await fetch(`http://localhost:8000/pages/${id}/subpage-count`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.count > 0) {
+                    const confirmed = window.confirm(`This page contains ${data.count} subpage(s). Move to trash?`);
+                    if (!confirmed) return;
+                }
+            } catch (error) {
+                console.error("Error checking subpage count:", error);
+            }
         }
 
         // Proceed with delete
