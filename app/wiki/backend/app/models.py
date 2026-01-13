@@ -47,6 +47,7 @@ class Folder(Base):
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("folders.id"), nullable=True)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
     order: Mapped[int] = mapped_column(Integer, default=0)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
     parent: Mapped[Optional["Folder"]] = relationship("Folder", remote_side=[id], backref="children")
     pages: Mapped[List["Page"]] = relationship(back_populates="folder")
@@ -65,6 +66,7 @@ class Page(Base):
     order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
     folder: Mapped[Optional["Folder"]] = relationship(back_populates="pages")
     parent: Mapped[Optional["Page"]] = relationship("Page", remote_side=[id], backref="children")

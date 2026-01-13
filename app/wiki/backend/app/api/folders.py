@@ -6,12 +6,12 @@ from uuid import UUID
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user, get_current_user_optional
 from app.db import get_db
-from app.models import Folder as FolderModel
+from app.models import Folder as FolderModel, Page as PageModel
 from app.models import User as UserModel
 from app.schemas import Folder as FolderSchema
 from app.schemas import FolderBase as FolderCreateSchema
@@ -26,7 +26,8 @@ async def list_folders(
 ):
     # For MVP, just return folders user has VIEW permission for OR are public
     # This is similar logic to pages.py list_pages
-    result = await db.execute(select(FolderModel))
+    # Exclude deleted folders
+    result = await db.execute(select(FolderModel).where(FolderModel.deleted_at.is_(None)))
     all_folders = result.scalars().all()
     
     from app.services import check_permission
@@ -87,6 +88,21 @@ async def update_folder(
     await db.refresh(folder)
     return folder
 
+@router.get("/{folder_id}/page-count")
+async def get_folder_page_count(
+    folder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get the count of non-deleted pages in a folder."""
+    result = await db.execute(
+        select(func.count(PageModel.id))
+        .where(PageModel.folder_id == folder_id)
+        .where(PageModel.deleted_at.is_(None))
+    )
+    count = result.scalar()
+    return {"count": count}
+
 @router.delete("/{folder_id}", status_code=204)
 async def remove_folder(
     folder_id: UUID,
@@ -96,3 +112,4 @@ async def remove_folder(
     if not await delete_folder(db, folder_id, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to delete this folder or folder not found")
     return None
+

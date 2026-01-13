@@ -118,7 +118,8 @@ async def list_pages(db: AsyncSession, user: Optional[User]) -> List[Page]:
     
     # Simple version for MVP: fetch all pages and check perms
     # Note: In production, we'd use a more complex SQL query to do this in one go.
-    result = await db.execute(select(Page))
+    # Exclude deleted pages
+    result = await db.execute(select(Page).where(Page.deleted_at.is_(None)))
     all_pages = result.scalars().all()
     
     accessible_pages = []
@@ -127,6 +128,7 @@ async def list_pages(db: AsyncSession, user: Optional[User]) -> List[Page]:
             accessible_pages.append(page)
     return accessible_pages
 async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
+    """Soft delete a folder and all pages within it."""
     if not await check_permission(db, user, folder_id, "FOLDER", "MANAGE"):
         return False
         
@@ -134,11 +136,19 @@ async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
     folder = result.scalar_one_or_none()
     if not folder:
         return False
-        
-    # Un-folder all pages first
-    from sqlalchemy import update
-    await db.execute(update(Page).where(Page.folder_id == folder_id).values(folder_id=None))
     
-    await db.delete(folder)
+    from datetime import datetime
+    from sqlalchemy import update
+    
+    # Soft delete the folder
+    folder.deleted_at = datetime.utcnow()
+    
+    # Cascade soft delete to all pages in this folder
+    await db.execute(
+        update(Page)
+        .where(Page.folder_id == folder_id)
+        .values(deleted_at=datetime.utcnow())
+    )
+    
     await db.commit()
     return True

@@ -283,6 +283,42 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         navigator.clipboard.writeText(url);
     };
 
+    const handleMoveToTrash = async (id: string, type: "folder" | "page") => {
+        const token = localStorage.getItem("wiki_token");
+        if (!token) return;
+
+        // For folders, check if there are pages inside
+        if (type === "folder") {
+            try {
+                const res = await fetch(`http://localhost:8000/folders/${id}/page-count`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.count > 0) {
+                    const confirmed = window.confirm(`This folder contains ${data.count} page(s). Move to trash?`);
+                    if (!confirmed) return;
+                }
+            } catch (error) {
+                console.error("Error checking page count:", error);
+            }
+        }
+
+        // Proceed with delete
+        const endpoint = type === "folder" ? `http://localhost:8000/folders/${id}` : `http://localhost:8000/pages/${id}`;
+        try {
+            const res = await fetch(endpoint, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                await fetchData(token);
+            }
+        } catch (error) {
+            console.error("Move to trash error:", error);
+        }
+    };
+
     const getContextMenuOptions = (type: "folder" | "page", id: string) => {
         if (type === "folder") {
             return [
@@ -299,14 +335,14 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                 },
                 { label: "Share", icon: "👥", onClick: () => console.log("Share folder", id) },
                 { label: "Copy Link", icon: "🔗", onClick: () => handleCopyLink(id, "folder") },
-                { label: "Delete", icon: "🗑️", onClick: () => setDeletingFolderId(id), danger: true }
+                { label: "Move to Trash", icon: "🗑️", onClick: () => handleMoveToTrash(id, "folder"), danger: true }
             ];
         } else {
             return [
                 { label: "Rename", icon: "✏️", onClick: () => console.log("Rename page", id) },
                 { label: "Share", icon: "👥", onClick: () => console.log("Share page", id) },
                 { label: "Copy Link", icon: "🔗", onClick: () => handleCopyLink(id, "page") },
-                { label: "Delete", icon: "🗑️", onClick: () => console.log("Delete page", id), danger: true }
+                { label: "Move to Trash", icon: "🗑️", onClick: () => handleMoveToTrash(id, "page"), danger: true }
             ];
         }
     };
