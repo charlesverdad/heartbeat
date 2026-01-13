@@ -453,7 +453,17 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
             ];
         } else {
             return [
-                { label: "Rename", icon: "✏️", onClick: () => console.log("Rename page", id) },
+                {
+                    label: "Rename",
+                    icon: "✏️",
+                    onClick: () => {
+                        setRenamingPageId(id);
+                        setTempPageTitle(pages.find(p => p.id === id)?.title || "");
+                        // Set anchor to the page element
+                        const pageElement = document.querySelector(`[data-page-id="${id}"]`);
+                        setRenamingAnchor(pageElement as HTMLElement);
+                    }
+                },
                 { label: "Share", icon: "👥", onClick: () => console.log("Share page", id) },
                 { label: "Copy Link", icon: "🔗", onClick: () => handleCopyLink(id, "page") },
                 { label: "Move to Trash", icon: "🗑️", onClick: () => handleMoveToTrash(id, "page"), danger: true }
