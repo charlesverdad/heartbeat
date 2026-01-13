@@ -60,15 +60,24 @@ function SidebarItem({
     node,
     pathname,
     onContextMenu,
-    onCreatePage
+    onCreatePage,
+    expandedPageIds
 }: {
     node: TreeNode;
     pathname: string;
     onContextMenu: (e: React.MouseEvent, type: "page", id: string) => void;
     onCreatePage: (folderId?: string, parentId?: string) => void;
+    expandedPageIds: Set<string>;
 }) {
-    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isCollapsed, setIsCollapsed] = useState(!expandedPageIds.has(node.id));
     const hasChildren = node.children.length > 0;
+
+    // Update collapsed state when expandedPageIds changes
+    useEffect(() => {
+        if (expandedPageIds.has(node.id)) {
+            setIsCollapsed(false);
+        }
+    }, [expandedPageIds, node.id]);
 
     return (
         <li className={styles.navItemWrapper}>
@@ -120,6 +129,7 @@ function SidebarItem({
                             pathname={pathname}
                             onContextMenu={onContextMenu}
                             onCreatePage={onCreatePage}
+                            expandedPageIds={expandedPageIds}
                         />
                     ))}
                 </ul>
@@ -151,6 +161,44 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
     const searchRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const router = useRouter();
+
+    // Calculate which pages should be expanded to show the current page
+    const expandedPageIds = useMemo(() => {
+        const expanded = new Set<string>();
+
+        // Extract page ID from pathname (e.g., /page/uuid)
+        const match = pathname.match(/^\/page\/([^\/]+)/);
+        if (!match) return expanded;
+
+        const currentPageId = match[1];
+
+        // Find the current page and all its ancestors
+        const findAncestors = (pageId: string): void => {
+            const page = pages.find(p => p.id === pageId);
+            if (!page) return;
+
+            // If page has a parent, expand the parent and recurse
+            if (page.parent_id) {
+                expanded.add(page.parent_id);
+                findAncestors(page.parent_id);
+            }
+        };
+
+        findAncestors(currentPageId);
+        return expanded;
+    }, [pathname, pages]);
+
+    // Auto-select folder when viewing a page
+    useEffect(() => {
+        const match = pathname.match(/^\/page\/([^\/]+)/);
+        if (match) {
+            const currentPageId = match[1];
+            const currentPage = pages.find(p => p.id === currentPageId);
+            if (currentPage?.folder_id && activeFolderId !== currentPage.folder_id) {
+                setActiveFolderId(currentPage.folder_id);
+            }
+        }
+    }, [pathname, pages, activeFolderId]);
 
     const fetchData = useCallback(async (token: string | null) => {
         try {
@@ -605,6 +653,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                                     pathname={pathname}
                                     onContextMenu={handleContextMenu}
                                     onCreatePage={handleCreatePage}
+                                    expandedPageIds={expandedPageIds}
                                 />
                             ))}
                         </ul>
