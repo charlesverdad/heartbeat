@@ -104,6 +104,7 @@ function SidebarItem({
                     className={styles.addChildBtn}
                     onClick={(e) => {
                         e.preventDefault();
+                        setIsCollapsed(false); // Expand parent to show new subpage
                         onCreatePage(node.folder_id || undefined, node.id);
                     }}
                 >

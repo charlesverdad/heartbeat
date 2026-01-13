@@ -74,3 +74,17 @@ async def update_page_endpoint(
     if not page:
         raise HTTPException(status_code=404, detail="Page not found or access denied")
     return page
+
+@router.patch("/{page_id}", response_model=Page)
+async def patch_page_endpoint(
+    page_id: UUID,
+    page_in: PageUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Partial update for pages (e.g., just renaming)."""
+    page = await update_page(db, page_id, page_in, current_user)
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found or access denied")
+    return page
+
