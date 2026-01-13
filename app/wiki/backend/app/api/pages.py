@@ -88,3 +88,16 @@ async def patch_page_endpoint(
         raise HTTPException(status_code=404, detail="Page not found or access denied")
     return page
 
+@router.delete("/{page_id}", status_code=204)
+async def delete_page_endpoint(
+    page_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Soft delete a page (move to trash)."""
+    from app.services import delete_page
+    
+    if not await delete_page(db, page_id, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this page or page not found")
+    return None
+

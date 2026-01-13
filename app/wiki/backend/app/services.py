@@ -127,6 +127,7 @@ async def list_pages(db: AsyncSession, user: Optional[User]) -> List[Page]:
         if await check_permission(db, user, page.id, "PAGE", "VIEW"):
             accessible_pages.append(page)
     return accessible_pages
+
 async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
     """Soft delete a folder and all pages within it."""
     if not await check_permission(db, user, folder_id, "FOLDER", "MANAGE"):
@@ -152,3 +153,22 @@ async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
     
     await db.commit()
     return True
+
+async def delete_page(db: AsyncSession, page_id: UUID, user: User) -> bool:
+    """Soft delete a page."""
+    if not await check_permission(db, user, page_id, "PAGE", "MANAGE"):
+        return False
+        
+    result = await db.execute(select(Page).where(Page.id == page_id))
+    page = result.scalar_one_or_none()
+    if not page:
+        return False
+    
+    from datetime import datetime
+    
+    # Soft delete the page
+    page.deleted_at = datetime.utcnow()
+    
+    await db.commit()
+    return True
+
