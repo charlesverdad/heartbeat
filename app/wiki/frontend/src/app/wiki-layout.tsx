@@ -56,13 +56,30 @@ function buildTree(items: Page[]): TreeNode[] {
     return rootNodes;
 }
 
-function SidebarItem({ node, pathname }: { node: TreeNode, pathname: string }) {
+function SidebarItem({
+    node,
+    pathname,
+    onContextMenu,
+    onCreatePage
+}: {
+    node: TreeNode;
+    pathname: string;
+    onContextMenu: (e: React.MouseEvent, type: "page", id: string) => void;
+    onCreatePage: (folderId?: string, parentId?: string) => void;
+}) {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const hasChildren = node.children.length > 0;
 
     return (
         <li className={styles.navItemWrapper}>
-            <div className={`${styles.navItem} ${pathname === `/page/${node.id}` ? styles.active : ""}`}>
+            <div
+                className={`${styles.navItem} ${pathname === `/page/${node.id}` ? styles.active : ""}`}
+                data-page-id={node.id}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    onContextMenu(e, "page", node.id);
+                }}
+            >
                 {hasChildren && (
                     <button
                         className={styles.collapseToggle}
@@ -74,12 +91,35 @@ function SidebarItem({ node, pathname }: { node: TreeNode, pathname: string }) {
                 <Link href={`/page/${node.id}`} className={styles.pageLink}>
                     {node.title}
                 </Link>
-                <Link href={`/page/new?parent_id=${node.id}&folder_id=${node.folder_id || ""}`} className={styles.addChildBtn}>+</Link>
+                <button
+                    className={styles.contextMenuBtn}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onContextMenu(e, "page", node.id);
+                    }}
+                >
+                    ⋯
+                </button>
+                <button
+                    className={styles.addChildBtn}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onCreatePage(node.folder_id || undefined, node.id);
+                    }}
+                >
+                    +
+                </button>
             </div>
             {!isCollapsed && hasChildren && (
                 <ul className={styles.childList}>
                     {node.children.map(child => (
-                        <SidebarItem key={child.id} node={child} pathname={pathname} />
+                        <SidebarItem
+                            key={child.id}
+                            node={child}
+                            pathname={pathname}
+                            onContextMenu={onContextMenu}
+                            onCreatePage={onCreatePage}
+                        />
                     ))}
                 </ul>
             )}
@@ -298,6 +338,35 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         }
     };
 
+    const handleRenamePage = async (pageId: string, newName?: string) => {
+        const nameToUse = newName || tempPageTitle;
+
+        if (!nameToUse.trim()) {
+            setRenamingPageId(null);
+            return;
+        }
+
+        const token = localStorage.getItem("wiki_token");
+        if (!token) return;
+
+        try {
+            const res = await fetch(`http://localhost:8000/pages/${pageId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ title: nameToUse.trim() })
+            });
+            if (res.ok) {
+                await fetchData(token);
+                setRenamingPageId(null);
+            }
+        } catch (error) {
+            console.error("Rename page error:", error);
+        }
+    };
+
     const handleDeleteFolder = async (folderId: string) => {
         const token = localStorage.getItem("wiki_token");
         if (!token) return;
@@ -512,7 +581,13 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                         </div>
                         <ul className={styles.pageList}>
                             {buildTree(pages.filter(p => !activeFolderId || p.folder_id === activeFolderId)).map(node => (
-                                <SidebarItem key={node.id} node={node} pathname={pathname} />
+                                <SidebarItem
+                                    key={node.id}
+                                    node={node}
+                                    pathname={pathname}
+                                    onContextMenu={handleContextMenu}
+                                    onCreatePage={handleCreatePage}
+                                />
                             ))}
                         </ul>
                     </div>
@@ -553,6 +628,20 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
                     }}
                     onCancel={() => {
                         setRenamingFolderId(null);
+                        setRenamingAnchor(null);
+                    }}
+                    anchorElement={renamingAnchor}
+                />
+            )}
+            {renamingPageId && renamingAnchor && (
+                <RenameModal
+                    initialValue={tempPageTitle}
+                    onSave={(newName) => {
+                        handleRenamePage(renamingPageId, newName);
+                        setRenamingAnchor(null);
+                    }}
+                    onCancel={() => {
+                        setRenamingPageId(null);
                         setRenamingAnchor(null);
                     }}
                     anchorElement={renamingAnchor}
