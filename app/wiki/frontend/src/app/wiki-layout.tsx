@@ -456,36 +456,38 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         const token = localStorage.getItem("wiki_token");
         if (!token) return;
 
-        // For folders, check if there are pages inside
-        if (type === "folder") {
-            try {
+        let confirmed = true;
+
+        // Check for children/subpages before deletion
+        try {
+            if (type === "folder") {
                 const res = await fetch(`http://localhost:8000/folders/${id}/page-count`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
-                const data = await res.json();
-
-                if (data.count > 0) {
-                    const confirmed = window.confirm(`This folder contains ${data.count} page(s). Move to trash?`);
-                    if (!confirmed) return;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.count > 0) {
+                        confirmed = window.confirm(`This folder contains ${data.count} page(s). Move to trash?`);
+                    }
                 }
-            } catch (error) {
-                console.error("Error checking page count:", error);
-            }
-        } else if (type === "page") {
-            try {
+            } else if (type === "page") {
                 const res = await fetch(`http://localhost:8000/pages/${id}/subpage-count`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
-                const data = await res.json();
-
-                if (data.count > 0) {
-                    const confirmed = window.confirm(`This page contains ${data.count} subpage(s). Move to trash?`);
-                    if (!confirmed) return;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.count > 0) {
+                        confirmed = window.confirm(`This page contains ${data.count} subpage(s). Move to trash?`);
+                    }
                 }
-            } catch (error) {
-                console.error("Error checking subpage count:", error);
             }
+        } catch (error) {
+            console.error(`Error checking ${type} children:`, error);
+            // If check fails, show a generic confirmation just in case
+            confirmed = window.confirm(`Are you sure you want to move this ${type} to trash?`);
         }
+
+        if (!confirmed) return;
 
         // Proceed with delete
         const endpoint = type === "folder" ? `http://localhost:8000/folders/${id}` : `http://localhost:8000/pages/${id}`;

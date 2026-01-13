@@ -155,7 +155,7 @@ async def delete_folder(db: AsyncSession, folder_id: UUID, user: User) -> bool:
     return True
 
 async def delete_page(db: AsyncSession, page_id: UUID, user: User) -> bool:
-    """Soft delete a page and all its subpages."""
+    """Soft delete a page and all its subpages (recursively)."""
     if not await check_permission(db, user, page_id, "PAGE", "MANAGE"):
         return False
         
@@ -165,17 +165,15 @@ async def delete_page(db: AsyncSession, page_id: UUID, user: User) -> bool:
         return False
     
     from datetime import datetime
-    from sqlalchemy import update
     
     # Soft delete the page
     page.deleted_at = datetime.utcnow()
     
-    # Cascade soft delete to all subpages (recursive via parent_id)
-    await db.execute(
-        update(Page)
-        .where(Page.parent_id == page_id)
-        .values(deleted_at=datetime.utcnow())
-    )
+    # Recursively soft delete children
+    child_result = await db.execute(select(Page).where(Page.parent_id == page_id).where(Page.deleted_at.is_(None)))
+    children = child_result.scalars().all()
+    for child in children:
+        await delete_page(db, child.id, user)
     
     await db.commit()
     return True
