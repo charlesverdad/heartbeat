@@ -4,21 +4,41 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import String, ForeignKey, Text, DateTime, Index, Uuid, Integer, Boolean
+from sqlalchemy import String, ForeignKey, Text, DateTime, Index, Uuid, Integer, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 
 class Role(Base):
-    """Represents a user role (e.g., admin, member, public)."""
+    """Represents a user role/group (e.g., admin, member, media-team)."""
 
     __tablename__ = "roles"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True)  # admin, member, public
-    name: Mapped[str] = mapped_column(String)
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # admin, member, media-team
+    name: Mapped[str] = mapped_column(String, unique=True)  # Display name
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)  # True for built-in roles
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
-    users: Mapped[List["User"]] = relationship(back_populates="role")
+    user_roles: Mapped[List["UserRole"]] = relationship(back_populates="role", cascade="all, delete-orphan")
+    creator: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
+
+class UserRole(Base):
+    """Junction table for many-to-many User-Role relationship."""
+    
+    __tablename__ = "user_roles"
+    
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    role_id: Mapped[str] = mapped_column(String, ForeignKey("roles.id"))
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (UniqueConstraint('user_id', 'role_id', name='_user_role_uc'),)
+    
+    user: Mapped["User"] = relationship(back_populates="user_roles")
+    role: Mapped["Role"] = relationship(back_populates="user_roles")
 
 class User(Base):
     __tablename__ = "users"
@@ -27,10 +47,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     full_name: Mapped[Optional[str]] = mapped_column(String)
     password_hash: Mapped[Optional[str]] = mapped_column(String)
-    role_id: Mapped[str] = mapped_column(String, ForeignKey("roles.id"))
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime)
     
-    role: Mapped["Role"] = relationship(back_populates="users")
+    user_roles: Mapped[List["UserRole"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     pages: Mapped[List["Page"]] = relationship(back_populates="author")
 
 class Setting(Base):
@@ -81,3 +100,4 @@ class Permission(Base):
     object_type: Mapped[str] = mapped_column(String)   # FOLDER or PAGE
     object_id: Mapped[uuid.UUID] = mapped_column(Uuid)
     level: Mapped[str] = mapped_column(String)         # MANAGE, EDIT, VIEW
+

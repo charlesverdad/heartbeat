@@ -35,24 +35,46 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     
     async with AsyncSession(engine) as session:
-        # Create default roles if they don't exist
-        for role_id, role_name in [("superadmin", "Super Admin"), ("admin", "Admin"), ("member", "Member"), ("public", "Public")]:
+        from app.models import UserRole
+        
+        # Create default system roles if they don't exist
+        system_roles = [
+            ("superadmin", "Super Admin", "Full system access"),
+            ("admin", "Admin", "Administrative access"),
+            ("member", "Member", "Standard member access"),
+            ("public", "Public", "Public access only")
+        ]
+        
+        for role_id, role_name, description in system_roles:
             result = await session.execute(select(Role).where(Role.id == role_id))
             if not result.scalar_one_or_none():
-                session.add(Role(id=role_id, name=role_name))
+                session.add(Role(
+                    id=role_id,
+                    name=role_name,
+                    is_system=True,
+                    description=description
+                ))
+        
+        await session.commit()
         
         # Create default admin user if not exists
         admin_email = "admin@admin.com"
         result = await session.execute(select(User).where(User.email == admin_email))
-        if not result.scalar_one_or_none():
+        admin_user = result.scalar_one_or_none()
+        
+        if not admin_user:
             logger.info(f"Creating default admin user: {admin_email}")
             admin_user = User(
                 email=admin_email,
                 full_name="System Admin",
-                role_id="superadmin",
                 password_hash=pwd_context.hash("password")
             )
             session.add(admin_user)
+            await session.flush()  # Get the admin_user.id
+            
+            # Assign superadmin role to admin user
+            user_role = UserRole(user_id=admin_user.id, role_id="superadmin")
+            session.add(user_role)
         
         await session.commit()
     

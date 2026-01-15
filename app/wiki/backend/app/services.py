@@ -38,27 +38,31 @@ async def check_permission(
     if not user:
         return False
 
-    # SuperAdmin has all permissions
-    if user and user.role_id == "superadmin":
+    # SuperAdmin has all permissions - check if user has superadmin role
+    user_role_ids = [ur.role_id for ur in user.user_roles]
+    if "superadmin" in user_role_ids:
         return True
         
-    # Check for direct permission
+    # Check for direct permission across ALL user roles
     stmt = select(Permission).where(
         and_(
             Permission.object_id == object_id,
             Permission.object_type == object_type,
             or_(
                 and_(Permission.subject_type == "USER", Permission.subject_id == str(user.id)),
-                and_(Permission.subject_type == "ROLE", Permission.subject_id == user.role_id)
+                and_(Permission.subject_type == "ROLE", Permission.subject_id.in_(user_role_ids))
             )
         )
     )
     result = await db.execute(stmt)
-    perm = result.scalar_one_or_none()
+    perms = result.scalars().all()  # Get ALL matching permissions
     
     levels = ["VIEW", "EDIT", "MANAGE"]
-    if perm:
-        if levels.index(perm.level) >= levels.index(required_level):
+    required_index = levels.index(required_level)
+    
+    # Check if ANY permission grants sufficient access
+    for perm in perms:
+        if levels.index(perm.level) >= required_index:
             return True
             
     # If not found and it's a page, check folder permissions (inheritance)
