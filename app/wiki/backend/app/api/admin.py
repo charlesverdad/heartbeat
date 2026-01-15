@@ -35,7 +35,10 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     _admin: UserModel = Depends(check_admin)
 ):
-    result = await db.execute(select(UserModel))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(UserModel).options(selectinload(UserModel.user_roles))
+    )
     users = result.scalars().all()
     
     # Convert to schema with roles
@@ -59,7 +62,12 @@ async def update_user(
     db: AsyncSession = Depends(get_db),
     _admin: UserModel = Depends(check_admin)
 ):
-    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(UserModel)
+        .where(UserModel.id == user_id)
+        .options(selectinload(UserModel.user_roles))
+    )
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -86,7 +94,7 @@ async def update_user(
             db.add(user_role)
     
     await db.commit()
-    await db.refresh(user)
+    await db.refresh(user, ["user_roles"])
     
     # Return user with roles
     user_dict = {
