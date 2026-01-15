@@ -13,6 +13,8 @@ class RoleBase(BaseModel):
     """Base schema for roles."""
     id: str
     name: str
+    is_system: bool = False
+    description: Optional[str] = None
 
 class Role(RoleBase):
     model_config = ConfigDict(from_attributes=True)
@@ -20,11 +22,11 @@ class Role(RoleBase):
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
-    role_id: str
 
 class User(UserBase):
     id: UUID
     last_login: Optional[datetime] = None
+    roles: List[str] = []  # List of role IDs
     model_config = ConfigDict(from_attributes=True)
 
 class Setting(BaseModel):
@@ -37,7 +39,7 @@ class SettingUpdate(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
-    role_id: Optional[str] = None
+    role_ids: Optional[List[str]] = None  # Updated to support multiple roles
 
 class FolderBase(BaseModel):
     name: str
@@ -85,3 +87,4 @@ class PermissionBase(BaseModel):
 class Permission(PermissionBase):
     id: UUID
     model_config = ConfigDict(from_attributes=True)
+
