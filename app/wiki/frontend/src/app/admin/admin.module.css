@@ -210,3 +210,261 @@
     color: #999;
     font-style: italic;
 }
+/* Multi-role user management */
+.roleCheckboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.roleCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.roleCheckbox input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.roleBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* Role management */
+.roleHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.roleHeader h2 {
+    margin: 0;
+}
+
+.createButton {
+    background: #0070f3;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.createButton:hover {
+    background: #0051cc;
+}
+
+.roleForm {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.roleForm h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.formGroup input,
+.formGroup textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.formGroup textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.formActions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.formActions button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.formActions button:first-child {
+    background: #0070f3;
+    color: white;
+}
+
+.formActions button:first-child:hover {
+    background: #0051cc;
+}
+
+.formActions button:last-child {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.formActions button:last-child:hover {
+    background: #e5e5e5;
+}
+
+.rolesGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rolesGrid h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.roleCard {
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 1.2rem;
+    transition: box-shadow 0.2s;
+}
+
+.roleCard:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.roleCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.roleCardHeader h4 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.systemBadge {
+    background: #e5e5e5;
+    color: #666;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.roleDescription {
+    color: #666;
+    margin: 0 0 0.8rem 0;
+    font-size: 0.95rem;
+}
+
+.roleStats {
+    color: #999;
+    font-size: 0.85rem;
+}
+
+.roleActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.roleActions button {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.roleActions button:hover {
+    background: #f5f5f5;
+}
+
+.deleteButton {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.deleteButton:hover {
+    background: #fff5f5 !important;
+}
+
+.roleEditForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.roleNameInput,
+.roleDescInput {
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.roleDescInput {
+    min-height: 60px;
+    resize: vertical;
+}
+
+.roleEditActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.roleEditActions button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.roleEditActions button:first-child {
+    background: #0070f3;
+    color: white;
+}
+
+.roleEditActions button:last-child {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.emptyState {
+    color: #999;
+    font-style: italic;
+    padding: 2rem;
+    text-align: center;
+}
