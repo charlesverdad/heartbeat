@@ -28,7 +28,7 @@ async def get_current_user(
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-        
+
     result = await db.execute(
         select(User)
         .where(User.email == email)
@@ -37,6 +37,17 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
+
+    # Check if user has any roles; if not, check allow_zero_role_users setting
+    if not user.user_roles:
+        from app.services import get_setting
+        allow_zero_role = await get_setting(db, "allow_zero_role_users", "true")
+        if allow_zero_role.lower() != "true":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User has no assigned roles. Contact an administrator.",
+            )
+
     return user
 
 async def get_current_user_optional(

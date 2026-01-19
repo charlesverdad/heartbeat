@@ -21,6 +21,7 @@ from app.db import Base
 from app.db import engine
 from app.db import get_db
 from app.models import Role
+from app.models import Setting
 from app.models import User
 
 # Setup logging
@@ -76,7 +77,18 @@ async def lifespan(app: FastAPI):
             # Assign superadmin role to admin user
             user_role = UserRole(user_id=admin_user.id, role_id="superadmin")
             session.add(user_role)
-        
+
+        await session.commit()
+
+        # Initialize default settings if they don't exist
+        default_settings = [
+            ("allow_zero_role_users", "true"),
+        ]
+        for key, default_value in default_settings:
+            result = await session.execute(select(Setting).where(Setting.key == key))
+            if not result.scalar_one_or_none():
+                session.add(Setting(key=key, value=default_value))
+
         await session.commit()
     
     yield

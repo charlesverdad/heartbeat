@@ -1,0 +1,101 @@
+# Tasks
+
+- [x] Planning & Requirements Gathering
+    - [x] Research Notion-like frontend libraries
+    - [x] Draft feature specification document
+    - [x] Refine Permissions & RBAC strategy
+    - [x] Integrate user feedback into plan
+- [x] Backend Architecture Design
+    - [x] Design Database Schema (SQLAlchemy/PostgreSQL)
+    - [x] Plan Google OAuth integration
+    - [x] Design Folder/Page hierarchy & ACL logic
+- [/] Frontend Architecture Design
+    - [x] Choose Frontend framework (Next.js/React)
+    - [x] Select Styling library
+    - [x] Plan Theme/Custom CSS support
+- [x] Implementation - Phase 1: MVP
+    - [x] Setup project structure in `app/wiki`
+    - [x] Implement Google Login (Scaffolded)
+    - [x] Basic internal page creation & editing
+- [x] Implementation - Phase 2: Permissions & Search
+    - [x] User roles & page permissions
+    - [x] Search indexing & UI
+- [x] Implementation - Phase 3: Export & Backup
+    - [x] .zip export functionality
+- [x] Environment Refinement
+    - [x] Setup `shell.nix` with `uv` and `yarn`
+    - [x] Switch frontend to `yarn`
+    - [x] Switch backend to `uv`
+- [x] Persistence & Core Fixes (Priority: P0)
+    - [x] Implement Page Update (Persistence)
+    - [x] Fix Frontend to Save Blocks on Change
+- [x] Authentication & Login (Priority: P1)
+    - [x] Default `admin@admin.com` credentials on startup
+    - [x] Functional Login Page
+    - [x] Integrate JWT with Frontend
+- [x] Admin Panel (Priority: P3)
+    - [x] User & Role Management
+    - [x] ACL Controls
+    - [x] Theme & Layout settings
+- [x] UI improvements: Better mobile layout and/or collapsible sidebar (Priority: P4)
+- [x] Folder Management & Search Integration (Priority: P5)
+    - [x] Connect frontend to backend folder API
+    - [x] Functional search bar
+- [x] Verification & Testing
+- [x] Implementation - Phase 4: Enhanced Features
+    - [x] Hide sidebar on login page
+    - [x] Clickable Folders (Spaces) filtering sidebar
+    - [x] Admin navigation button for admin users
+    - [x] Improve search to support Full-Text Search
+    - [x] Page banner images (Low priority)
+- [x] Implementation - Phase 5: Bug Fixes & UX (P7)
+    - [x] Search box click-outside behavior
+    - [x] Fuse.js content search integration
+    - [x] Fix banner/folder prompt interference
+    - [x] Page folder inheritance fix
+- [/] Implementation - Phase 6: Admin Settings & Public Access (P8)
+    - [x] Backend: Setting model & Public Access ACL
+    - [x] Frontend: Site Name & Tab Title dynamic update
+    - [x] Frontend: Default Home Page logic
+    - [x] Admin UI: Settings management
+- [x] Implementation - Phase 7: Stability & UX Refinement (P0)
+    - [x] Debug Folder & Page persistence issues
+    - [x] Refine Folder creation UX (Inline create + rename style)
+    - [x] Implement Backend Unit Tests (pytest)
+    - [x] Verify creation flows with tests
+- [x] Implementation - Phase 8: Deletion & Final Cleanup (P1)
+    - [x] Implement Backend: Folder deletion endpoint
+    - [x] Implement Frontend: Folder delete button ('x') in edit mode
+    - [x] Final verification of all features
+    - [x] Commit all changes
+- [x] Implementation - Phase 9: UX Refinement (Renaming & Deletion) (P0)
+    - [x] Fix Enter key for renaming folder
+    - [x] Replace `window.confirm` with inline "Confirm Delete" UI
+    - [x] Standardize inputs: Add "saved" visual feedback (e.g. green outline)
+    - [x] Admin Panel: Make Home Page selector searchable (like search box)
+    - [ ] Implement Drag-and-drop for page rearrangement (P2)
+- [x] Implementation - Phase 10: Context Menus & UI Finalization (P1)
+    - [x] Bug Fix: Ensure folder renaming exits on Enter and Blur
+    - [x] Implement Reusable `ContextMenu` component
+    - [x] Update Sidebar: Add `...` menu to Folders and Pages
+    - [x] Auto-expand sidebar tree to show current page location
+    - [x] Implement "Move to Trash" action in context menu
+    - [x] Implement "Copy Link" action in context menu
+    - [ ] Implement Drag-and-drop for sidebar reordering
+    - [ ] **Refactoring**: Consolidate duplicate logic in context menu handlers
+- [/] Implementation - Phase 11: Multi-Role RBAC & Sharing UI (P0)
+    - [x] Database: Create `user_roles` junction table and migrate data
+    - [x] Database: Update `Role` model with `is_system`, `description`, `created_by`
+    - [x] Database: Update `User` model to support many-to-many roles
+    - [x] Backend: Update `check_permission` for multi-role support
+    - [x] Backend: Implement role management API endpoints
+    - [x] Backend: Implement permissions API endpoints
+    - [x] Backend: Add `allow_zero_role_users` setting
+    - [ ] Frontend: Create `SharingModal` component
+    - [x] Frontend: Add role management to admin panel
+    - [x] Frontend: Update user management for multi-role assignment
+    - [ ] Frontend: Filter folders/pages based on user permissions
+    - [ ] Frontend: Conditionally render UI elements based on permissions
+    - [x] Testing: Verify multi-role permission checks
+    - [x] Testing: Test sharing UI workflow
+

@@ -21,7 +21,8 @@ async def update_setting(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role_id != "superadmin":
+    user_role_ids = [ur.role_id for ur in current_user.user_roles]
+    if "superadmin" not in user_role_ids:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     result = await db.execute(select(Setting).where(Setting.key == key))

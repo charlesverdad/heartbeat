@@ -11,9 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Folder
 from app.models import Page
 from app.models import Permission
+from app.models import Setting
 from app.models import User
 from app.schemas import PageCreate
 from app.schemas import PageUpdate
+
+
+async def get_setting(db: AsyncSession, key: str, default: str = "") -> str:
+    """Get a setting value by key, returning default if not found."""
+    result = await db.execute(select(Setting).where(Setting.key == key))
+    setting = result.scalar_one_or_none()
+    return setting.value if setting else default
 
 async def check_permission(
     db: AsyncSession,
