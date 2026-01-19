@@ -30,6 +30,15 @@ heartbeat/
 
 ## Essential Commands
 
+### Wiki App (Quickstart)
+
+```bash
+cd app/wiki
+./run dev                     # Start both backend (:8000) and frontend (:3000)
+./run test                    # Run all backend tests
+./run test -k test_name       # Run specific tests
+```
+
 ### Wiki Backend
 
 ```bash
@@ -51,9 +60,13 @@ yarn lint                     # Run ESLint
 
 ### Development Environment
 
+All tools (python, node, yarn, uv) are provided by Nix and auto-loaded via direnv when entering project directories. Do not use system Python or manually install dependencies.
+
 ```bash
-nix-shell                     # Enter Nix shell (auto-activates via direnv)
+cd app/wiki                   # direnv auto-activates shell.nix and .venv
 ```
+
+Each app has its own `shell.nix`. The wiki app (`app/wiki/shell.nix`) provides Python 3.11, uv, Node 20, and yarn, and auto-creates/activates a `.venv`.
 
 ### Infrastructure
 
@@ -125,3 +138,13 @@ Currently in **Phase 11**: Multi-role RBAC implementation. Recent commits focus 
 - Role management API
 - Unit tests for RBAC system
 - Database schema updates for multi-role support
+
+
+## Creating a new Feature or bug fix
+
+- Always create new features or bug fix on a new commit on the current feature branch. If the current branch is `main`, notify the user. Never commit directly to the main branch
+- If relevant, update the current project docs walkthrough.md, tasks.md, and known_bugs.md
+- After all the code changes make sure the unit tests succeed. If it doesn't, fix it first and include the fix in the commit, even though the problem is not relevant
+
+
+

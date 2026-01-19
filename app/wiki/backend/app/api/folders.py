@@ -45,7 +45,8 @@ async def create_folder(
     current_user: UserModel = Depends(get_current_user)
 ):
     # Basic permission check: only admins can create folders in this MVP
-    if current_user.role_id not in ["superadmin", "admin"]:
+    user_role_ids = [ur.role_id for ur in current_user.user_roles]
+    if not any(role_id in ["superadmin", "admin"] for role_id in user_role_ids):
         raise HTTPException(status_code=403, detail="Not authorized to create folders")
         
     folder = FolderModel(

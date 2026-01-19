@@ -37,6 +37,7 @@ A collaborative knowledge management platform with multi-role access control.
 
 ```
 app/wiki/
+├── run                       # Dev helper script (./run dev, ./run test)
 ├── backend/
 │   ├── app/
 │   │   ├── main.py           # App entry, startup, core routes
@@ -58,6 +59,13 @@ app/wiki/
 ```
 
 ## Development Commands
+
+### Quickstart
+```bash
+cd app/wiki
+./run dev       # Start both backend (:8000) and frontend (:3000)
+./run test      # Run all backend tests
+```
 
 ### Backend
 ```bash
