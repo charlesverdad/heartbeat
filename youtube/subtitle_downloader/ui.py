@@ -1,10 +1,14 @@
-import streamlit as st
+import json
 import os
-import tempfile
 from pathlib import Path
-from video_downloader import VideoDownloader, VideoDownloadResult
-from transcriber import Transcriber, TranscriptionResult
+import tempfile
 import time
+import urllib.error
+import urllib.request
+
+import streamlit as st
+from transcriber import Transcriber, TranscriptionResult
+from video_downloader import VideoDownloader, VideoDownloadResult
 
 # Configure Streamlit page
 st.set_page_config(
@@ -23,6 +27,59 @@ if 'audio_result' not in st.session_state:
     st.session_state.audio_result = None
 if 'output_dir' not in st.session_state:
     st.session_state.output_dir = tempfile.mkdtemp(prefix="youtube_processing_")
+if 'blog_post_result' not in st.session_state:
+    st.session_state.blog_post_result = None
+
+
+def generate_blog_post(
+    api_url,
+    api_key,
+    model,
+    system_prompt,
+    user_prompt,
+    transcript,
+    temperature,
+):
+    messages = []
+    if system_prompt.strip():
+        messages.append({"role": "system", "content": system_prompt.strip()})
+
+    prompt_payload = user_prompt.strip()
+    if prompt_payload:
+        prompt_payload += "\n\n"
+    prompt_payload += f"Transcript:\n{transcript.strip()}"
+    messages.append({"role": "user", "content": prompt_payload})
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        api_url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    with urllib.request.urlopen(request, timeout=120) as response:
+        response_payload = json.loads(response.read().decode("utf-8"))
+
+    if "choices" in response_payload and response_payload["choices"]:
+        choice = response_payload["choices"][0]
+        if "message" in choice and "content" in choice["message"]:
+            return choice["message"]["content"].strip()
+        if "text" in choice:
+            return choice["text"].strip()
+
+    if "output_text" in response_payload:
+        return response_payload["output_text"].strip()
+
+    raise ValueError("LLM response did not include any recognizable output text.")
 
 
 def main():
@@ -56,7 +113,9 @@ def main():
             st.rerun()
     
     # Main content area with tabs
-    tab1, tab2, tab3 = st.tabs(["🔽 Download", "📝 Transcription", "🔄 Full Workflow"])
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["🔽 Download", "📝 Transcription", "🔄 Full Workflow", "📰 Blog Post"]
+    )
     
     with tab1:
         download_tab(output_dir)
@@ -66,6 +125,9 @@ def main():
     
     with tab3:
         workflow_tab(output_dir, model_size)
+
+    with tab4:
+        blog_post_tab(output_dir)
 
 def download_tab(output_dir):
     st.header("📥 YouTube Video Download")
@@ -322,6 +384,108 @@ def workflow_tab(output_dir, model_size):
         finally:
             progress_bar.empty()
             status_text.empty()
+
+
+def blog_post_tab(output_dir):
+    st.header("📰 Blog Post Generator")
+    st.markdown("Generate a blog post from a transcript using an LLM.")
+
+    if st.session_state.transcript_result:
+        transcript_value = st.session_state.transcript_result.transcript
+    else:
+        transcript_value = ""
+
+    transcript = st.text_area(
+        "Transcript",
+        value=transcript_value,
+        height=200,
+        help="Paste or edit the transcript used to generate the blog post.",
+    )
+
+    with st.expander("🤖 LLM Settings", expanded=True):
+        api_url = st.text_input(
+            "LLM API URL",
+            value="https://api.openai.com/v1/chat/completions",
+            help="Use an OpenAI-compatible chat completions endpoint.",
+        )
+        api_key = st.text_input(
+            "API Key",
+            type="password",
+            help="API key used to authenticate with the LLM provider.",
+        )
+        model = st.text_input(
+            "Model",
+            value="gpt-4o-mini",
+            help="Model identifier for the LLM endpoint.",
+        )
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.3,
+            step=0.1,
+        )
+        system_prompt = st.text_area(
+            "System Prompt",
+            value="You are a helpful assistant that writes engaging blog posts.",
+            height=120,
+            help="Customize the system prompt that guides the LLM response.",
+        )
+        user_prompt = st.text_area(
+            "Blog Post Prompt",
+            value=(
+                "Write a blog post summarizing the sermon. "
+                "Include a title, introduction, key takeaways, and a closing section."
+            ),
+            height=120,
+            help="User instructions to shape the blog post output.",
+        )
+
+    if st.button("✍️ Generate Blog Post", type="primary"):
+        if not transcript.strip():
+            st.error("Please provide a transcript before generating a blog post.")
+            return
+        if not api_key.strip():
+            st.error("Please provide an API key.")
+            return
+        if not api_url.strip():
+            st.error("Please provide an API URL.")
+            return
+        if not model.strip():
+            st.error("Please provide a model name.")
+            return
+
+        with st.spinner("Generating blog post..."):
+            try:
+                blog_post = generate_blog_post(
+                    api_url=api_url.strip(),
+                    api_key=api_key.strip(),
+                    model=model.strip(),
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    transcript=transcript,
+                    temperature=temperature,
+                )
+                st.session_state.blog_post_result = blog_post
+                st.success("✅ Blog post generated!")
+            except (urllib.error.URLError, ValueError) as exc:
+                st.error(f"❌ Blog post generation failed: {exc}")
+
+    if st.session_state.blog_post_result:
+        st.subheader("📝 Generated Blog Post")
+        st.text_area(
+            "Blog Post Output",
+            st.session_state.blog_post_result,
+            height=300,
+        )
+        with st.expander("📋 Copy Blog Post (click the copy icon in the code block)"):
+            st.code(st.session_state.blog_post_result, language="markdown")
+        st.download_button(
+            "💾 Download Blog Post",
+            st.session_state.blog_post_result,
+            file_name="blog_post.md",
+            mime="text/markdown",
+        )
 
 
 # File browser section
