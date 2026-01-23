@@ -1,0 +1,89 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    z-index: 9998;
+}
+
+.modal {
+    position: fixed;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    z-index: 9999;
+    min-width: 280px;
+    max-width: 90vw;
+}
+
+.label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input:focus {
+    border-color: #0070f3;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.cancelBtn,
+.saveBtn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.cancelBtn {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.cancelBtn:hover {
+    background: #e0e0e0;
+}
+
+.saveBtn {
+    background: #0070f3;
+    color: white;
+}
+
+.saveBtn:hover {
+    background: #0051cc;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+    .modal {
+        position: fixed;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%);
+        min-width: 300px;
+    }
+}
