@@ -2,95 +2,43 @@
 
 MCP (Model Context Protocol) server for interacting with Ghost CMS, allowing Claude to create and manage blog posts.
 
-## Prerequisites
+Uses [@fanyangmeng/ghost-mcp](https://github.com/MFYDev/ghost-mcp) with a wrapper script that securely retrieves API keys from macOS Keychain.
 
-- Ghost CMS instance with Admin API access
-- Docker (for containerized deployment) OR Node.js 18+ (for local)
-- Ghost Admin API key
+## Quick Setup
 
-## Getting Your Ghost Admin API Key
+### 1. Get Your Ghost Admin API Key
 
-1. Log in to your Ghost Admin panel
+1. Log in to Ghost Admin at https://heartbeatchurch.com.au/ghost
 2. Go to **Settings** → **Integrations**
 3. Click **Add custom integration**
-4. Name it something like "Claude MCP"
+4. Name it "Claude MCP"
 5. Copy the **Admin API Key** (format: `{id}:{secret}`)
 
-## Option 1: Run with npx (Simplest)
-
-No Docker needed - just run directly:
+### 2. Store the Key in macOS Keychain
 
 ```bash
-# Set environment variables
-export GHOST_API_URL="https://heartbeatchurch.com.au"
-export GHOST_ADMIN_API_KEY="your_admin_api_key"
-export GHOST_API_VERSION="v5.0"
-
-# Run the MCP server
-npx @fanyangmeng/ghost-mcp
+security add-generic-password -s "ghost-admin-api" -a "$USER" -w "YOUR_API_KEY_HERE"
 ```
 
-## Option 2: Docker Deployment
+### 3. Configure Claude Code
 
-### Setup
-
-```bash
-cd ghost-mcp
-
-# Copy and edit environment file
-cp .env.example .env
-# Edit .env with your Ghost credentials
-
-# Build the image
-docker build -t ghost-mcp .
-```
-
-### Run
-
-```bash
-# Run with docker-compose
-docker-compose up -d
-
-# Or run directly
-docker run -it --env-file .env ghost-mcp
-```
-
-## Option 3: Claude Code MCP Configuration
-
-Add to your `~/.claude/claude_desktop_config.json`:
+Add to your `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "ghost": {
-      "command": "npx",
-      "args": ["-y", "@fanyangmeng/ghost-mcp"],
-      "env": {
-        "GHOST_API_URL": "https://heartbeatchurch.com.au",
-        "GHOST_ADMIN_API_KEY": "your_admin_api_key",
-        "GHOST_API_VERSION": "v5.0"
-      }
+      "command": "/Users/charles/work/heartbeat/ghost-mcp/ghost-mcp-wrapper.sh"
     }
   }
 }
 ```
 
-Or for Docker-based:
+### 4. Restart Claude Code
 
-```json
-{
-  "mcpServers": {
-    "ghost": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "--env-file", "/path/to/ghost-mcp/.env", "ghost-mcp"]
-    }
-  }
-}
-```
+The Ghost MCP tools will now be available.
 
-## Available MCP Tools
-
-Once configured, Claude can use these Ghost tools:
+## Available Tools
 
 | Tool | Description |
 |------|-------------|
@@ -102,44 +50,49 @@ Once configured, Claude can use these Ghost tools:
 | `ghost_browse_tags` | List all tags |
 | `ghost_add_tag` | Create a new tag |
 | `ghost_browse_members` | List members |
-| `ghost_browse_newsletters` | List newsletters |
 
-## Usage with Sermon Blog Skills
-
-After configuring the MCP server, the `/sermon-to-blog` skill can publish directly to Ghost:
+## Managing the API Key
 
 ```bash
-# Generate and publish sermon blog post
+# View stored key
+security find-generic-password -s "ghost-admin-api" -w
+
+# Update key (delete old, add new)
+security delete-generic-password -s "ghost-admin-api"
+security add-generic-password -s "ghost-admin-api" -a "$USER" -w "NEW_KEY"
+```
+
+## Usage with Sermon Skills
+
+Once configured, use with the sermon blog workflow:
+
+```bash
+# The --publish flag will use Ghost MCP to create a draft post
 /sermon-to-blog https://youtube.com/watch?v=VIDEO_ID --publish
 ```
 
-The `--publish` flag will:
-1. Create a draft post in Ghost
-2. Set the "Sermons" tag
-3. Return the Ghost admin URL for review
-
 ## Troubleshooting
 
+### "Ghost Admin API key not found in Keychain"
+
+Run the setup command:
+```bash
+security add-generic-password -s "ghost-admin-api" -a "$USER" -w "YOUR_KEY"
+```
+
 ### "Invalid API key" error
+
 - Ensure the key format is `{id}:{secret}` (includes the colon)
-- Check the key hasn't been revoked in Ghost Admin
+- Check the integration hasn't been deleted in Ghost Admin
 
-### "Connection refused" error
-- Verify `GHOST_API_URL` is correct and accessible
-- Check if Ghost is running and the URL includes `https://`
+### MCP server not loading
 
-### MCP server not responding
-- Ensure Node.js 18+ is installed
-- Try running `npx @fanyangmeng/ghost-mcp` directly to see errors
+- Ensure Node.js 18+ is installed: `node --version`
+- Check the wrapper script is executable: `chmod +x ghost-mcp-wrapper.sh`
+- Test manually: `./ghost-mcp-wrapper.sh`
 
-## Security Notes
+## Security
 
-- Never commit `.env` files with real API keys
-- The Admin API key has full access - keep it secure
-- Consider using Ghost's built-in role permissions for limited access
-
-## Sources
-
-- [ghost-mcp on GitHub](https://github.com/MFYDev/ghost-mcp)
-- [ghost-mcp on npm](https://www.npmjs.com/package/@fanyangmeng/ghost-mcp)
-- [Ghost Admin API docs](https://ghost.org/docs/admin-api/)
+- API key is stored in macOS Keychain, not in plaintext files
+- The wrapper script retrieves the key at runtime
+- Never commit `.env` files or keys to git

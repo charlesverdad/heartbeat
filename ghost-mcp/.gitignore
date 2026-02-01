@@ -1,8 +1,6 @@
-# Environment files with secrets
+# Never commit secrets
 .env
+*.env
 
-# Node modules (if running locally)
+# Node modules (if testing locally)
 node_modules/
-
-# Docker
-.docker/
