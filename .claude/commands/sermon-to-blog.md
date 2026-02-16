@@ -15,22 +15,31 @@ This should be either:
 
 ## Pipeline
 
+### Important: nix-shell requirement
+
+All CLI commands require nix-shell for FFmpeg and the Python venv. You MUST:
+1. Source nix first: `source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null`
+2. Run from the **repo root** (`/Users/charles/work/heartbeat`) so the venv activates correctly
+3. Use `nix-shell shell.nix --run "..."` to wrap every CLI command
+
+The combined pattern for every CLI call is:
+```bash
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py <COMMAND>"
+```
+
 ### Step 1: Transcribe
 
 Follow the same process as the `sermon-transcribe` skill:
 
 1. If "latest", list channel videos and pick the most recent sermon-length video:
    ```bash
-   cd youtube/subtitle_downloader && python cli.py list-channel "https://www.youtube.com/@HeartbeatChurch" --max-results 5 --json
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --max-results 5 --json"
    ```
    Show the selection to the user and confirm.
 
-2. Download and transcribe:
+2. Download and transcribe (run in background as it takes several minutes):
    ```bash
-   cd youtube/subtitle_downloader && python cli.py workflow "<VIDEO_URL>" \
-     --output-dir ../transcripts \
-     --model-size base \
-     --transcript-output "../transcripts/<YYYY-MM-DD>-<slug>.txt"
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt'"
    ```
 
 3. Identify sermon boundaries and clean the transcript. Use `youtube/glossary.json` as a reference for correcting common transcription manglings of Bible books and theological terms.

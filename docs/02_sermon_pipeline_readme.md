@@ -207,13 +207,38 @@ docs/
 
 ## CLI Reference
 
-The subtitle downloader CLI (`youtube/subtitle_downloader/cli.py`) has these commands. All commands require running inside `nix-shell` for yt-dlp, Whisper, and FFmpeg.
+The subtitle downloader CLI (`youtube/subtitle_downloader/cli.py`) requires nix-shell for yt-dlp, Whisper, and FFmpeg.
+
+### Running CLI commands
+
+All commands must be run via nix-shell from the repo root so that the Python venv activates correctly and FFmpeg is available:
+
+```bash
+# Pattern for all CLI commands:
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null \
+  && cd /Users/charles/work/heartbeat \
+  && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py <COMMAND>"
+```
+
+**Why this pattern is required:**
+- `source nix-daemon.sh` puts `nix-shell` on the PATH (it's not in the default shell PATH)
+- `cd` to the repo root so `shell.nix`'s shellHook can find and activate the `venv/` directory
+- `nix-shell --run` provides FFmpeg and other system dependencies
+
+### First-time setup
+
+Before using the CLI for the first time, install Python dependencies into the venv:
+
+```bash
+/Users/charles/work/heartbeat/venv/bin/python -m ensurepip
+/Users/charles/work/heartbeat/venv/bin/python -m pip install -r youtube/subtitle_downloader/requirements.txt
+```
 
 ### `list-channel` -- List recent videos
 
 ```bash
-python cli.py list-channel "https://www.youtube.com/@HeartbeatChurch" --max-results 10
-python cli.py list-channel "https://www.youtube.com/@HeartbeatChurch" --json
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --max-results 10"
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --json"
 ```
 
 Lists recent videos from a YouTube channel with title, duration, and upload date. Use `--json` for machine-readable output.
@@ -221,25 +246,22 @@ Lists recent videos from a YouTube channel with title, duration, and upload date
 ### `workflow` -- Download and transcribe
 
 ```bash
-python cli.py workflow "https://youtube.com/watch?v=VIDEO_ID" \
-  --output-dir ../transcripts \
-  --model-size base \
-  --transcript-output "../transcripts/2026-02-16-sermon.txt"
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow 'https://youtube.com/watch?v=VIDEO_ID' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/2026-02-16-sermon.txt'"
 ```
 
-Downloads the video, extracts audio, and transcribes with Whisper in one step.
+Downloads the video, extracts audio, and transcribes with Whisper in one step. Takes several minutes for a full sermon.
 
 ### `download` -- Download video only
 
 ```bash
-python cli.py download "https://youtube.com/watch?v=VIDEO_ID" --output-dir ./downloads
-python cli.py download "URL" --start-time "45:00" --end-time "1:30:00"
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py download 'https://youtube.com/watch?v=VIDEO_ID' --output-dir ./downloads"
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py download 'URL' --start-time '45:00' --end-time '1:30:00'"
 ```
 
 ### `transcribe` -- Transcribe audio only
 
 ```bash
-python cli.py transcribe audio.mp3 --model-size base --output-file transcript.txt
+nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py transcribe audio.mp3 --model-size base --output-file transcript.txt"
 ```
 
 ---

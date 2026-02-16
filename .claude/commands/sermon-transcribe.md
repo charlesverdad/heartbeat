@@ -10,12 +10,24 @@ The user provides either:
 
 ## Steps
 
+### Important: nix-shell requirement
+
+All CLI commands require nix-shell for FFmpeg and the Python venv. You MUST:
+1. Source nix first: `source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null`
+2. Run from the **repo root** (`/Users/charles/work/heartbeat`) so the venv activates correctly
+3. Use `nix-shell shell.nix --run "..."` to wrap every CLI command
+
+The combined pattern for every CLI call is:
+```bash
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py <COMMAND>"
+```
+
 ### 1. Resolve the video URL
 
 If the user said "latest" or didn't provide a URL:
 1. Run the channel listing command:
    ```bash
-   cd youtube/subtitle_downloader && python cli.py list-channel "https://www.youtube.com/@HeartbeatChurch" --max-results 5 --json
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --max-results 5 --json"
    ```
 2. Pick the most recent video that looks like a Sunday service (duration > 30 minutes, title suggests a sermon).
 3. Show the user which video was selected and confirm before proceeding.
@@ -27,15 +39,12 @@ If a URL was provided, use it directly.
 Run the full workflow using the existing subtitle downloader:
 
 ```bash
-cd youtube/subtitle_downloader && python cli.py workflow "<VIDEO_URL>" \
-  --output-dir ../transcripts \
-  --model-size base \
-  --transcript-output "../transcripts/<YYYY-MM-DD>-<slug>.txt"
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt'"
 ```
 
 Use the video's upload date for the date prefix and a slugified version of the title. The model-size "base" is a good balance of speed and accuracy. If the user asks for higher quality, use "small" or "medium".
 
-This step will take several minutes for a full sermon. Keep the user informed of progress.
+This step will take several minutes for a full sermon. Run it in the background and keep the user informed of progress.
 
 ### 3. Identify the sermon portion
 
