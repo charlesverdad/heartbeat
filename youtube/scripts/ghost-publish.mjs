@@ -75,6 +75,19 @@ function parseArgs(argv) {
 
 // --- Ghost API Client ---
 
+async function resolveGhostUrl(ghostUrl) {
+  const url = `${ghostUrl.replace(/\/$/, '')}/ghost/api/admin/site/`;
+  const response = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('location');
+    if (location) {
+      const resolved = new URL(location);
+      return `${resolved.protocol}//${resolved.host}`;
+    }
+  }
+  return ghostUrl.replace(/\/$/, '');
+}
+
 async function ghostFetch(ghostUrl, endpoint, token, options = {}) {
   const url = `${ghostUrl.replace(/\/$/, '')}/ghost/api/admin/${endpoint}`;
   const headers = {
@@ -184,12 +197,18 @@ async function main() {
     process.exit(0);
   }
 
+  // Resolve the Ghost URL (handles domain redirects like non-www -> www)
+  const resolvedUrl = await resolveGhostUrl(ghostUrl);
+  if (resolvedUrl !== ghostUrl.replace(/\/$/, '')) {
+    console.log(`Resolved Ghost URL: ${resolvedUrl}`);
+  }
+
   // Generate JWT
   const token = ghostJWT(apiKey);
 
   // Look up author if specified
   if (args.author) {
-    const author = await lookupAuthor(ghostUrl, token, args.author);
+    const author = await lookupAuthor(resolvedUrl, token, args.author);
     if (author) {
       postData.authors = [{ id: author.id }];
     } else {
@@ -199,7 +218,7 @@ async function main() {
 
   // Create the draft post
   console.log(`Creating draft post: "${args.title}"...`);
-  const result = await createDraftPost(ghostUrl, token, postData);
+  const result = await createDraftPost(resolvedUrl, token, postData);
 
   const post = result.posts?.[0];
   if (!post) {
@@ -207,7 +226,7 @@ async function main() {
     process.exit(1);
   }
 
-  const adminUrl = `${ghostUrl.replace(/\/$/, '')}/ghost/#/editor/post/${post.id}`;
+  const adminUrl = `${resolvedUrl}/ghost/#/editor/post/${post.id}`;
 
   console.log('Draft created successfully!');
   console.log(`Post ID: ${post.id}`);
