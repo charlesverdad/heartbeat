@@ -13,7 +13,7 @@
  *     --excerpt "Short excerpt" \
  *     --tag sermons \
  *     --author heartbeat \
- *     --youtube-url "https://youtube.com/watch?v=..." \
+ *     [--published-at "2026-02-01T10:00:00.000+11:00"] \
  *     [--dry-run]
  *
  * Environment variables:
@@ -176,10 +176,8 @@ async function main() {
     postData.tags = args.tag.split(',').map(t => ({ name: t.trim() }));
   }
 
-  if (args.youtubeUrl) {
-    // Store the YouTube URL in the post's codeinjection_foot as a comment
-    // so it's preserved but not visible. Also add it at the bottom of the HTML.
-    postData.html += `\n<p><a href="${args.youtubeUrl}">Watch the full sermon on YouTube</a></p>`;
+  if (args.publishedAt) {
+    postData.published_at = args.publishedAt;
   }
 
   // Dry run: print what would be sent
@@ -191,6 +189,7 @@ async function main() {
     console.log(`Excerpt: ${postData.custom_excerpt || '(none)'}`);
     console.log(`Tags: ${JSON.stringify(postData.tags || [])}`);
     console.log(`Author: ${args.author || '(default)'}`);
+    console.log(`Published at: ${postData.published_at || '(not set)'}`);
     console.log(`HTML length: ${html.length} chars`);
     console.log(`HTML preview: ${html.slice(0, 200)}...`);
     console.log('=== Would create draft post ===');

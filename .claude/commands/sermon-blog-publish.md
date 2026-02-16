@@ -39,8 +39,11 @@ node youtube/scripts/ghost-publish.mjs \
   --excerpt "<EXCERPT>" \
   --tag "sermons" \
   --author "heartbeat" \
+  --published-at "<STREAM_DATE>T10:00:00.000+11:00" \
   --dry-run
 ```
+
+If `stream_date` is available in the `.meta.json` file, use it for the `--published-at` flag (formatted as `<YYYY-MM-DD>T10:00:00.000+11:00` for AEST morning). If not available, omit `--published-at`.
 
 Show the dry-run output to the user and ask for confirmation before proceeding.
 
@@ -54,10 +57,9 @@ node youtube/scripts/ghost-publish.mjs \
   --html-file "youtube/blog-posts/<file>.html" \
   --excerpt "<EXCERPT>" \
   --tag "sermons" \
-  --author "heartbeat"
+  --author "heartbeat" \
+  --published-at "<STREAM_DATE>T10:00:00.000+11:00"
 ```
-
-If a YouTube URL is available (from metadata or the transcript filename), add `--youtube-url "<URL>"`.
 
 ### 4. Report the result
 

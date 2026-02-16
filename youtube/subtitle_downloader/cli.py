@@ -24,6 +24,7 @@ def main():
     transcribe_parser.add_argument('--output-dir', default='.', help='Output directory')
     transcribe_parser.add_argument('--output-file', help='Specific output file path for transcript')
     transcribe_parser.add_argument('--model-size', default='base', help='Whisper model size')
+    transcribe_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
 
     # Full workflow
     workflow_parser = subparsers.add_parser('workflow', help='Complete workflow: download -> transcribe')
@@ -33,6 +34,7 @@ def main():
     workflow_parser.add_argument('--end-time', help='End time (HH:MM:SS or seconds)')
     workflow_parser.add_argument('--model-size', default='base', help='Whisper model size')
     workflow_parser.add_argument('--transcript-output', help='Specific output file path for transcript')
+    workflow_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
 
     # List channel videos
     list_parser = subparsers.add_parser('list-channel', help='List recent videos from a YouTube channel')
@@ -54,7 +56,7 @@ def main():
 
     elif args.command == 'transcribe':
         transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir)
-        result = transcriber.transcribe_audio(args.input, output_path=args.output_file)
+        result = transcriber.transcribe_audio(args.input, output_path=args.output_file, timestamps=args.timestamps)
         if result.success:
             print(f"Transcription successful: {result.output_path}")
             print(f"\nTranscript preview:\n{result.transcript[:200]}...")
@@ -81,6 +83,7 @@ def main():
         transcribe_result = transcriber.transcribe_audio(
             download_result.output_path,
             output_path=args.transcript_output,
+            timestamps=args.timestamps,
         )
 
         if not transcribe_result.success:

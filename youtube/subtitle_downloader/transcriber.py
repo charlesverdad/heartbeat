@@ -37,10 +37,19 @@ class Transcriber:
             print(f"Loading Whisper model ({self.model_size})...")
             self.model = whisper.load_model(self.model_size)
     
+    @staticmethod
+    def _format_timestamp(seconds: float) -> str:
+        """Format seconds as [HH:MM:SS]"""
+        h = int(seconds) // 3600
+        m = (int(seconds) % 3600) // 60
+        s = int(seconds) % 60
+        return f"[{h:02d}:{m:02d}:{s:02d}]"
+
     def transcribe_audio(self,
                         audio_path: str,
                         save_to_file: bool = True,
-                        output_path: Optional[str] = None) -> TranscriptionResult:
+                        output_path: Optional[str] = None,
+                        timestamps: bool = False) -> TranscriptionResult:
         """
         Transcribe audio file to text
 
@@ -48,6 +57,7 @@ class Transcriber:
             audio_path: Path to audio file
             save_to_file: Whether to save transcript to a text file
             output_path: Specific output file path (overrides auto-generated name)
+            timestamps: If True, prefix each segment with [HH:MM:SS] timestamps
 
         Returns:
             TranscriptionResult object
@@ -64,7 +74,14 @@ class Transcriber:
             print(f"Transcribing {audio_path}...")
             result = self.model.transcribe(audio_path)
 
-            transcript_text = result["text"].strip()
+            if timestamps and result.get("segments"):
+                transcript_text = "\n".join(
+                    f"{self._format_timestamp(seg['start'])} {seg['text'].strip()}"
+                    for seg in result["segments"]
+                )
+            else:
+                transcript_text = result["text"].strip()
+
             saved_path = None
 
             # Save to file if requested
@@ -81,7 +98,7 @@ class Transcriber:
 
                 saved_path = str(transcript_file)
                 print(f"Transcript saved to: {saved_path}")
-            
+
             return TranscriptionResult(
                 success=True,
                 transcript=transcript_text,
