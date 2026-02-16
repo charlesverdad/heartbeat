@@ -2,8 +2,8 @@ import yt_dlp
 import os
 import re
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
 
 
 @dataclass
@@ -13,6 +13,16 @@ class VideoDownloadResult:
     output_path: Optional[str] = None
     error_message: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class ChannelVideoInfo:
+    """Info about a single video from a channel listing"""
+    id: str
+    title: str
+    url: str
+    upload_date: Optional[str] = None
+    duration: Optional[float] = None
 
 
 class VideoDownloader:
@@ -49,7 +59,49 @@ class VideoDownloader:
             filename = 'unknown'
         return filename
     
-    def download_video(self, 
+    def list_channel_videos(self, channel_url: str, max_results: int = 20) -> List[ChannelVideoInfo]:
+        """
+        List recent videos from a YouTube channel.
+
+        Args:
+            channel_url: Channel URL (e.g. https://www.youtube.com/@HeartbeatChurch)
+            max_results: Maximum number of videos to return
+
+        Returns:
+            List of ChannelVideoInfo objects
+        """
+        # Ensure URL ends with /videos for the uploads playlist
+        if not channel_url.rstrip('/').endswith('/videos'):
+            channel_url = channel_url.rstrip('/') + '/videos'
+
+        ydl_opts = {
+            'extract_flat': True,
+            'playlistend': max_results,
+            'quiet': True,
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(channel_url, download=False)
+
+                videos = []
+                for entry in info.get('entries', []):
+                    if entry is None:
+                        continue
+                    video_id = entry.get('id', '')
+                    videos.append(ChannelVideoInfo(
+                        id=video_id,
+                        title=entry.get('title', 'Unknown'),
+                        url=f"https://www.youtube.com/watch?v={video_id}",
+                        upload_date=entry.get('upload_date'),
+                        duration=entry.get('duration'),
+                    ))
+                return videos
+        except Exception as e:
+            print(f"Error listing channel videos: {e}")
+            return []
+
+    def download_video(self,
                       video_url: str, 
                       start_time: Optional[str] = None,
                       end_time: Optional[str] = None,

@@ -94,3 +94,7 @@ override.tf.json
 
 # Project specific
 website/ghost/content/
+
+# Sermon pipeline generated content
+youtube/transcripts/
+youtube/blog-posts/

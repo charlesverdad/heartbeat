@@ -37,16 +37,28 @@ class Transcriber:
             print(f"Loading Whisper model ({self.model_size})...")
             self.model = whisper.load_model(self.model_size)
     
-    def transcribe_audio(self, 
+    @staticmethod
+    def _format_timestamp(seconds: float) -> str:
+        """Format seconds as [HH:MM:SS]"""
+        h = int(seconds) // 3600
+        m = (int(seconds) % 3600) // 60
+        s = int(seconds) % 60
+        return f"[{h:02d}:{m:02d}:{s:02d}]"
+
+    def transcribe_audio(self,
                         audio_path: str,
-                        save_to_file: bool = True) -> TranscriptionResult:
+                        save_to_file: bool = True,
+                        output_path: Optional[str] = None,
+                        timestamps: bool = False) -> TranscriptionResult:
         """
         Transcribe audio file to text
-        
+
         Args:
             audio_path: Path to audio file
             save_to_file: Whether to save transcript to a text file
-        
+            output_path: Specific output file path (overrides auto-generated name)
+            timestamps: If True, prefix each segment with [HH:MM:SS] timestamps
+
         Returns:
             TranscriptionResult object
         """
@@ -56,30 +68,41 @@ class Transcriber:
                     success=False,
                     error_message=f"Audio file not found: {audio_path}"
                 )
-            
+
             self._load_model()
-            
+
             print(f"Transcribing {audio_path}...")
             result = self.model.transcribe(audio_path)
-            
-            transcript_text = result["text"].strip()
-            output_path = None
-            
+
+            if timestamps and result.get("segments"):
+                transcript_text = "\n".join(
+                    f"{self._format_timestamp(seg['start'])} {seg['text'].strip()}"
+                    for seg in result["segments"]
+                )
+            else:
+                transcript_text = result["text"].strip()
+
+            saved_path = None
+
             # Save to file if requested
             if save_to_file:
-                audio_file = Path(audio_path)
-                transcript_file = self.output_dir / f"{audio_file.stem}_transcript.txt"
-                
+                if output_path:
+                    transcript_file = Path(output_path).resolve()
+                    transcript_file.parent.mkdir(parents=True, exist_ok=True)
+                else:
+                    audio_file = Path(audio_path)
+                    transcript_file = self.output_dir / f"{audio_file.stem}_transcript.txt"
+
                 with open(transcript_file, 'w', encoding='utf-8') as f:
                     f.write(transcript_text)
-                
-                output_path = str(transcript_file)
-                print(f"Transcript saved to: {output_path}")
-            
+
+                saved_path = str(transcript_file)
+                print(f"Transcript saved to: {saved_path}")
+
             return TranscriptionResult(
                 success=True,
                 transcript=transcript_text,
-                output_path=output_path,
+                output_path=saved_path,
                 metadata={
                     "language": result.get("language"),
                     "duration": result.get("segments", [{}])[-1].get("end", 0) if result.get("segments") else 0
