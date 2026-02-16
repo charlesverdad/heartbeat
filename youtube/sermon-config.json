@@ -1,0 +1,10 @@
+{
+  "youtube_channel": "https://www.youtube.com/@HeartbeatChurch",
+  "ghost_url": "https://heartbeatchurch.com.au",
+  "ghost_author": "heartbeat",
+  "default_tags": ["sermons"],
+  "transcript_dir": "youtube/transcripts",
+  "blog_post_dir": "youtube/blog-posts",
+  "bible_version": "NIV",
+  "blog_post_word_target": 1000
+}
