@@ -43,7 +43,7 @@ node youtube/scripts/ghost-publish.mjs \
   --dry-run
 ```
 
-If `stream_date` is available in the `.meta.json` file, use it for the `--published-at` flag (formatted as `<YYYY-MM-DD>T10:00:00.000+11:00` for AEST morning). If not available, omit `--published-at`.
+If `stream_date` is available in the `.meta.json` file, use it for the `--published-at` flag (formatted as `<YYYY-MM-DD>T10:00:00.000+11:00` for AEST morning). If not available, omit `--published-at`. **Note:** The `stream_date` should be the actual Sunday the sermon was preached — YouTube dates may be offset by timezone.
 
 Show the dry-run output to the user and ask for confirmation before proceeding.
 

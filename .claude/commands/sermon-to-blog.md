@@ -44,7 +44,7 @@ Follow the same process as the `sermon-transcribe` skill:
 
 3. Identify sermon boundaries and clean the transcript. Use `youtube/glossary.json` as a reference for correcting common transcription manglings of Bible books and theological terms.
    - **Record `sermon_start_seconds`**: Note the `[HH:MM:SS]` timestamp at the sermon start and convert to total seconds.
-   - **Record `stream_date`**: Extract from the video title (e.g. "9 Feb 2026") or from the upload_date. Format as YYYY-MM-DD.
+   - **Record `stream_date`**: Extract from the video title (e.g. "9 Feb 2026") or from the upload_date. Format as YYYY-MM-DD. **Important:** Dates from YouTube may be offset by timezone (UTC vs AEST). Heartbeat services are on Sundays — always confirm the date is a Sunday and adjust if needed.
    - **Strip `[HH:MM:SS]` markers** during transcript cleaning.
 
 4. Save the cleaned transcript.

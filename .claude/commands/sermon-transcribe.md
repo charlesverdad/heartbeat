@@ -91,7 +91,7 @@ Report to the user:
 - Video title and URL
 - Detected sermon duration (approximate word count)
 - `sermon_start_seconds` — the offset where the sermon begins
-- `stream_date` — the date the video was streamed (from the video title or upload_date)
+- `stream_date` — the date the sermon was preached (usually a Sunday). **Important:** The date in the video title (DD/MM/YYYY format) or the `upload_date` from yt-dlp may be offset by timezone differences (YouTube uses UTC). Heartbeat Church services are on Sundays in AEST (UTC+10/+11). Always confirm the stream_date is a Sunday — if the extracted date is a Saturday or Monday, adjust to the nearest Sunday.
 - Any quality concerns (garbled sections, uncertain boundaries)
 - The file path where the transcript was saved
 - A preview of the first 500 characters

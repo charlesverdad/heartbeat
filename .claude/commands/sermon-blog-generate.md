@@ -46,11 +46,11 @@ Follow the structure of existing Heartbeat Church blog posts:
 
 2. **YouTube embed** (if `youtube_url` and `sermon_start_seconds` are available):
    ```html
-   <figure class="kg-card kg-embed-card">
-     <iframe src="https://www.youtube.com/embed/VIDEO_ID?start=SECONDS" width="600" height="338" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-   </figure>
+   <!--kg-card-begin: html-->
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/VIDEO_ID?start=SECONDS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <!--kg-card-end: html-->
    ```
-   Extract `VIDEO_ID` from the YouTube URL. Use `sermon_start_seconds` for the `?start=` parameter. If these values aren't available, skip the embed.
+   Extract `VIDEO_ID` from the YouTube URL. Use `sermon_start_seconds` for the `?start=` parameter. The `<!--kg-card-begin: html-->` / `<!--kg-card-end: html-->` wrappers are required — Ghost strips raw iframes without them. If these values aren't available, skip the embed.
 
 3. **Body sections** (3-5 sections with `<h2>` headings):
    - Each heading should capture the sub-theme (use the speaker's own phrases for headings when possible)
@@ -80,7 +80,7 @@ Follow the structure of existing Heartbeat Church blog posts:
 
 From the blog post and transcript, determine:
 - **Title**: The sermon title. The speaker usually states it near the beginning. If unclear, create a short (6-10 word) title from the main theme. No clickbait.
-- **Excerpt**: 1-2 sentence summary suitable for a post card/preview.
+- **Excerpt**: A short, punchy summary (~150 characters max) suitable for a post card/preview. Must be significantly shorter than the opening paragraph — think tweet-length, not a full sentence.
 - **Keywords**: 3 topic keywords for potential image search (e.g. "faith", "community", "prayer").
 
 ### 4. Save the output
