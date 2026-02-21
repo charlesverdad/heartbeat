@@ -1,10 +1,10 @@
-# Heartbeat Repository
+# Heartbeat Church Repository
 
-This repository contains various projects and tools. It uses Nix and direnv for automatic dependency management and consistent development environments.
+Monorepo for Heartbeat Church infrastructure, applications, and content tooling. All production systems run in Azure — apps on a single VM via Docker, and the website via Azure Container Apps.
 
 ## Prerequisites
 
-The setup script will install Nix for you. Direnv will be automatically installed through the nix-shell environment.
+[Nix](https://nixos.org/) is the only prerequisite. Everything else (Node.js, Python, Terraform, Azure CLI, Docker, kubectl, etc.) is installed automatically through `shell.nix`.
 
 ## First-time Setup
 
@@ -30,50 +30,86 @@ The setup script will install Nix for you. Direnv will be automatically installe
    direnv allow
    ```
 
-## Development Environment
-
-The repository uses Nix and direnv to manage dependencies. When you enter the repository directory, direnv automatically activates the Nix shell environment defined in `shell.nix`. This provides:
-
-- Python 3 with pip and virtualenv
-- Node.js with yarn
-- Git
-- Docker and docker-compose
-- Direnv (automatically installed via nix-shell)
-
-A Python virtual environment is automatically created and activated when you enter the directory.
+Direnv will automatically activate the Nix shell and load environment variables from `.env` on every `cd` into the project.
 
 ## Project Structure
 
 ```
-├── bin/
-│   └── setup.sh       # Initial setup script for Nix
-├── website/
-│   └── ghost/         # Ghost CMS setup
-└── youtube/
-    └── subtitle_downloader/  # YouTube subtitle downloader
+heartbeat/
+├── app/                        # Application source code
+│   ├── chatbot/                #   Chatbot app
+│   └── wiki/                   #   Wiki app
+├── bin/                        # Utility scripts (setup.sh, tf.sh, etc.)
+├── bootstrap-tfstate/          # Terraform remote state bootstrap
+├── manifests/                  # Docker deployment manifests (production)
+│   ├── bookstack/              #   BookStack docker-compose + deploy scripts
+│   └── living-life-quiz/       #   Living Life Quiz docker-compose + deploy scripts
+├── terraform/                  # Infrastructure as Code (Azure)
+│   ├── acr/                    #   Azure Container Registry
+│   ├── aks/                    #   Azure Kubernetes Service
+│   ├── google-oauth/           #   Google OAuth configuration
+│   ├── kv/                     #   Azure Key Vault (secrets)
+│   ├── vm/                     #   VM for Docker apps
+│   ├── vm-bookstack/           #   BookStack VM resources
+│   ├── vm-living-life-quiz/    #   Living Life Quiz VM resources
+│   └── website-container/      #   Ghost website (Azure Container Apps)
+├── website/                    # Website and app configurations
+│   └── ghost/                  #   Ghost CMS templates and config
+├── youtube/                    # YouTube tooling
+│   └── subtitle_downloader/    #   Subtitle downloader
+├── .claude/                    # Claude Code skills (sermon-to-blog pipeline)
+├── shell.nix                   # Nix dev environment definition
+├── .envrc                      # Direnv config (loads nix + .env)
+└── .env                        # Environment variables (not committed)
 ```
 
-## Adding New Dependencies
+## Production Systems
 
-To add new development dependencies:
+All production systems are hosted in Azure. Infrastructure is defined in the `terraform/` directory.
 
-1. Edit `shell.nix`
-2. Add the package to the `buildInputs` list
-3. Exit and re-enter the directory for direnv to reload
+### Living Life Quiz
 
-For Python project dependencies:
+A custom-built quiz application running in a Docker container on an Azure VM.
 
-1. Activate the virtual environment (automatic when entering directory)
-2. Use `pip install <package>` as usual
-3. Remember to update `requirements.txt` if needed
+- **Source:** `app/`
+- **Deployment:** `manifests/living-life-quiz/docker-compose.yml`
+- **Infrastructure:** `terraform/vm-living-life-quiz/`
+- **Deploy:** `manifests/living-life-quiz/deploy.sh`
 
-## Contributing
+### BookStack
 
-1. Make sure you have run the setup script
-2. Create a new branch for your feature
-3. Make your changes
-4. Submit a pull request
+A documentation wiki running in a Docker container on the same Azure VM.
 
-## License
+- **Deployment:** `manifests/bookstack/docker-compose.yml`
+- **Infrastructure:** `terraform/vm-bookstack/`
+- **Deploy:** `manifests/bookstack/deploy.sh`
 
-[Add your license information here]
+Both apps share a single VM. Secrets are stored in Azure Key Vault (`terraform/kv/`) and mounted at deploy time via `mount-secrets.sh`.
+
+### Website (Ghost CMS)
+
+The church website runs on Ghost CMS, deployed to Azure Container Apps (not the VM).
+
+- **Config:** `website/ghost/`
+- **Infrastructure:** `terraform/website-container/`
+
+## Sermon-to-Blog Pipeline
+
+Claude Code skills in `.claude/commands/` automate turning YouTube sermon recordings into Ghost blog posts:
+
+| Skill | Description |
+|-------|-------------|
+| `/sermon-transcribe` | Transcribe a YouTube sermon via Whisper |
+| `/sermon-blog-generate` | Generate a blog post from a transcript |
+| `/sermon-blog-publish` | Publish a generated post to Ghost CMS |
+| `/sermon-to-blog` | End-to-end: transcribe, generate, and publish |
+
+These skills require the `GHOST_ADMIN_API_KEY` and `GHOST_URL` environment variables set in `.env`.
+
+## Adding Dependencies
+
+**System-level (Nix):** Edit `shell.nix`, add the package to `buildInputs`, then re-enter the directory.
+
+**Python:** The virtual environment activates automatically. Use `pip install` and update `requirements.txt` as needed.
+
+**Node.js:** Use `yarn` as usual.
