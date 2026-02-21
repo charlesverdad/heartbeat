@@ -121,6 +121,19 @@ resource "azurerm_network_security_group" "vm" {
     destination_address_prefix = "*"
   }
 
+  # Allow outbound SMTP for email (Gmail port 587)
+  security_rule {
+    name                       = "AllowSMTPOutbound"
+    priority                   = 1040
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "587"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
   # Deny all other outbound traffic
   security_rule {
     name                       = "DenyAllOutbound"
