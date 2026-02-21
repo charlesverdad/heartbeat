@@ -92,6 +92,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Claude Code local settings (contains personal permissions, not for repo)
+.claude/settings.local.json
+
 # Project specific
 website/ghost/content/
 
