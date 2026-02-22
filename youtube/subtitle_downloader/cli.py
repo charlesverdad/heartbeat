@@ -23,7 +23,8 @@ def main():
     transcribe_parser.add_argument('input', help='Input audio file path')
     transcribe_parser.add_argument('--output-dir', default='.', help='Output directory')
     transcribe_parser.add_argument('--output-file', help='Specific output file path for transcript')
-    transcribe_parser.add_argument('--model-size', default='base', help='Whisper model size')
+    transcribe_parser.add_argument('--model-size', default='default', help='Whisper model size (default: auto-selects best model for platform)')
+    transcribe_parser.add_argument('--fast', action='store_true', help='Use smaller/faster model (mlx-whisper base on Apple Silicon)')
     transcribe_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
 
     # Full workflow
@@ -32,7 +33,8 @@ def main():
     workflow_parser.add_argument('--output-dir', default='.', help='Output directory')
     workflow_parser.add_argument('--start-time', help='Start time (HH:MM:SS or seconds)')
     workflow_parser.add_argument('--end-time', help='End time (HH:MM:SS or seconds)')
-    workflow_parser.add_argument('--model-size', default='base', help='Whisper model size')
+    workflow_parser.add_argument('--model-size', default='default', help='Whisper model size (default: auto-selects best model for platform)')
+    workflow_parser.add_argument('--fast', action='store_true', help='Use smaller/faster model (mlx-whisper base on Apple Silicon)')
     workflow_parser.add_argument('--transcript-output', help='Specific output file path for transcript')
     workflow_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
 
@@ -55,7 +57,7 @@ def main():
 
 
     elif args.command == 'transcribe':
-        transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir)
+        transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir, fast=args.fast)
         result = transcriber.transcribe_audio(args.input, output_path=args.output_file, timestamps=args.timestamps)
         if result.success:
             print(f"Transcription successful: {result.output_path}")
@@ -79,7 +81,7 @@ def main():
 
         # Step 2: Transcribe audio
         print("\n=== Step 2: Transcribing audio ===")
-        transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir)
+        transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir, fast=args.fast)
         transcribe_result = transcriber.transcribe_audio(
             download_result.output_path,
             output_path=args.transcript_output,

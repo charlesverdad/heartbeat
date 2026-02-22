@@ -1,8 +1,30 @@
 import os
-import whisper
+import platform
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
+
+
+def _is_apple_silicon() -> bool:
+    """Check if running on Apple Silicon (M-series chips)."""
+    return platform.system() == "Darwin" and platform.machine() == "arm64"
+
+
+def _get_backend() -> str:
+    """Return 'mlx' if on Apple Silicon, otherwise 'openai'."""
+    return "mlx" if _is_apple_silicon() else "openai"
+
+
+# Model mapping for each backend
+MLX_MODELS = {
+    "default": "mlx-community/whisper-large-v3-turbo",
+    "fast": "mlx-community/whisper-base",
+}
+
+OPENAI_MODELS = {
+    "default": "base",
+    "fast": "base",
+}
 
 
 @dataclass
@@ -16,27 +38,57 @@ class TranscriptionResult:
 
 
 class Transcriber:
-    """Transcribe audio files to text using Whisper"""
-    
-    def __init__(self, model_size: str = "base", output_dir: str = "."):
+    """Transcribe audio files to text using Whisper (MLX on Apple Silicon, OpenAI elsewhere)"""
+
+    def __init__(self, model_size: str = "default", output_dir: str = ".", fast: bool = False):
         """
-        Initialize transcriber
-        
+        Initialize transcriber.
+
         Args:
-            model_size: Whisper model size ("tiny", "base", "small", "medium", "large")
-            output_dir: Directory to save transcript files
+            model_size: Model size/name. Use "default" or "fast" for automatic
+                        selection, or pass an explicit model name to override.
+            output_dir: Directory to save transcript files.
+            fast: If True, use the smaller/faster model variant.
         """
-        self.model_size = model_size
+        self.backend = _get_backend()
+        self.fast = fast
+        self.model_size = self._resolve_model(model_size)
         self.model = None  # Load lazily
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-    
+
+    def _resolve_model(self, model_size: str) -> str:
+        """Resolve the model name based on backend and fast flag."""
+        # Explicit model name — use as-is
+        if model_size not in ("default", "fast", "base", "small", "medium", "large", "tiny"):
+            return model_size
+
+        profile = "fast" if (self.fast or model_size == "fast") else "default"
+
+        if self.backend == "mlx":
+            return MLX_MODELS[profile]
+        else:
+            # For openai-whisper, honour legacy model size names
+            if model_size in ("base", "small", "medium", "large", "tiny"):
+                return model_size
+            return OPENAI_MODELS[profile]
+
     def _load_model(self):
         """Load Whisper model if not already loaded"""
-        if self.model is None:
-            print(f"Loading Whisper model ({self.model_size})...")
+        if self.model is not None:
+            return
+
+        print(f"Loading {self.backend}-whisper {self.model_size} model...")
+
+        if self.backend == "mlx":
+            # mlx-whisper exposes a module-level transcribe(); no model object to hold.
+            # We just import it here to trigger the download/cache on first use.
+            import mlx_whisper  # noqa: F401
+            self.model = "mlx"  # sentinel — actual call goes through mlx_whisper.transcribe()
+        else:
+            import whisper
             self.model = whisper.load_model(self.model_size)
-    
+
     @staticmethod
     def _format_timestamp(seconds: float) -> str:
         """Format seconds as [HH:MM:SS]"""
@@ -46,12 +98,12 @@ class Transcriber:
         return f"[{h:02d}:{m:02d}:{s:02d}]"
 
     def transcribe_audio(self,
-                        audio_path: str,
-                        save_to_file: bool = True,
-                        output_path: Optional[str] = None,
-                        timestamps: bool = False) -> TranscriptionResult:
+                         audio_path: str,
+                         save_to_file: bool = True,
+                         output_path: Optional[str] = None,
+                         timestamps: bool = False) -> TranscriptionResult:
         """
-        Transcribe audio file to text
+        Transcribe audio file to text.
 
         Args:
             audio_path: Path to audio file
@@ -71,8 +123,13 @@ class Transcriber:
 
             self._load_model()
 
-            print(f"Transcribing {audio_path}...")
-            result = self.model.transcribe(audio_path)
+            print(f"Transcribing {audio_path} with {self.backend}-whisper ({self.model_size})...")
+
+            if self.backend == "mlx":
+                import mlx_whisper
+                result = mlx_whisper.transcribe(audio_path, path_or_hf_repo=self.model_size)
+            else:
+                result = self.model.transcribe(audio_path)
 
             if timestamps and result.get("segments"):
                 transcript_text = "\n".join(
@@ -84,7 +141,6 @@ class Transcriber:
 
             saved_path = None
 
-            # Save to file if requested
             if save_to_file:
                 if output_path:
                     transcript_file = Path(output_path).resolve()
@@ -105,10 +161,12 @@ class Transcriber:
                 output_path=saved_path,
                 metadata={
                     "language": result.get("language"),
-                    "duration": result.get("segments", [{}])[-1].get("end", 0) if result.get("segments") else 0
+                    "duration": result.get("segments", [{}])[-1].get("end", 0) if result.get("segments") else 0,
+                    "backend": self.backend,
+                    "model": self.model_size,
                 }
             )
-            
+
         except Exception as e:
             return TranscriptionResult(
                 success=False,

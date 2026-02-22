@@ -39,10 +39,10 @@ If a URL was provided, use it directly.
 Run the full workflow with `--timestamps` to preserve segment timing:
 
 ```bash
-source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
 ```
 
-Use the video's upload date for the date prefix and a slugified version of the title. The model-size "base" is a good balance of speed and accuracy. If the user asks for higher quality, use "small" or "medium".
+Use the video's upload date for the date prefix and a slugified version of the title. The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality, ~5.5min for a 110min sermon); on other platforms it falls back to **openai-whisper base**. If the user asks for a faster transcription, add `--fast` (uses mlx-whisper base on Apple Silicon, ~1min for 110min).
 
 This step will take several minutes for a full sermon. Run it in the background and keep the user informed of progress.
 

@@ -1,4 +1,5 @@
 yt-dlp>=2023.12.30
 webvtt-py>=0.4.6
 openai-whisper
+mlx-whisper; platform_machine == "arm64" and sys_platform == "darwin"
 streamlit>=1.28.0
