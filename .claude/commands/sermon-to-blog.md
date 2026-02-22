@@ -44,14 +44,16 @@ Follow the same process as the `sermon-transcribe` skill:
 
 3. Identify sermon boundaries and clean the transcript. Use `youtube/glossary.json` as a reference for correcting common transcription manglings of Bible books and theological terms.
    - **Record `sermon_start_seconds`**: Note the `[HH:MM:SS]` timestamp at the sermon start and convert to total seconds.
-   - **Record `stream_date`**: Extract from the video title (e.g. "9 Feb 2026") or from the upload_date. Format as YYYY-MM-DD. **Important:** Dates from YouTube may be offset by timezone (UTC vs AEST). Heartbeat services are on Sundays — always confirm the date is a Sunday and adjust if needed.
+   - **Record `stream_date`**: Derive from the `release_timestamp` field (Unix timestamp of when the stream went live, printed by the workflow command). Convert to **Australia/Sydney** time to get the correct date: `datetime.fromtimestamp(release_timestamp, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')`. This will always be a Sunday. Do NOT use `upload_date` or `release_date` — they're in UTC and may land on Saturday.
+   - **Record `release_timestamp`**: Keep the raw Unix timestamp for use in the Ghost publish step — it gives the exact stream start time for accurate `published_at` dates.
    - **Strip `[HH:MM:SS]` markers** during transcript cleaning.
 
 4. Save the cleaned transcript.
 
 **Pause:** Show the user a preview of the cleaned transcript (first 1000 characters) and report:
 - `sermon_start_seconds` (e.g. 2712)
-- `stream_date` (e.g. 2026-02-09)
+- `stream_date` (e.g. 2026-02-09) — derived from `release_timestamp` in Sydney time
+- `release_timestamp` (e.g. 1771113270)
 - YouTube URL
 
 Ask:
@@ -88,7 +90,13 @@ If the user provides feedback, revise and show again.
 
 Follow the same process as the `sermon-blog-publish` skill:
 
-1. Dry-run the Ghost publish to verify, including `--published-at`:
+1. Compute the `--published-at` value. Ghost's timezone is **UTC**, so the UTC date in `published_at` must match the intended display date:
+   - Convert `release_timestamp` to Sydney time to get the correct date: `datetime.fromtimestamp(release_timestamp, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')`
+   - Then use **noon UTC** on that date: `<DATE>T12:00:00.000Z` (e.g. `2026-02-15T12:00:00.000Z`)
+   - Do NOT pass the raw Sydney-offset timestamp (e.g. `T10:50+11:00`) — Ghost stores UTC and ~10:50am AEDT = ~23:50 UTC the **previous day**, which would show as Saturday instead of Sunday.
+   - If `release_timestamp` is not available, use `<STREAM_DATE>T12:00:00.000Z`.
+
+2. Dry-run the Ghost publish to verify:
    ```bash
    node youtube/scripts/ghost-publish.mjs \
      --title "<TITLE>" \
@@ -96,10 +104,11 @@ Follow the same process as the `sermon-blog-publish` skill:
      --excerpt "<EXCERPT>" \
      --tag "sermons" \
      --author "heartbeat" \
-     --published-at "<STREAM_DATE>T10:00:00.000+11:00" \
+     --published-at "<ISO_DATETIME>" \
      --dry-run
    ```
-2. Publish as a draft (same command without `--dry-run`).
+
+3. Publish as a draft (same command without `--dry-run`).
 3. Report the Ghost admin edit URL.
 
 ### Final output

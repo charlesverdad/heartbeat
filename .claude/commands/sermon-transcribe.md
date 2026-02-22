@@ -91,7 +91,8 @@ Report to the user:
 - Video title and URL
 - Detected sermon duration (approximate word count)
 - `sermon_start_seconds` — the offset where the sermon begins
-- `stream_date` — the date the sermon was preached (usually a Sunday). **Important:** The date in the video title (DD/MM/YYYY format) or the `upload_date` from yt-dlp may be offset by timezone differences (YouTube uses UTC). Heartbeat Church services are on Sundays in AEST (UTC+10/+11). Always confirm the stream_date is a Sunday — if the extracted date is a Saturday or Monday, adjust to the nearest Sunday.
+- `stream_date` — the date the sermon was preached (always a Sunday). Derive this from the `release_timestamp` field returned by yt-dlp (Unix timestamp of when the stream went live). Convert it to **Australia/Sydney** time to get the correct Sunday date. In Python: `datetime.fromtimestamp(release_timestamp, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')` (use +11 for AEDT or +10 for AEST). Do NOT rely on `upload_date` or `release_date` — those are in UTC and may land on Saturday. If `release_timestamp` is not available, fall back to the date in the video title (DD/MM/YYYY format) and confirm it's a Sunday.
+- `release_timestamp` — the Unix timestamp of when the stream went live (from yt-dlp). Pass this through the pipeline for accurate Ghost `published_at` dates.
 - Any quality concerns (garbled sections, uncertain boundaries)
 - The file path where the transcript was saved
 - A preview of the first 500 characters

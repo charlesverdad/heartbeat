@@ -99,10 +99,13 @@ Save two files:
      "transcript_file": "youtube/transcripts/<filename>.txt",
      "youtube_url": "https://youtube.com/watch?v=...",
      "stream_date": "2026-02-09",
+     "release_timestamp": 1771113270,
      "sermon_start_seconds": 2700,
      "generated_at": "2026-02-16T12:00:00Z"
    }
    ```
+
+   Include `release_timestamp` (Unix timestamp of stream start from yt-dlp) if available. This is used by the publish step to set the correct `published_at` date in Ghost.
 
 Use the same date prefix and slug as the transcript file.
 
