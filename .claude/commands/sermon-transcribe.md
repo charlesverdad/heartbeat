@@ -27,7 +27,7 @@ source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && 
 If the user said "latest" or didn't provide a URL:
 1. Run the channel listing command:
    ```bash
-   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --max-results 5 --json"
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch/streams' --max-results 5 --json"
    ```
 2. Pick the most recent video that looks like a Sunday service (duration > 30 minutes, title suggests a sermon).
 3. Show the user which video was selected and confirm before proceeding.

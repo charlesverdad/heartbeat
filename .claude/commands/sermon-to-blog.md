@@ -33,7 +33,7 @@ Follow the same process as the `sermon-transcribe` skill:
 
 1. If "latest", list channel videos and pick the most recent sermon-length video:
    ```bash
-   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch' --max-results 5 --json"
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py list-channel 'https://www.youtube.com/@HeartbeatChurch/streams' --max-results 5 --json"
    ```
    Show the selection to the user and confirm.
 
