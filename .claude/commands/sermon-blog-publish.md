@@ -39,11 +39,15 @@ node youtube/scripts/ghost-publish.mjs \
   --excerpt "<EXCERPT>" \
   --tag "sermons" \
   --author "heartbeat" \
-  --published-at "<STREAM_DATE>T10:00:00.000+11:00" \
+  --published-at "<ISO_DATETIME>" \
   --dry-run
 ```
 
-If `stream_date` is available in the `.meta.json` file, use it for the `--published-at` flag (formatted as `<YYYY-MM-DD>T10:00:00.000+11:00` for AEST morning). If not available, omit `--published-at`. **Note:** The `stream_date` should be the actual Sunday the sermon was preached — YouTube dates may be offset by timezone.
+Compute `--published-at` from the `.meta.json` data. Ghost's timezone is **UTC**, so the UTC date must match the intended display date:
+- **Preferred:** Use `release_timestamp` to derive the correct date in Sydney time, then set noon UTC on that date: convert `release_timestamp` to Sydney time (`datetime.fromtimestamp(ts, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')`) → then use `<DATE>T12:00:00.000Z`. Example: stream at 10:54am Sunday AEDT → `2026-02-15T12:00:00.000Z`.
+- **Fallback:** If `release_timestamp` is not available, use `<stream_date>T12:00:00.000Z`.
+- Do NOT pass a Sydney-offset time like `T10:00:00+11:00` — Ghost stores UTC and that becomes the previous day.
+- If neither is available, omit `--published-at`.
 
 Show the dry-run output to the user and ask for confirmation before proceeding.
 
@@ -58,7 +62,7 @@ node youtube/scripts/ghost-publish.mjs \
   --excerpt "<EXCERPT>" \
   --tag "sermons" \
   --author "heartbeat" \
-  --published-at "<STREAM_DATE>T10:00:00.000+11:00"
+  --published-at "<ISO_DATETIME>"
 ```
 
 ### 4. Report the result

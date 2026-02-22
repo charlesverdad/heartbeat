@@ -23,6 +23,8 @@ class ChannelVideoInfo:
     url: str
     upload_date: Optional[str] = None
     duration: Optional[float] = None
+    release_timestamp: Optional[int] = None
+    was_live: Optional[bool] = None
 
 
 class VideoDownloader:
@@ -95,6 +97,8 @@ class VideoDownloader:
                         url=f"https://www.youtube.com/watch?v={video_id}",
                         upload_date=entry.get('upload_date'),
                         duration=entry.get('duration'),
+                        release_timestamp=entry.get('release_timestamp'),
+                        was_live=entry.get('was_live'),
                     ))
                 return videos
         except Exception as e:
@@ -202,7 +206,10 @@ class VideoDownloader:
                         'title': original_title,
                         'sanitized_title': sanitized_title,
                         'duration': info.get('duration'),
-                        'url': video_url
+                        'url': video_url,
+                        'upload_date': info.get('upload_date'),
+                        'release_timestamp': info.get('release_timestamp'),
+                        'was_live': info.get('was_live'),
                     }
                 )
                 

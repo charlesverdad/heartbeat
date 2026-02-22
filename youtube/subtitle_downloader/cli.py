@@ -93,6 +93,11 @@ def main():
         print(f"\n=== Workflow Complete ===")
         print(f"Audio file: {download_result.output_path}")
         print(f"Transcript file: {transcribe_result.output_path}")
+        if download_result.metadata:
+            if download_result.metadata.get('release_timestamp'):
+                print(f"Release timestamp: {download_result.metadata['release_timestamp']}")
+            if download_result.metadata.get('upload_date'):
+                print(f"Upload date: {download_result.metadata['upload_date']}")
         print(f"\nTranscript preview:\n{transcribe_result.transcript[:300]}...")
 
     elif args.command == 'list-channel':
@@ -111,6 +116,8 @@ def main():
                     'url': v.url,
                     'upload_date': v.upload_date,
                     'duration': v.duration,
+                    'release_timestamp': v.release_timestamp,
+                    'was_live': v.was_live,
                 }
                 for v in videos
             ]
