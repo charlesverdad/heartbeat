@@ -55,7 +55,7 @@ Read the full transcript. A typical Heartbeat Church live stream includes:
 4. Closing prayer and wrap-up (final 5 minutes)
 
 Identify and extract ONLY the sermon portion. Look for:
-- **Sermon START:** A greeting after worship ends, introduction of a Bible passage or sermon topic, phrases like "let's open our Bibles", "today we're going to talk about". **Note the `[HH:MM:SS]` timestamp at the sermon start** — convert it to `sermon_start_seconds` (total seconds from the beginning of the stream). For example, `[00:45:12]` = 2712 seconds.
+- **Sermon START:** The moment the speaker first addresses the congregation after worship ends — this includes their intro/preamble, announcements, and warm-up before they get into the main Bible passage. Look for phrases like "today is our first service", "welcome everyone", "good morning church", etc. This is typically a few minutes **before** the main teaching begins. **Note the `[HH:MM:SS]` timestamp at this point** — convert it to `sermon_start_seconds` (total seconds from the beginning of the stream). For example, `[00:40:00]` = 2400 seconds.
 - **Sermon END:** A closing prayer, "let's pray", transition back to worship or announcements
 
 If boundaries are unclear, keep the full transcript and tell the user.
