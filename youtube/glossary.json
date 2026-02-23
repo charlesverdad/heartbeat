@@ -79,5 +79,11 @@
   "church_specific": {
     "heartbeat": "Heartbeat Church",
     "heart beat": "Heartbeat Church"
+  },
+  "places": {
+    "berala": "Bowral",
+    "barrow": "Bowral",
+    "boral": "Bowral",
+    "bowral": "Bowral"
   }
 }
