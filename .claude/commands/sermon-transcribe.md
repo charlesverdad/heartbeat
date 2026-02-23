@@ -39,10 +39,10 @@ If a URL was provided, use it directly.
 Run the full workflow with `--timestamps` to preserve segment timing:
 
 ```bash
-source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
 ```
 
-Use the video's upload date for the date prefix and a slugified version of the title. The model-size "base" is a good balance of speed and accuracy. If the user asks for higher quality, use "small" or "medium".
+Use the video's upload date for the date prefix and a slugified version of the title. The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality, ~5.5min for a 110min sermon); on other platforms it falls back to **openai-whisper base**. If the user asks for a faster transcription, add `--fast` (uses mlx-whisper base on Apple Silicon, ~1min for 110min).
 
 This step will take several minutes for a full sermon. Run it in the background and keep the user informed of progress.
 
@@ -55,7 +55,7 @@ Read the full transcript. A typical Heartbeat Church live stream includes:
 4. Closing prayer and wrap-up (final 5 minutes)
 
 Identify and extract ONLY the sermon portion. Look for:
-- **Sermon START:** A greeting after worship ends, introduction of a Bible passage or sermon topic, phrases like "let's open our Bibles", "today we're going to talk about". **Note the `[HH:MM:SS]` timestamp at the sermon start** — convert it to `sermon_start_seconds` (total seconds from the beginning of the stream). For example, `[00:45:12]` = 2712 seconds.
+- **Sermon START:** The moment the speaker first addresses the congregation after worship ends — this includes their intro/preamble, announcements, and warm-up before they get into the main Bible passage. Look for phrases like "today is our first service", "welcome everyone", "good morning church", etc. This is typically a few minutes **before** the main teaching begins. **Note the `[HH:MM:SS]` timestamp at this point** — convert it to `sermon_start_seconds` (total seconds from the beginning of the stream). For example, `[00:40:00]` = 2400 seconds.
 - **Sermon END:** A closing prayer, "let's pray", transition back to worship or announcements
 
 If boundaries are unclear, keep the full transcript and tell the user.

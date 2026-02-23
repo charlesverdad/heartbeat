@@ -39,8 +39,9 @@ Follow the same process as the `sermon-transcribe` skill:
 
 2. Download and transcribe with `--timestamps` (run in background as it takes several minutes):
    ```bash
-   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --model-size base --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
+   source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
    ```
+   The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality); on other platforms it falls back to **openai-whisper base**. Add `--fast` for quicker but lower-quality transcription.
 
 3. Identify sermon boundaries and clean the transcript. Use `youtube/glossary.json` as a reference for correcting common transcription manglings of Bible books and theological terms.
    - **Record `sermon_start_seconds`**: Note the `[HH:MM:SS]` timestamp at the sermon start and convert to total seconds.
@@ -50,16 +51,11 @@ Follow the same process as the `sermon-transcribe` skill:
 
 4. Save the cleaned transcript.
 
-**Pause:** Show the user a preview of the cleaned transcript (first 1000 characters) and report:
+**Do NOT pause for review.** Proceed directly to blog generation. Record the pipeline data for use in the next steps:
 - `sermon_start_seconds` (e.g. 2712)
 - `stream_date` (e.g. 2026-02-09) — derived from `release_timestamp` in Sydney time
 - `release_timestamp` (e.g. 1771113270)
 - YouTube URL
-
-Ask:
-> "Transcript ready. Does it look correct? Press enter to continue, or provide feedback to adjust."
-
-If the user provides feedback, apply corrections and show again.
 
 ### Step 2: Generate blog post
 
@@ -81,12 +77,9 @@ Follow the same process as the `sermon-blog-generate` skill:
 
 2. Save HTML and metadata files (include `stream_date` and `sermon_start_seconds` in `.meta.json`).
 
-**Pause:** Show the user the complete blog post and ask:
-> "Blog post ready. Review it above. Press enter to publish as a Ghost draft, or provide feedback to revise."
+### Step 3: Publish to Ghost as draft
 
-If the user provides feedback, revise and show again.
-
-### Step 3: Publish to Ghost
+**Do NOT pause for review before publishing.** Always publish as a Ghost draft immediately — the user prefers to review directly on the Ghost platform.
 
 Follow the same process as the `sermon-blog-publish` skill:
 
@@ -96,7 +89,7 @@ Follow the same process as the `sermon-blog-publish` skill:
    - Do NOT pass the raw Sydney-offset timestamp (e.g. `T10:50+11:00`) — Ghost stores UTC and ~10:50am AEDT = ~23:50 UTC the **previous day**, which would show as Saturday instead of Sunday.
    - If `release_timestamp` is not available, use `<STREAM_DATE>T12:00:00.000Z`.
 
-2. Dry-run the Ghost publish to verify:
+2. Publish as a draft:
    ```bash
    node youtube/scripts/ghost-publish.mjs \
      --title "<TITLE>" \
@@ -104,16 +97,11 @@ Follow the same process as the `sermon-blog-publish` skill:
      --excerpt "<EXCERPT>" \
      --tag "sermons" \
      --author "heartbeat" \
-     --published-at "<ISO_DATETIME>" \
-     --dry-run
+     --published-at "<ISO_DATETIME>"
    ```
 
-3. Publish as a draft (same command without `--dry-run`).
 3. Report the Ghost admin edit URL.
 
 ### Final output
 
-Show:
-- Ghost draft edit URL (the main deliverable)
-- Remind the user to add a splash image via Ghost's Unsplash browser and review before publishing
-- File paths for transcript and blog post (in case they want to re-run any step)
+Show the Ghost draft edit URL — this is the main deliverable. The user will review, add a splash image, and publish from Ghost directly.

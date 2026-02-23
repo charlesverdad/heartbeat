@@ -49,11 +49,11 @@ Compute `--published-at` from the `.meta.json` data. Ghost's timezone is **UTC**
 - Do NOT pass a Sydney-offset time like `T10:00:00+11:00` — Ghost stores UTC and that becomes the previous day.
 - If neither is available, omit `--published-at`.
 
-Show the dry-run output to the user and ask for confirmation before proceeding.
+**Do NOT pause for confirmation.** Publish the draft immediately — the user prefers to review directly on the Ghost platform.
 
 ### 3. Publish the draft
 
-After user confirmation, run the actual publish:
+Run the actual publish:
 
 ```bash
 node youtube/scripts/ghost-publish.mjs \
@@ -67,13 +67,7 @@ node youtube/scripts/ghost-publish.mjs \
 
 ### 4. Report the result
 
-Show the user:
-- The Ghost admin edit URL for the draft
-- Remind them to:
-  1. Open the draft in Ghost editor
-  2. Add a splash image using Ghost's built-in Unsplash browser (click the image area at the top)
-  3. Review the content and make any edits
-  4. Publish when ready
+Show the user the Ghost admin edit URL for the draft. This is the main deliverable — the user will review, add a splash image, and publish from Ghost directly.
 
 ### Error handling
 
