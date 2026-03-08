@@ -44,6 +44,8 @@ source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && 
 
 Use the video's upload date for the date prefix and a slugified version of the title. The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality, ~5.5min for a 110min sermon); on other platforms it falls back to **openai-whisper base**. If the user asks for a faster transcription, add `--fast` (uses mlx-whisper base on Apple Silicon, ~1min for 110min).
 
+`condition_on_previous_text` is set to **False by default** — this prevents Whisper from hallucinating repetitive filler ("Thank you", "Amen") during worship music sections. Do not pass `--condition-on-previous-text` unless specifically requested.
+
 This step will take several minutes for a full sermon. Run it in the background and keep the user informed of progress.
 
 ### 3. Identify the sermon portion
@@ -94,5 +96,6 @@ Report to the user:
 - `stream_date` — the date the sermon was preached (always a Sunday). Derive this from the `release_timestamp` field returned by yt-dlp (Unix timestamp of when the stream went live). Convert it to **Australia/Sydney** time to get the correct Sunday date. In Python: `datetime.fromtimestamp(release_timestamp, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')` (use +11 for AEDT or +10 for AEST). Do NOT rely on `upload_date` or `release_date` — those are in UTC and may land on Saturday. If `release_timestamp` is not available, fall back to the date in the video title (DD/MM/YYYY format) and confirm it's a Sunday.
 - `release_timestamp` — the Unix timestamp of when the stream went live (from yt-dlp). Pass this through the pipeline for accurate Ghost `published_at` dates.
 - Any quality concerns (garbled sections, uncertain boundaries)
+- **Transcript quality warning**: After reading the transcript, check for signs of hallucination — long runs of repeated phrases like "Thank you.", "Amen.", or empty lines repeating at regular intervals (every 30 seconds). If found, warn the user: "⚠️ The transcript contains possible Whisper hallucinations in sections [X–Y]. These likely correspond to music or silence. Blog post generated from the clean portion only." Also warn if there are large silent gaps (many consecutive empty/blank lines) that may indicate missed content.
 - The file path where the transcript was saved
 - A preview of the first 500 characters

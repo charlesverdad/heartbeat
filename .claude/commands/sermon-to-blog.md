@@ -41,7 +41,7 @@ Follow the same process as the `sermon-transcribe` skill:
    ```bash
    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null && cd /Users/charles/work/heartbeat && nix-shell shell.nix --run "cd youtube/subtitle_downloader && python cli.py workflow '<VIDEO_URL>' --output-dir ../transcripts --transcript-output '../transcripts/<YYYY-MM-DD>-<slug>.txt' --timestamps"
    ```
-   The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality); on other platforms it falls back to **openai-whisper base**. Add `--fast` for quicker but lower-quality transcription.
+   The transcriber auto-detects the platform: on Apple Silicon it uses **mlx-whisper large-v3-turbo** (best quality); on other platforms it falls back to **openai-whisper base**. Add `--fast` for quicker but lower-quality transcription. `condition_on_previous_text` is **False by default** — this prevents hallucinations during worship music sections.
 
 3. Identify sermon boundaries and clean the transcript. Use `youtube/glossary.json` as a reference for correcting common transcription manglings of Bible books and theological terms.
    - **Record `sermon_start_seconds`**: Note the `[HH:MM:SS]` timestamp at the sermon start and convert to total seconds.
@@ -50,6 +50,8 @@ Follow the same process as the `sermon-transcribe` skill:
    - **Strip `[HH:MM:SS]` markers** during transcript cleaning.
 
 4. Save the cleaned transcript.
+
+5. **Check transcript quality.** After reading the transcript, scan for signs of Whisper hallucination — long runs of repeated phrases ("Thank you.", "Amen.") or blank lines at regular 30-second intervals. If found, notify the user: "⚠️ The transcript had hallucinations in sections [X–Y min], likely music or silence. Blog post generated from the clean portion only." Also flag large silent gaps that may indicate missed content.
 
 **Do NOT pause for review.** Proceed directly to blog generation. Record the pipeline data for use in the next steps:
 - `sermon_start_seconds` (e.g. 2712)
