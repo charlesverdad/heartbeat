@@ -101,7 +101,8 @@ class Transcriber:
                          audio_path: str,
                          save_to_file: bool = True,
                          output_path: Optional[str] = None,
-                         timestamps: bool = False) -> TranscriptionResult:
+                         timestamps: bool = False,
+                         condition_on_previous_text: bool = False) -> TranscriptionResult:
         """
         Transcribe audio file to text.
 
@@ -127,9 +128,16 @@ class Transcriber:
 
             if self.backend == "mlx":
                 import mlx_whisper
-                result = mlx_whisper.transcribe(audio_path, path_or_hf_repo=self.model_size)
+                result = mlx_whisper.transcribe(
+                    audio_path,
+                    path_or_hf_repo=self.model_size,
+                    condition_on_previous_text=condition_on_previous_text,
+                )
             else:
-                result = self.model.transcribe(audio_path)
+                result = self.model.transcribe(
+                    audio_path,
+                    condition_on_previous_text=condition_on_previous_text,
+                )
 
             if timestamps and result.get("segments"):
                 transcript_text = "\n".join(

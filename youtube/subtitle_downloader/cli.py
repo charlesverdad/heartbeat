@@ -26,6 +26,7 @@ def main():
     transcribe_parser.add_argument('--model-size', default='default', help='Whisper model size (default: auto-selects best model for platform)')
     transcribe_parser.add_argument('--fast', action='store_true', help='Use smaller/faster model (mlx-whisper base on Apple Silicon)')
     transcribe_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
+    transcribe_parser.add_argument('--condition-on-previous-text', action='store_true', default=False, help='Condition each segment on previous text (can cause hallucinations during music/silence)')
 
     # Full workflow
     workflow_parser = subparsers.add_parser('workflow', help='Complete workflow: download -> transcribe')
@@ -37,6 +38,7 @@ def main():
     workflow_parser.add_argument('--fast', action='store_true', help='Use smaller/faster model (mlx-whisper base on Apple Silicon)')
     workflow_parser.add_argument('--transcript-output', help='Specific output file path for transcript')
     workflow_parser.add_argument('--timestamps', action='store_true', help='Include [HH:MM:SS] timestamps in transcript')
+    workflow_parser.add_argument('--condition-on-previous-text', action='store_true', default=False, help='Condition each segment on previous text (can cause hallucinations during music/silence)')
 
     # List channel videos
     list_parser = subparsers.add_parser('list-channel', help='List recent videos from a YouTube channel')
@@ -58,7 +60,7 @@ def main():
 
     elif args.command == 'transcribe':
         transcriber = Transcriber(model_size=args.model_size, output_dir=args.output_dir, fast=args.fast)
-        result = transcriber.transcribe_audio(args.input, output_path=args.output_file, timestamps=args.timestamps)
+        result = transcriber.transcribe_audio(args.input, output_path=args.output_file, timestamps=args.timestamps, condition_on_previous_text=args.condition_on_previous_text)
         if result.success:
             print(f"Transcription successful: {result.output_path}")
             print(f"\nTranscript preview:\n{result.transcript[:200]}...")
@@ -86,6 +88,7 @@ def main():
             download_result.output_path,
             output_path=args.transcript_output,
             timestamps=args.timestamps,
+            condition_on_previous_text=args.condition_on_previous_text,
         )
 
         if not transcribe_result.success:

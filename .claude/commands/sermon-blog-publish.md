@@ -43,11 +43,10 @@ node youtube/scripts/ghost-publish.mjs \
   --dry-run
 ```
 
-Compute `--published-at` from the `.meta.json` data. Ghost's timezone is **UTC**, so the UTC date must match the intended display date:
-- **Preferred:** Use `release_timestamp` to derive the correct date in Sydney time, then set noon UTC on that date: convert `release_timestamp` to Sydney time (`datetime.fromtimestamp(ts, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')`) → then use `<DATE>T12:00:00.000Z`. Example: stream at 10:54am Sunday AEDT → `2026-02-15T12:00:00.000Z`.
-- **Fallback:** If `release_timestamp` is not available, use `<stream_date>T12:00:00.000Z`.
-- Do NOT pass a Sydney-offset time like `T10:00:00+11:00` — Ghost stores UTC and that becomes the previous day.
-- If neither is available, omit `--published-at`.
+Compute `--published-at` from the `.meta.json` data. Ghost's timezone is **Australia/Sydney**, so dates display in Sydney time:
+- Use `<stream_date>T12:00:00.000Z` (noon UTC on the Sydney date). `stream_date` in the meta.json is already the correct Sydney date.
+- Do NOT re-derive the date from `release_timestamp` directly — services at ~10:50am AEDT are ~23:50 UTC the previous day, so using the UTC date from the timestamp gives the wrong (Saturday) date.
+- If `stream_date` is not available, omit `--published-at`.
 
 **Do NOT pause for confirmation.** Publish the draft immediately — the user prefers to review directly on the Ghost platform.
 

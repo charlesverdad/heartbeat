@@ -83,11 +83,9 @@ Follow the same process as the `sermon-blog-generate` skill:
 
 Follow the same process as the `sermon-blog-publish` skill:
 
-1. Compute the `--published-at` value. Ghost's timezone is **UTC**, so the UTC date in `published_at` must match the intended display date:
-   - Convert `release_timestamp` to Sydney time to get the correct date: `datetime.fromtimestamp(release_timestamp, tz=timezone(timedelta(hours=11))).strftime('%Y-%m-%d')`
-   - Then use **noon UTC** on that date: `<DATE>T12:00:00.000Z` (e.g. `2026-02-15T12:00:00.000Z`)
-   - Do NOT pass the raw Sydney-offset timestamp (e.g. `T10:50+11:00`) — Ghost stores UTC and ~10:50am AEDT = ~23:50 UTC the **previous day**, which would show as Saturday instead of Sunday.
-   - If `release_timestamp` is not available, use `<STREAM_DATE>T12:00:00.000Z`.
+1. Compute the `--published-at` value. Ghost's timezone is **Australia/Sydney**, so dates display in Sydney time:
+   - Use `stream_date` (already the correct Sydney date from Step 1) and pass `<STREAM_DATE>T12:00:00.000Z` (noon UTC on that date).
+   - Do NOT re-derive the date from `release_timestamp` — the raw timestamp is UTC and services at ~10:50am AEDT are ~23:50 UTC the previous day, which can produce the wrong date if used directly.
 
 2. Publish as a draft:
    ```bash
