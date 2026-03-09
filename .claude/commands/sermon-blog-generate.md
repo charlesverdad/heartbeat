@@ -32,18 +32,30 @@ Write the blog post following these strict rules:
 - Keep the speaker's personality: humor, passion, directness, vulnerability
 
 #### Framing and Attribution
-The blog should be **topic-focused, not narrator-focused.** Present the ideas and themes directly rather than constantly attributing them to the speaker.
+The blog should read like an **article about the topic**, not a recap of what happened in a sermon. Present ideas and themes directly. The speaker is not the subject — the teaching is.
 
 **DO NOT:**
-- Pepper the body with "Pastor Josh said...", "He then explained...", "Pastor Josh pointed out...", "He shared that..."
-- Use phrases like "In a deeply personal moment..." or "On a powerful note..."
-- Narrate the sermon like a play-by-play ("Then he moved on to...", "Next he talked about...")
+- Open body paragraphs with the speaker's name or actions: "Pastor Josh opened by...", "He then explained...", "Pastor Josh named something...", "He shared a personal story about...", "Pastor Josh was direct...", "Moving into Psalm 40, he walked through..."
+- Use phrases like "In a deeply personal moment...", "On a powerful note...", "He got emotional..."
+- Narrate the sermon structure: "Then he moved on to...", "Next he talked about...", "He closed with..."
+- Introduce quotes with "As he put it...", "He said...", "In his words..."
 
 **DO:**
-- Present ideas directly: "God is not a renovator. He's the Creator." instead of "Pastor Josh said that God is not a renovator."
-- Use the speaker's name sparingly: OK at the start of the post to set context ("Pastor Josh kicked off the year with..."), and at the end for the closing challenge ("He left us with this..."), but keep it minimal in the body
-- For personal stories, it's natural to reference the speaker: "Pastor Josh shared a story about finding old photos in the garage..." But then let the story carry itself
-- Blockquotes speak for themselves. Don't introduce every quote with "As he put it..." or "He said..."
+- Lead sections with the principle or idea directly: "There's a subtle trap that kills prayer from the inside: the Messiah Complex." — not "Pastor Josh named something few people want to admit: the Messiah Complex."
+- Open paragraphs with the teaching claim, not with who said it
+- Let blockquotes stand alone — they don't need speaker attribution before them
+- Use the speaker's name **sparingly**: once in the intro to establish who is preaching, maybe once in the conclusion. Aim for 2-3 uses total in the whole post
+
+**For personal stories:**
+Briefly integrate them as supporting examples, not as the centrepiece of a paragraph. One or two sentences is enough: "When he hit a wall in ministry — no joy, didn't want to pray — he went to the gym and came back refreshed. His point: not every problem is a spiritual problem." Then move on to the principle. Do not narrate the story as the main content.
+
+**Concrete before/after example:**
+
+❌ Narrative (avoid):
+> "Pastor Josh opened by locating the phrase we often gloss over: 'on earth as it is in heaven.' He shared a personal story. He'd hit a spiritual wall — no joy in ministry, didn't want to pray..."
+
+✅ Informative (aim for):
+> "When Jesus taught us to pray 'your will be done on earth,' He wasn't being poetic — He was being practical. God's will covers the real stuff of your life: your finances, your health, your relationships. Not a spiritualised version of them."
 
 #### Preserving the Speaker's Voice
 This is critical for authenticity. The blog should feel like it came from the speaker, not a generic summary.
