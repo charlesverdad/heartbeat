@@ -26,7 +26,7 @@ SSH="ssh vmadmin@20.58.140.44 -i /Users/charles/.ssh/heartbeat_vm_access_key -o 
 | Local port | 3001 (maps to container 3000) |
 | Key Vault | `kv-vm-pulse-prod-w9es` |
 | Terraform | `terraform/vm-hb-pulse/` with `tf -f prod plan/apply` |
-| Docker image | `pulse:latest` (built locally on VM) |
+| Docker image | `pulse:latest` (built locally or shipped from macOS) |
 | Database | PostgreSQL 16 in `pulse-db` container |
 | Tunnel | Cloudflare tunnel via `cloudflared-pulse` container |
 | Admin email | charles@heartbeatchurch.com.au |
@@ -35,13 +35,33 @@ SSH="ssh vmadmin@20.58.140.44 -i /Users/charles/.ssh/heartbeat_vm_access_key -o 
 
 ## Common Operations
 
-### Deploy new version
+### Deploy new version (Option A: build on VM)
 
 ```bash
-# Pull latest app code and rebuild
+# Pull latest app code and rebuild on the VM
 $SSH 'cd ~/hb-pulse && GIT_SSH_COMMAND="ssh -p 443" git pull origin main && docker build -t pulse:latest .'
 
 # Redeploy containers
+$SSH 'cd ~/heartbeat/manifests/hb-pulse && ./deploy.sh'
+```
+
+### Deploy new version (Option B: build locally, ship to VM)
+
+Faster — builds on macOS then ships the image. Requires `just release` in `~/work/hb-pulse`
+which creates a git tag and builds `pulse:<version>` + `pulse:latest` for `linux/amd64`.
+
+```bash
+# 1. Tag and build locally (in ~/work/hb-pulse)
+just release            # e.g. produces pulse:0.1.0 + pulse:latest
+
+# 2. Export, transfer, load
+VERSION=0.1.0
+docker save pulse:$VERSION | gzip > /tmp/pulse-$VERSION.tar.gz
+scp -i /Users/charles/.ssh/heartbeat_vm_access_key -o StrictHostKeyChecking=no /tmp/pulse-$VERSION.tar.gz vmadmin@20.58.140.44:/tmp/
+$SSH "gunzip -c /tmp/pulse-$VERSION.tar.gz | docker load && docker tag pulse:$VERSION pulse:latest && rm /tmp/pulse-$VERSION.tar.gz"
+rm /tmp/pulse-$VERSION.tar.gz
+
+# 3. Redeploy
 $SSH 'cd ~/heartbeat/manifests/hb-pulse && ./deploy.sh'
 ```
 
