@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  pulse-db:
+    image: postgres:16-alpine
+    container_name: pulse-db
+    restart: unless-stopped
+    volumes:
+      - /data/hb-pulse/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: pulse
+      POSTGRES_USER: pulse
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pulse']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulse-network
+
+  pulse:
+    image: pulse:latest
+    container_name: pulse
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    depends_on:
+      pulse-db:
+        condition: service_healthy
+    volumes:
+      - /data/hb-pulse/uploads:/data/uploads
+    environment:
+      - DATABASE_URL=postgresql://pulse:${DB_PASSWORD}@pulse-db:5432/pulse
+      - SESSION_SECRET=${SESSION_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - BASE_URL=https://pulse.heartbeatchurch.com.au
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - PORT=3000
+      - NODE_ENV=production
+      # Email (Google SMTP)
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=noreply@heartbeatchurch.com.au
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=noreply@heartbeatchurch.com.au
+      - SMTP_FROM_NAME=Pulse — Heartbeat Church
+      # Push notifications
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=mailto:admin@heartbeatchurch.com.au
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - pulse-network
+
+  cloudflared-pulse:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-pulse
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
+    depends_on:
+      - pulse
+
+networks:
+  pulse-network:
+    driver: bridge
