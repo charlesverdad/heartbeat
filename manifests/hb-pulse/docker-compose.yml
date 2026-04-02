@@ -31,6 +31,7 @@ services:
     volumes:
       - /data/hb-pulse/uploads:/data/uploads
     environment:
+      - DB_PASSWORD=${DB_PASSWORD}
       - DATABASE_URL=postgresql://pulse:${DB_PASSWORD}@pulse-db:5432/pulse
       - SESSION_SECRET=${SESSION_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
