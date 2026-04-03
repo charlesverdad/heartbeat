@@ -63,9 +63,15 @@ Follow the same process as the `sermon-transcribe` skill:
 
 Follow the same process as the `sermon-blog-generate` skill:
 
-1. Generate the blog post from the cleaned transcript, passing the pipeline data:
-   - `youtube_url`, `sermon_start_seconds`, `stream_date`
-   - Matching Heartbeat Church style:
+1. **Fetch recent published posts from Ghost** to avoid repeating phrases, hooks, and structural patterns. The user sometimes edits posts after publishing, so always fetch from Ghost (not local HTML files):
+   ```bash
+   set -a && source .env && set +a && node youtube/scripts/ghost-list-posts.mjs --limit 5 --tag sermons --html
+   ```
+   Identify opening patterns, repeated phrases/hooks, section heading patterns, and challenge/conclusion formats used recently. Include these as explicit "patterns to avoid" when generating.
+
+2. **Generate the blog post using a dedicated subagent.** Pass it the transcript, the pipeline data (`youtube_url`, `sermon_start_seconds`, `stream_date`), AND the "patterns to avoid" from step 1. The separate agent produces better style adherence because it gets fresh context focused on the writing task.
+
+   Matching Heartbeat Church style:
      - Conversational, pastoral tone
      - Short punchy sentences mixed with longer explanations
      - **H2 headings** for sections, using the speaker's own phrases
@@ -77,7 +83,7 @@ Follow the same process as the `sermon-blog-generate` skill:
      - Preserve the speaker's analogies, stories, humor, and challenging thoughts
      - NO hallucinated quotes, theology, or Bible references
 
-2. Save HTML and metadata files (include `stream_date` and `sermon_start_seconds` in `.meta.json`).
+3. Save HTML and metadata files (include `stream_date` and `sermon_start_seconds` in `.meta.json`).
 
 ### Step 3: Publish to Ghost as draft
 
