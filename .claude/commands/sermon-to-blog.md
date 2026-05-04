@@ -83,13 +83,15 @@ Follow the same process as the `sermon-blog-generate` skill:
      - Preserve the speaker's analogies, stories, humor, and challenging thoughts
      - NO hallucinated quotes, theology, or Bible references
 
-3. Save HTML and metadata files (include `stream_date` and `sermon_start_seconds` in `.meta.json`).
+3. **Run the `deglaze` skill on the subagent output before saving.** The deglaze skill (located at `~/work/custom-skills/skills/deglaze/SKILL.md`) strips AI-generated writing patterns — em dash overuse, template phrases, copula avoidance, "It's not X, it's Y" constructions, hollow intensifiers, formulaic openings, etc. Run it in `rewrite` mode with `blog` profile against the generated HTML body. Take the **rewritten version** from its output and use that as the final HTML. This step makes the post sound more natural and human, not like AI-generated prose. Skip only the YouTube embed block (the iframe is exempt).
+
+4. Save HTML and metadata files (include `stream_date` and `sermon_start_seconds` in `.meta.json`).
 
 ### Step 3: Publish to Ghost as draft
 
 **Do NOT pause for review before publishing.** Always publish as a Ghost draft immediately — the user prefers to review directly on the Ghost platform.
 
-Follow the same process as the `sermon-blog-publish` skill:
+Follow the same process as the `sermon-blog-publish` skill. Use the deglazed HTML from Step 2.
 
 1. Compute the `--published-at` value. Ghost's timezone is **Australia/Sydney**, so dates display in Sydney time:
    - Use `stream_date` (already the correct Sydney date from Step 1) and pass `<STREAM_DATE>T12:00:00.000Z` (noon UTC on that date).
