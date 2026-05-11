@@ -166,6 +166,9 @@ async function main() {
     title: args.title,
     html: html,
     status: 'draft',
+    // Sermon posts use the no-feature-image template so the splash image
+    // doesn't compete with the YouTube embed at the top of the body.
+    custom_template: 'custom-no-feature-image',
   };
 
   if (args.excerpt) {
@@ -190,6 +193,7 @@ async function main() {
     console.log(`Tags: ${JSON.stringify(postData.tags || [])}`);
     console.log(`Author: ${args.author || '(default)'}`);
     console.log(`Published at: ${postData.published_at || '(not set)'}`);
+    console.log(`Template: ${postData.custom_template}`);
     console.log(`HTML length: ${html.length} chars`);
     console.log(`HTML preview: ${html.slice(0, 200)}...`);
     console.log('=== Would create draft post ===');
