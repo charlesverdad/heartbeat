@@ -114,6 +114,18 @@ async function createDraftPost(ghostUrl, token, postData) {
   });
 }
 
+async function getPost(ghostUrl, token, postId) {
+  return ghostFetch(ghostUrl, `posts/${postId}/`, token);
+}
+
+async function updateDraftPost(ghostUrl, token, postId, postData, updatedAt) {
+  return ghostFetch(ghostUrl, `posts/${postId}/?source=html`, token, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ posts: [{ ...postData, updated_at: updatedAt }] }),
+  });
+}
+
 async function lookupAuthor(ghostUrl, token, authorSlug) {
   try {
     const data = await ghostFetch(ghostUrl, `users/slug/${authorSlug}/`, token);
@@ -219,9 +231,21 @@ async function main() {
     }
   }
 
-  // Create the draft post
-  console.log(`Creating draft post: "${args.title}"...`);
-  const result = await createDraftPost(resolvedUrl, token, postData);
+  // Create or update the draft
+  let result;
+  if (args.updateId) {
+    console.log(`Updating draft post ${args.updateId}: "${args.title}"...`);
+    const existing = await getPost(resolvedUrl, token, args.updateId);
+    const existingUpdatedAt = existing.posts?.[0]?.updated_at;
+    if (!existingUpdatedAt) {
+      console.error(`Error: Could not fetch existing post ${args.updateId}`);
+      process.exit(1);
+    }
+    result = await updateDraftPost(resolvedUrl, token, args.updateId, postData, existingUpdatedAt);
+  } else {
+    console.log(`Creating draft post: "${args.title}"...`);
+    result = await createDraftPost(resolvedUrl, token, postData);
+  }
 
   const post = result.posts?.[0];
   if (!post) {
@@ -231,7 +255,7 @@ async function main() {
 
   const adminUrl = `${resolvedUrl}/ghost/#/editor/post/${post.id}`;
 
-  console.log('Draft created successfully!');
+  console.log(args.updateId ? 'Draft updated successfully!' : 'Draft created successfully!');
   console.log(`Post ID: ${post.id}`);
   console.log(`Slug: ${post.slug}`);
   console.log(`Edit URL: ${adminUrl}`);
