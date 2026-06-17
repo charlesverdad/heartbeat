@@ -82,6 +82,10 @@ resource "azurerm_key_vault_secret" "session_secret" {
   value        = var.session_secret
   key_vault_id = azurerm_key_vault.pulse.id
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
   ]
@@ -91,6 +95,10 @@ resource "azurerm_key_vault_secret" "db_password" {
   name         = "db-password"
   value        = var.db_password
   key_vault_id = azurerm_key_vault.pulse.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
@@ -102,6 +110,10 @@ resource "azurerm_key_vault_secret" "google_client_id" {
   value        = var.google_client_id
   key_vault_id = azurerm_key_vault.pulse.id
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
   ]
@@ -111,6 +123,10 @@ resource "azurerm_key_vault_secret" "google_client_secret" {
   name         = "google-client-secret"
   value        = var.google_client_secret
   key_vault_id = azurerm_key_vault.pulse.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
@@ -132,6 +148,10 @@ resource "azurerm_key_vault_secret" "vapid_public_key" {
   value        = var.vapid_public_key
   key_vault_id = azurerm_key_vault.pulse.id
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
   ]
@@ -142,6 +162,10 @@ resource "azurerm_key_vault_secret" "vapid_private_key" {
   value        = var.vapid_private_key
   key_vault_id = azurerm_key_vault.pulse.id
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
   ]
@@ -151,6 +175,10 @@ resource "azurerm_key_vault_secret" "smtp_pass" {
   name         = "smtp-pass"
   value        = var.smtp_pass
   key_vault_id = azurerm_key_vault.pulse.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 
   depends_on = [
     azurerm_role_assignment.current_user_keyvault_admin
