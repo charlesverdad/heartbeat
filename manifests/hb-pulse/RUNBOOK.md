@@ -101,6 +101,13 @@ $SSH 'cd ~/heartbeat && git pull origin main'
 
 `session-secret`, `db-password`, `google-client-id`, `google-client-secret`, `vapid-public-key`, `vapid-private-key`, `smtp-pass`, `cloudflare-tunnel-token`
 
+## Database Secrets
+
+`db-password` is stored in Key Vault and exported as `DB_PASSWORD` by `deploy.sh`.
+The Postgres service receives it as `POSTGRES_PASSWORD`. The Pulse app service does
+not receive `DB_PASSWORD`; `deploy.sh` builds `DATABASE_URL` from the password and
+passes that connection string to the app.
+
 ## Coexisting Services
 
 The living-life quiz runs on the same VM on port 3000. Its manifests are at `~/heartbeat/manifests/living-life-quiz/` and secrets at `/secrets/`.
