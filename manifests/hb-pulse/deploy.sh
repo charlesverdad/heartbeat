@@ -39,18 +39,19 @@ if [[ ! -d "$SECRETS_DIR" ]]; then
 fi
 
 log "Reading secrets from Key Vault..."
-export DB_PASSWORD=$(sudo cat $SECRETS_DIR/db-password)
-export SESSION_SECRET=$(sudo cat $SECRETS_DIR/session-secret)
-export GOOGLE_CLIENT_ID=$(sudo cat $SECRETS_DIR/google-client-id)
-export GOOGLE_CLIENT_SECRET=$(sudo cat $SECRETS_DIR/google-client-secret)
-export VAPID_PUBLIC_KEY=$(sudo cat $SECRETS_DIR/vapid-public-key)
-export VAPID_PRIVATE_KEY=$(sudo cat $SECRETS_DIR/vapid-private-key)
-export SMTP_PASS=$(sudo cat $SECRETS_DIR/smtp-pass)
-export TUNNEL_TOKEN=$(sudo cat $SECRETS_DIR/cloudflare-tunnel-token)
+export DB_PASSWORD=$(sudo cat "$SECRETS_DIR/db-password")
+export DATABASE_URL="postgresql://pulse:${DB_PASSWORD}@pulse-db:5432/pulse"
+export SESSION_SECRET=$(sudo cat "$SECRETS_DIR/session-secret")
+export GOOGLE_CLIENT_ID=$(sudo cat "$SECRETS_DIR/google-client-id")
+export GOOGLE_CLIENT_SECRET=$(sudo cat "$SECRETS_DIR/google-client-secret")
+export VAPID_PUBLIC_KEY=$(sudo cat "$SECRETS_DIR/vapid-public-key")
+export VAPID_PRIVATE_KEY=$(sudo cat "$SECRETS_DIR/vapid-private-key")
+export SMTP_PASS=$(sudo cat "$SECRETS_DIR/smtp-pass")
+export TUNNEL_TOKEN=$(sudo cat "$SECRETS_DIR/cloudflare-tunnel-token")
 export ADMIN_EMAIL="charles@heartbeatchurch.com.au"
 
 # Verify all secrets were read
-for var in DB_PASSWORD SESSION_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET \
+for var in DB_PASSWORD DATABASE_URL SESSION_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET \
            VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY SMTP_PASS TUNNEL_TOKEN; do
     if [[ -z "${!var}" ]]; then
         error "Failed to read secret for $var"
