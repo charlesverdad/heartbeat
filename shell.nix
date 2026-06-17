@@ -17,6 +17,7 @@ pkgs.mkShell {
     docker-compose
     direnv
     azure-cli
+    google-cloud-sdk
     terraform
     cloudflared
     kubectl

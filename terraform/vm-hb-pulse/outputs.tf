@@ -23,6 +23,11 @@ output "domain_name" {
   value       = var.domain_name
 }
 
+output "google_drive_service_account_email" {
+  description = "Share Drive folders with this service account email to allow Pulse folder listing"
+  value       = "${var.google_drive_service_account_id}@${var.google_project_id}.iam.gserviceaccount.com"
+}
+
 output "dns_record_id" {
   description = "Cloudflare DNS record ID"
   value       = cloudflare_record.pulse.id

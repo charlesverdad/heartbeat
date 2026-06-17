@@ -11,14 +11,17 @@ cloudflare_account_id = "d26a8771162442a563371ea8097acc89"
 cloudflare_zone_id    = "80440a32523d928c9d7e015168a67758"
 domain_name           = "pulse.heartbeatchurch.com.au"
 
+# Google Drive folder browsing
+google_project_id = "heartbeat-internal"
+
 # Application secrets (replace with actual values before applying)
-session_secret      = "REPLACE_ME"
-db_password         = "REPLACE_ME"
-google_client_id    = "REPLACE_ME"
+session_secret       = "REPLACE_ME"
+db_password          = "REPLACE_ME"
+google_client_id     = "REPLACE_ME"
 google_client_secret = "REPLACE_ME"
-vapid_public_key    = "REPLACE_ME"
-vapid_private_key   = "REPLACE_ME"
-smtp_pass           = "REPLACE_ME"
+vapid_public_key     = "REPLACE_ME"
+vapid_private_key    = "REPLACE_ME"
+smtp_pass            = "REPLACE_ME"
 
 # Resource Tags
 tags = {

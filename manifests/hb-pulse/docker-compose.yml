@@ -20,7 +20,7 @@ services:
       - pulse-network
 
   pulse:
-    image: pulse:latest
+    image: pulse:0.3.0
     container_name: pulse
     restart: unless-stopped
     ports:
@@ -35,6 +35,7 @@ services:
       - SESSION_SECRET=${SESSION_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_SERVICE_ACCOUNT_KEY=${GOOGLE_SERVICE_ACCOUNT_KEY}
       - BASE_URL=https://pulse.heartbeatchurch.com.au
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - PORT=3000

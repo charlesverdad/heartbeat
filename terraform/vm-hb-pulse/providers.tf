@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
   }
   required_version = ">= 1.0"
 }
@@ -27,4 +31,8 @@ provider "azurerm" {
 
 provider "cloudflare" {
   # API token is provided via CLOUDFLARE_API_TOKEN environment variable
+}
+
+provider "google" {
+  project = var.google_project_id
 }
