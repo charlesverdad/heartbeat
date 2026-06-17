@@ -14,6 +14,7 @@ REQUIRED_SECRETS=(
     "db-password"
     "google-client-id"
     "google-client-secret"
+    "google-service-account-key"
     "vapid-public-key"
     "vapid-private-key"
     "smtp-pass"

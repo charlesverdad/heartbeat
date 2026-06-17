@@ -83,11 +83,12 @@ Reference the **existing** VM's resource group and managed identity (same VM as 
 |----------|-------------|---------|
 | `azurerm_key_vault` | `kv-vm-pulse-prod-<suffix>` | Store all Pulse secrets |
 | `azurerm_role_assignment` (x2) | — | VM identity → "Key Vault Secrets User"; current user → "Key Vault Administrator" |
-| **Secrets (8):** | | |
+| **Secrets (9):** | | |
 | `azurerm_key_vault_secret` | `session-secret` | Session signing key |
 | `azurerm_key_vault_secret` | `db-password` | PostgreSQL password |
 | `azurerm_key_vault_secret` | `google-client-id` | OAuth client ID |
 | `azurerm_key_vault_secret` | `google-client-secret` | OAuth client secret |
+| `azurerm_key_vault_secret` | `google-service-account-key` | Google Drive folder browsing service account key |
 | `azurerm_key_vault_secret` | `vapid-public-key` | Web Push public key |
 | `azurerm_key_vault_secret` | `vapid-private-key` | Web Push private key |
 | `azurerm_key_vault_secret` | `smtp-pass` | Google App Password for email |
@@ -106,6 +107,7 @@ variable "vm_managed_identity_name" { type = string }          # "id-vm1-prod-8t
 variable "cloudflare_account_id"    { type = string }
 variable "cloudflare_zone_id"       { type = string }
 variable "domain_name"              { default = "pulse.heartbeatchurch.com.au" }
+variable "google_project_id"        { type = string }
 variable "session_secret"           { type = string, sensitive = true }
 variable "db_password"              { type = string, sensitive = true }
 variable "google_client_id"         { type = string, sensitive = true }
@@ -190,6 +192,7 @@ REQUIRED_SECRETS=(
     "db-password"
     "google-client-id"
     "google-client-secret"
+    "google-service-account-key"
     "vapid-public-key"
     "vapid-private-key"
     "smtp-pass"
@@ -241,6 +244,7 @@ services:
       - SESSION_SECRET=${SESSION_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_SERVICE_ACCOUNT_KEY=${GOOGLE_SERVICE_ACCOUNT_KEY}
       - BASE_URL=https://pulse.heartbeatchurch.com.au
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - PORT=3000
@@ -308,6 +312,7 @@ export DB_PASSWORD=$(sudo cat $SECRETS_DIR/db-password)
 export SESSION_SECRET=$(sudo cat $SECRETS_DIR/session-secret)
 export GOOGLE_CLIENT_ID=$(sudo cat $SECRETS_DIR/google-client-id)
 export GOOGLE_CLIENT_SECRET=$(sudo cat $SECRETS_DIR/google-client-secret)
+export GOOGLE_SERVICE_ACCOUNT_KEY=$(sudo cat $SECRETS_DIR/google-service-account-key)
 export VAPID_PUBLIC_KEY=$(sudo cat $SECRETS_DIR/vapid-public-key)
 export VAPID_PRIVATE_KEY=$(sudo cat $SECRETS_DIR/vapid-private-key)
 export SMTP_PASS=$(sudo cat $SECRETS_DIR/smtp-pass)

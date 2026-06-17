@@ -36,6 +36,17 @@ variable "domain_name" {
   default     = "pulse.heartbeatchurch.com.au"
 }
 
+variable "google_project_id" {
+  description = "Google Cloud project ID used for Pulse Drive folder browsing"
+  type        = string
+}
+
+variable "google_drive_service_account_id" {
+  description = "Service account ID for Pulse Google Drive folder browsing"
+  type        = string
+  default     = "pulse-drive-browser"
+}
+
 # Application secrets
 variable "session_secret" {
   description = "Secret key for session signing (openssl rand -hex 32)"

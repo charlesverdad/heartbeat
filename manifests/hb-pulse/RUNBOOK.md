@@ -99,7 +99,7 @@ $SSH 'cd ~/heartbeat && git pull origin main'
 
 ## Secrets in Key Vault
 
-`session-secret`, `db-password`, `google-client-id`, `google-client-secret`, `vapid-public-key`, `vapid-private-key`, `smtp-pass`, `cloudflare-tunnel-token`
+`session-secret`, `db-password`, `google-client-id`, `google-client-secret`, `google-service-account-key`, `vapid-public-key`, `vapid-private-key`, `smtp-pass`, `cloudflare-tunnel-token`
 
 ## Database Secrets
 

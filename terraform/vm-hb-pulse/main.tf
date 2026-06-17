@@ -18,6 +18,27 @@ data "azurerm_user_assigned_identity" "vm" {
   resource_group_name = data.azurerm_resource_group.vm.name
 }
 
+# ── Google Drive Folder Browsing ─────────────────────────────────────────────
+
+resource "google_project_service" "drive" {
+  service            = "drive.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_service_account" "pulse_drive" {
+  account_id   = var.google_drive_service_account_id
+  display_name = "Pulse Drive Folder Browser"
+  description  = "Used by Pulse to list Google Drive folders shared with this service account."
+
+  depends_on = [
+    google_project_service.drive
+  ]
+}
+
+resource "google_service_account_key" "pulse_drive" {
+  service_account_id = google_service_account.pulse_drive.name
+}
+
 # Azure Key Vault for storing secrets
 resource "azurerm_key_vault" "pulse" {
   name                = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
@@ -89,6 +110,16 @@ resource "azurerm_key_vault_secret" "google_client_id" {
 resource "azurerm_key_vault_secret" "google_client_secret" {
   name         = "google-client-secret"
   value        = var.google_client_secret
+  key_vault_id = azurerm_key_vault.pulse.id
+
+  depends_on = [
+    azurerm_role_assignment.current_user_keyvault_admin
+  ]
+}
+
+resource "azurerm_key_vault_secret" "google_service_account_key" {
+  name         = "google-service-account-key"
+  value        = base64decode(google_service_account_key.pulse_drive.private_key)
   key_vault_id = azurerm_key_vault.pulse.id
 
   depends_on = [
