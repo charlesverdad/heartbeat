@@ -20,7 +20,7 @@ services:
       - pulse-network
 
   pulse:
-    image: pulse:0.3.0
+    image: pulse:0.3.1
     container_name: pulse
     restart: unless-stopped
     ports:
