@@ -47,6 +47,7 @@ heartbeat/
 ├── terraform/                  # Infrastructure as Code (Azure)
 │   ├── acr/                    #   Azure Container Registry
 │   ├── aks/                    #   Azure Kubernetes Service
+│   ├── dns/                    #   Standalone Cloudflare DNS records
 │   ├── google-oauth/           #   Google OAuth configuration
 │   ├── kv/                     #   Azure Key Vault (secrets)
 │   ├── vm/                     #   VM for Docker apps
