@@ -126,7 +126,11 @@ Follow the structure of existing Heartbeat Church blog posts:
 
 From the blog post and transcript, determine:
 - **Title**: The sermon title. The speaker usually states it near the beginning. If unclear, create a short (6-10 word) title from the main theme. No clickbait.
-- **Excerpt**: A short, punchy summary (~150 characters max) suitable for a post card/preview. State the core idea directly. No teaser-style listings ("took us through X, Y, and Z"), no literary flourishes or em-dashes. Think tweet-length.
+- **Excerpt**: ~150 characters, tweet-length. **Lead with a hook**, then land the sermon. The first sentence should be a provocative question or a sharp, counterintuitive claim pulled from the sermon's central tension — something that creates curiosity. Only *after* the hook, name the speaker, the passage, and the turn the sermon takes (often a single key word revealed after a colon). Do NOT open with admin like "<Speaker> closes/opens the series in <book>", and do NOT end on a flat three-item summary ("the gospel changes our identity, our relationships, and how we read circumstances") — that reads as a table of contents, not a hook. No em-dashes.
+  - Good: "What does God's silence actually mean? Kevin Shin opens Matthew 7 with three answers worth knowing: yes, no, and the hardest one. Wait."
+  - Good: "You can tick every box and still feel hungry. Jason Lim opens Matthew 7 with the word that changes the question: satisfaction."
+  - Good: "Sabbath came before work, not after it. Pastor Josh on rest as identity, the lie of productivity, and why we are creatures of appreciation."
+  - Weak (avoid): "Pastor Josh closes the Celebrating Work series in Philemon: the gospel rewrites our identity, our relationships, and how we read every hard circumstance."
 - **Keywords**: 3 topic keywords for potential image search (e.g. "faith", "community", "prayer").
 
 ### 5. Save the output
