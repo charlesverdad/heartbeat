@@ -3,7 +3,7 @@ terraform {
     resource_group_name  = "rg-terraform-state-backend"
     storage_account_name = "terraforminfratfstate"
     container_name       = "tfstate"
-    key                  = "dns/terraform.tfstate"
-    use_azuread_auth     = true
+    # key is supplied at init time by bin/tf.py as <dir>/<flavor>.tfstate
+    use_azuread_auth = true
   }
 }
