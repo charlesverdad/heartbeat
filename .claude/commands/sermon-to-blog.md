@@ -82,6 +82,7 @@ Follow the same process as the `sermon-blog-generate` skill:
      - **YouTube embed** with `?start=` parameter near the top
      - Preserve the speaker's analogies, stories, humor, and challenging thoughts
      - NO hallucinated quotes, theology, or Bible references
+     - **Excerpt (~150 chars): hook-first.** Open with a provocative question or sharp, counterintuitive claim from the sermon's core tension, THEN name the speaker/passage/turn (often a key word after a colon). Don't open with "<Speaker> closes/opens the series" and don't end on a flat three-item summary. See the excerpt examples in the `sermon-blog-generate` skill.
 
 3. **Run the `deglaze` skill on the subagent output before saving.** The deglaze skill (located at `~/work/custom-skills/skills/deglaze/SKILL.md`) strips AI-generated writing patterns — em dash overuse, template phrases, copula avoidance, "It's not X, it's Y" constructions, hollow intensifiers, formulaic openings, etc. Run it in `rewrite` mode with `blog` profile against the generated HTML body. Take the **rewritten version** from its output and use that as the final HTML. This step makes the post sound more natural and human, not like AI-generated prose. Skip only the YouTube embed block (the iframe is exempt).
 

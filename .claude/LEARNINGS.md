@@ -1,0 +1,14 @@
+# Learnings
+
+## Sermon blog pipeline (2026-07-24 batch run)
+
+- **Camp / special-event streams live on the Gold Coast channel** (`@heartbeatgoldcoast2173/streams`), not the main `@HeartbeatChurch` channel. If a Sunday has no stream on the main channel, check there before concluding no service happened.
+- **A "5-min read" = 1,000-1,250 words** (user-defined). Give writer subagents a hard cap; drafts at the older 1200-1800 target will need trimming.
+- **`ghost-list-posts.mjs` only lists published posts.** To check for existing drafts, copy it and change the filter `status:published` → `status:draft`. Always check drafts before creating posts (use `ghost-publish.mjs --updateId <id>` to update in place).
+- **Camp session numbering ≠ sermon numbering.** QLD camp 2026 had 4 sessions but only 3 sermons (Session 2 was prayer pathways). In posts, refer to "Saturday night's message" rather than "session N" to avoid clashing with YouTube video titles. Session 3 was split across two videos (worship video first, sermon video second) — embed the sermon video.
+- **Pastor Josh's daughter is "Sky"** (not Skye) — matches published posts. She and PM were commissioned as full shepherds on 2026-07-12.
+- **`ghost-publish.mjs` cannot change the slug.** There is no `--slug` flag, and Ghost keeps the existing slug on `--updateId`. If the title changes after the draft is created, the slug stays stale and must be edited by hand in the Ghost editor's post settings. Settle the title before the first publish to avoid this.
+- **Excerpts must not use AI teaser phrasing.** "lands closer to home", "the answer might surprise you", "what he said next" and friends were explicitly rejected. State the actual substance instead of promising a payoff. `/codex:rescue` is a good second ear for both excerpts and full-body deglazing — Codex catches contrast formulas ("not X, but Y") and uniform paragraph rhythm that the deglaze skill leaves behind.
+- **A sermon that continues a previous week's message needs re-angling, not re-summarising.** The 2026-07-26 service finished the camp's "You Are Full" message, so the already-published post covered its first half. Check the prior post's beats and build the new one on the fresh material only.
+- **Pastor Josh rarely announces a sermon title.** Look for the declaration he has the congregation repeat to each other, usually near the closing prayer — that line is the intended takeaway and makes the best title.
+- **Effective batch flow:** transcribe strictly sequentially (Whisper saturates the machine), but run writer/deglaze subagents in parallel — they're not CPU-bound. Chain per post: write (fresh from transcript, never from old draft) → discrete deglaze pass → Ghost draft. Finish with a single cross-post cohesion pass (series threading, repeated hooks, names, word caps) and re-push only edited posts.
