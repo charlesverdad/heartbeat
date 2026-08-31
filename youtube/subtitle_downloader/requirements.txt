@@ -1,4 +1,6 @@
-yt-dlp>=2023.12.30
+# Older yt-dlp builds 403 on every Heartbeat stream (YouTube's SABR rollout).
+# Keep this floor in sync with MIN_YTDLP_VERSION in video_downloader.py.
+yt-dlp>=2026.08.17
 webvtt-py>=0.4.6
 openai-whisper
 mlx-whisper; platform_machine == "arm64" and sys_platform == "darwin"

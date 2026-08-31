@@ -116,6 +116,17 @@ Timestamps can be specified in two formats:
 - Error messages provide helpful information for debugging issues
 - **FFmpeg errors**: Ensure you're running the script within the nix-shell environment
 - **Timestamp issues**: Verify timestamps are within the video duration
+- **`HTTP Error 403: Forbidden` on download**: your `yt-dlp` is out of date. YouTube's
+  SABR rollout hides every audio format from old builds, leaving only progressive
+  format 18, which 403s. `requirements.txt` sets a floor, but an existing venv keeps
+  whatever it installed first — upgrade it explicitly:
+  ```bash
+  python -m pip install -U -r requirements.txt
+  ```
+  Use `python -m pip`, not bare `pip`: inside `nix-shell` the latter resolves to nix's
+  python and fails with "externally-managed-environment". `download_video()` warns
+  up-front when the installed version is below `MIN_YTDLP_VERSION`, and retries once
+  over HLS before giving up.
 
 ## Future Extensions
 
