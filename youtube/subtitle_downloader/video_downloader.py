@@ -1,9 +1,57 @@
 import yt_dlp
 import os
 import re
+import shutil
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
+
+
+# Oldest yt-dlp verified to download Heartbeat streams. Older builds only see
+# progressive format 18 (YouTube's SABR rollout hides the rest) and every
+# download dies with "HTTP Error 403: Forbidden".
+MIN_YTDLP_VERSION = "2026.08.17"
+
+# HLS audio. Fragmented m3u8 fetching has survived the SABR changes that break
+# the DASH/progressive formats, so it is the retry when a download 403s.
+HLS_AUDIO_FORMAT = "bestaudio[protocol^=m3u8]/234/233"
+
+# yt-dlp only enables deno by default; shell.nix ships node. Without a runtime
+# it cannot solve the `n` challenge and drops formats.
+JS_RUNTIME_CANDIDATES = ("deno", "node", "bun", "quickjs")
+
+UPGRADE_HINT = (
+    "Upgrade yt-dlp and retry:\n"
+    "  python -m pip install -U 'yt-dlp>=%s'\n"
+    "(use `python -m pip`, not bare `pip`, inside nix-shell)" % MIN_YTDLP_VERSION
+)
+
+
+def _version_tuple(version: str) -> tuple:
+    """Parse a yt-dlp version ('2026.08.19', '2026.08.17.073947') into ints."""
+    parts = []
+    for part in version.split('.'):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            break
+    return tuple(parts)
+
+
+def ytdlp_version_warning() -> Optional[str]:
+    """Return a warning if the installed yt-dlp is too old to work, else None."""
+    installed = yt_dlp.version.__version__
+    if _version_tuple(installed) >= _version_tuple(MIN_YTDLP_VERSION):
+        return None
+    return (
+        f"yt-dlp {installed} is older than the {MIN_YTDLP_VERSION} known-good "
+        f"build and will almost certainly fail with HTTP 403.\n{UPGRADE_HINT}"
+    )
+
+
+def detect_js_runtimes() -> Dict[str, dict]:
+    """Find JavaScript runtimes on PATH for yt-dlp's `n` challenge solver."""
+    return {name: {} for name in JS_RUNTIME_CANDIDATES if shutil.which(name)}
 
 
 @dataclass
@@ -61,6 +109,11 @@ class VideoDownloader:
             filename = 'unknown'
         return filename
     
+    @staticmethod
+    def _is_forbidden(error: Exception) -> bool:
+        """Whether an exception is YouTube rejecting the media URLs with a 403"""
+        return '403' in str(error) and 'forbidden' in str(error).lower()
+
     def list_channel_videos(self, channel_url: str, max_results: int = 20) -> List[ChannelVideoInfo]:
         """
         List recent videos from a YouTube channel.
@@ -123,6 +176,10 @@ class VideoDownloader:
             VideoDownloadResult object
         """
         try:
+            version_warning = ytdlp_version_warning()
+            if version_warning:
+                print(f"WARNING: {version_warning}")
+
             ydl_opts = {
                 'format': 'bestaudio/best' if extract_audio else 'best',
                 'outtmpl': str(self.output_dir / '%(title)s.%(ext)s'),
@@ -130,7 +187,13 @@ class VideoDownloader:
                 'fragment_retries': 10,
                 'socket_timeout': 30,
             }
-            
+
+            # Let yt-dlp solve YouTube's `n` challenge. Without a runtime it
+            # silently drops formats and falls back to ones that 403.
+            js_runtimes = detect_js_runtimes()
+            if js_runtimes:
+                ydl_opts['js_runtimes'] = js_runtimes
+
             # Add timestamp cutting if provided
             if start_time or end_time:
                 start_seconds = self.convert_time_to_seconds(start_time) if start_time else None
@@ -168,12 +231,34 @@ class VideoDownloader:
                 
                 # Update output template with sanitized filename
                 ydl_opts['outtmpl'] = str(self.output_dir / f"{sanitized_title}.%(ext)s")
-                
+
                 # Re-create YoutubeDL with updated options
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl_final:
-                    # Download the video/audio
-                    ydl_final.download([video_url])
-                
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl_final:
+                        # Download the video/audio
+                        ydl_final.download([video_url])
+                except Exception as e:
+                    if not self._is_forbidden(e):
+                        raise
+                    # The DASH/progressive URLs were rejected. Fragmented HLS
+                    # is served through a different path and usually survives.
+                    print(f"Download 403'd on '{ydl_opts['format']}'; "
+                          f"retrying with HLS ('{HLS_AUDIO_FORMAT}')")
+                    hls_opts = dict(ydl_opts, format=HLS_AUDIO_FORMAT)
+                    try:
+                        with yt_dlp.YoutubeDL(hls_opts) as ydl_hls:
+                            ydl_hls.download([video_url])
+                    except Exception as hls_error:
+                        # Whatever the retry died of, the run started with a
+                        # 403 — report that, not the second-order symptom.
+                        raise RuntimeError(
+                            f"YouTube returned 403 for '{ydl_opts['format']}' and "
+                            f"the HLS retry ('{HLS_AUDIO_FORMAT}') also failed: "
+                            f"{hls_error}\n\nOriginal error: {e}\n"
+                            f"Installed yt-dlp is {yt_dlp.version.__version__}.\n"
+                            f"{UPGRADE_HINT}"
+                        ) from hls_error
+
                 # Determine expected output file path
                 if extract_audio:
                     expected_path = self.output_dir / f"{sanitized_title}.mp3"
@@ -214,7 +299,11 @@ class VideoDownloader:
                 )
                 
         except Exception as e:
+            message = str(e)
+            if self._is_forbidden(e) and UPGRADE_HINT not in message:
+                message = (f"{message}\n\nInstalled yt-dlp is "
+                           f"{yt_dlp.version.__version__}.\n{UPGRADE_HINT}")
             return VideoDownloadResult(
                 success=False,
-                error_message=str(e)
+                error_message=message
             )
