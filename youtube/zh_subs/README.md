@@ -21,14 +21,36 @@ site an **embed** URL rather than a watch URL:
 
 ## Pipeline
 
-    ffmpeg -ss <sermon_start> -i service.mp3 -ac 1 -ar 16000 sermon16k.wav
+    prepare.py             # fetch DASH audio, cut the sermon span, write meta.json
     asr.py                 # mlx-whisper large-v3-turbo, word timestamps (~39x realtime)
     sentences.py           # re-cut into sentences with accurate spans
     filter_song.py         # drop sung worship and ASR hallucination
+    make_batches.py        # split into batches of 200, carrying context across the seam
     (translate)            # Claude subagents, batched, see TRANSLATION_BRIEF.md
     build_srt.py           # lay each Chinese sentence across its English span
     qa_srt.py              # overlaps, line width, reading speed
-    make_review.py         # bilingual HTML for a native speaker to check
+    make_editor.py         # bilingual editor + a range-capable server, for a native check
+    apply_edits.py         # fold the reviewer's edits back in
+    bake_subs.py           # only if a caption track is not an option (see below)
+
+`translate_nanogpt.py` can stand in for the manual translate step, but it has never
+completed a successful API call -- treat it as unverified until it has.
+
+Every step runs inside the repo's nix shell:
+
+    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix-shell shell.nix --run "python youtube/zh_subs/asr.py ..."
+
+## Tests
+
+    nix-shell shell.nix --run "cd youtube/zh_subs && python test_pipeline.py"
+
+The failure this guards against is not a crash -- it is a track that builds cleanly
+and is two seconds out, or attached to the wrong sentence. Nobody catches that until
+it is on a screen in front of a congregation. So the tests assert timing invariants
+(no overlaps, no negative or zero-length cues, every cue inside its sentence span,
+song and dropped lines emitting nothing) rather than diffing output files, plus the
+edit-precedence rules and the byte-range server.
 
 ## Design decisions worth keeping
 
