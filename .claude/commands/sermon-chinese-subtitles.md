@@ -45,6 +45,15 @@ Work happens in `youtube/work/<VIDEO_ID>/`.
 python prepare.py ../work/<VIDEO_ID> <VIDEO_ID> --start <SECONDS> [--end <SECONDS>]
 ```
 
+**If the video ID starts with a hyphen** (they often do -- `-BMLhFhfp24`), argparse
+reads it as a flag and dies with "expected one argument". Use the `--` separator for
+positionals and the `=` form for options:
+
+```bash
+python prepare.py ../work/-BMLhFhfp24 -- -BMLhFhfp24 --start 2481
+python bake_subs.py --download=-BMLhFhfp24 --workdir=../work/-BMLhFhfp24 ...
+```
+
 Downloads DASH audio (never the muxed progressive format -- YouTube's SABR
 rollout 403s that one) and writes a 16 kHz mono WAV plus `meta.json`.
 
@@ -56,8 +65,24 @@ On a 403, `yt-dlp` is stale: `python -m pip install -U -r youtube/subtitle_downl
 python asr.py ../work/<VIDEO_ID>
 ```
 
-mlx-whisper `large-v3-turbo` on Apple Silicon, roughly **39x realtime** -- a
-64-minute sermon takes under two minutes. Falls back to openai-whisper elsewhere.
+mlx-whisper `large-v3-turbo` on Apple Silicon. Speed varies with the audio far
+more than you would expect: **39x realtime** measured on a clean English sermon
+(64 min in under two minutes), but only **5-10x** on a service with heavy singing,
+or where Whisper is hallucinating because the language is wrong -- a loop costs
+more decoding than speech does. Budget for the slow case. Falls back to
+openai-whisper off Apple Silicon.
+
+**If the preacher is not speaking English, pass `--language`.** Whisper pointed at
+the wrong language does not fail: it loops, emitting the same token for a minute
+at a time. Those loops classify as speech and get translated and subtitled. A
+Korean guest sermon run through the default English path produced 168 such lines.
+
+```bash
+python asr.py ../work/<VIDEO_ID> --language ko     # or: --language auto
+```
+
+`filter_song.py` now catches these loops, but catching them is damage control --
+the words are still lost. Check who is preaching before you start.
 
 **Word-level timestamps are mandatory.** The next step derives sentence spans from
 individual word timings because 45% of Whisper's own segments end mid-sentence.
@@ -191,8 +216,11 @@ rather than shipping the old Chinese under new English.
 ```bash
 # choose a size first -- renders one frame per size, no encoding.
 # --download caches the source as ../work/<VIDEO_ID>/<VIDEO_ID>.source.mp4
+# PASS --start, or --preview-at defaults to 120s and you get a frame from the
+# pre-service holding screen, 40 minutes before the sermon -- which reads as
+# "the preview is broken" when it is working perfectly.
 python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
-  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --preview
+  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --start <SECONDS> --preview
 
 # then the real render -- same --download, so it reuses the file already fetched
 python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
@@ -200,7 +228,8 @@ python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
   --out ../work/<VIDEO_ID>/sermon.zh-subbed.mp4
 ```
 
-About **22x realtime**, so a 64-minute sermon renders in roughly three minutes.
+Roughly **10-22x realtime** depending on source resolution -- a 1080p source is
+the slow end. A 39-minute sermon took about 3.5 minutes at 1080p.
 
 `--start/--end` cut the video and re-base the subtitle track onto the cut in one
 step, since the track is written in full-video time.
@@ -208,6 +237,13 @@ step, since the track is written in full-video time.
 The font is chosen at runtime from the Simplified Chinese faces installed
 (`Hiragino Sans GB W6` first). A missing family does not error -- libass draws
 empty boxes and you only find out by watching, so do not hard-code one.
+
+**Check the source for captions it already has.** Some services go out with the
+church's own English captions burned in, sometimes only over part of the service.
+A second layer at the default `--margin 38` lands on top of them. Sample a frame
+from the middle of the sermon before committing to the render; `--margin 100`
+lifts the Chinese clear of a bottom-anchored English caption. Very large margins
+silently render no text at all rather than erroring, so check the preview.
 
 Size is **not** inherited from the English burn-ins. English was settled at
 FontSize 24; Chinese starts at 22 because full-width glyphs take more of the line.

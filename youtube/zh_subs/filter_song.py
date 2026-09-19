@@ -26,6 +26,10 @@ def wps(s):
     d = s["end"] - s["start"]
     return len(s["text"].split()) / d if d > 0 else 99.0
 
+LOOP_MIN_WORDS  = 8     # shorter than this and repetition is just emphasis
+LOOP_UNIQUE_MAX = 0.35  # unique words / total; real speech measured 1.00, loops 0.017
+LOOP_TOP_MIN    = 0.5   # share taken by the single commonest word
+
 def mark(sents):
     for s in sents:
         s["kind"] = "speech"
@@ -56,6 +60,28 @@ def mark(sents):
         if adjacent / (len(hits) - 1) >= 0.8:
             for i in hits:
                 sents[i]["kind"] = "halluc"
+
+    # --- hallucination: a long sentence that is mostly one repeated token ---
+    # Whisper pointed at the wrong language does not fail; it loops, emitting
+    # "Jesus' Jesus' Jesus' ..." or "Stunden Stunden Stunden ..." for a minute
+    # at a time. These arrive as 40-60 word run-ons, each textually distinct
+    # from its neighbour, so the adjacent-identical rule above never sees them.
+    # A Korean sermon run through the English-only path produced 168 of these
+    # and every one was classified as speech, translated, and subtitled.
+    #
+    # Real speech and these loops are not close: measured over 805 clean English
+    # sentences and 132 clean Korean ones, the lowest unique-word ratio was 1.00
+    # for sentences this long, while the loops sit at 0.017. Anything near the
+    # threshold does not occur, so it is set loosely on purpose.
+    for s in sents:
+        if s["kind"] != "speech":
+            continue
+        w = [x.lower().strip(".,!?;:\"'") for x in s["text"].split()]
+        if len(w) < LOOP_MIN_WORDS:
+            continue
+        if (len(set(w)) / len(w) <= LOOP_UNIQUE_MAX
+                or Counter(w).most_common(1)[0][1] / len(w) >= LOOP_TOP_MIN):
+            s["kind"] = "halluc"
     return sents
 
 if __name__ == "__main__":

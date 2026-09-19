@@ -108,3 +108,4 @@ __pycache__/
 
 # Local DB dumps / pre-deploy backups (never commit)
 backups/
+youtube/zh_subs/subtitle_size_zh.html
