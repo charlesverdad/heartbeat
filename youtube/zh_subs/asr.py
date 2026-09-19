@@ -16,9 +16,9 @@ DEFAULT_CPU = "large-v3"
 def apple_silicon():
     return sys.platform == "darwin" and platform.machine() == "arm64"
 
-def transcribe(wav, model):
+def transcribe(wav, model, language="en"):
     """mlx-whisper on Apple Silicon (~39x realtime), openai-whisper elsewhere."""
-    kw = dict(language="en", word_timestamps=True, verbose=False,
+    kw = dict(language=language, word_timestamps=True, verbose=False,
               # Whisper loops on music and silence when it can see its own last
               # output; the worship block at the end of a service triggers it.
               condition_on_previous_text=False)
@@ -42,7 +42,7 @@ def main(a):
     print(f"audio   : {dur/60:.1f} min" if dur else "audio   : (duration unknown)")
 
     t0 = time.time()
-    r = transcribe(wav, a.model)
+    r = transcribe(wav, a.model, None if a.language == "auto" else a.language)
     el = time.time() - t0
 
     segs = [{"start": s["start"], "end": s["end"], "text": s["text"].strip(),
@@ -66,5 +66,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("workdir")
+    ap.add_argument("--language", default="en",
+                    help="source language of the SERMON: an ISO code (en, ko, zh) or 'auto' to detect. "
+                         "Whisper pointed at the wrong language does not fail -- it loops, emitting "
+                         "the same token for a minute at a time, and those loops classify as speech "
+                         "and get translated. A guest preacher in another language needs this flag.")
     ap.add_argument("--model", default=None, help=f"default: {DEFAULT_MLX} on Apple Silicon")
     main(ap.parse_args())

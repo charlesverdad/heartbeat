@@ -118,6 +118,23 @@ if __name__ == "__main__":
     marked = json.load(open(a.marked))
     zh, origin = load_translations(a.batches)
     offset = marked.get("offset", 0.0)
+
+    # Re-running prepare.py with a corrected start rewrites meta.json but leaves
+    # asr_en.json and the sentence files on the old clock. Building from that mix
+    # yields a track that passes every check in qa_srt.py and is silently wrong by
+    # the difference -- 41 minutes, in the run that prompted this guard. Nothing
+    # downstream can detect it, so refuse here.
+    meta_path = pathlib.Path(a.marked).parent / "meta.json"
+    if meta_path.exists():
+        meta_offset = json.load(open(meta_path)).get("offset", 0.0)
+        if abs(meta_offset - offset) > 0.001:
+            sys.exit(
+                f"ERROR: offset mismatch.\n"
+                f"  {pathlib.Path(a.marked).name} was built at offset {offset}s\n"
+                f"  meta.json now says {meta_offset}s\n"
+                f"prepare.py has been re-run since these sentences were made. Re-run "
+                f"asr.py, sentences.py and filter_song.py, or every subtitle will be "
+                f"out by {abs(meta_offset - offset):.0f}s.")
     sents  = marked["sentences"]
 
     # A human's own Chinese outranks every machine translation, including a

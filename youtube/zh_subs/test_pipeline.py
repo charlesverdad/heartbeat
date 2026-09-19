@@ -392,10 +392,66 @@ def test_check_batches():
         check("an empty directory is an error, not a pass",
               check_batches.main(str(pathlib.Path(d) / "batches")) == 2)
 
+def test_halluc_loops():
+    """Whisper pointed at the wrong language loops instead of failing. Those
+    loops classified as speech and were translated and subtitled."""
+    print("\nfilter_song: repeated-token loops are caught")
+    import filter_song
+    def kinds(texts):
+        sents = [{"start": i*5.0, "end": i*5.0+4.0, "text": t, "n_words": len(t.split())}
+                 for i, t in enumerate(texts)]
+        return [x["kind"] for x in filter_song.mark(sents)]
+
+    loop_en = " ".join(["Jesus'"] * 60)
+    loop_de = " ".join(["Stunden"] * 60)
+    phrase  = "it must be it " * 15
+    real1   = "So let's welcome Pastor Hong with a huge round of applause."
+    real2   = "I pray all these things in Jesus' name."
+    real3   = "이 말씀은 탕자의 비유라는 말씀으로 굉장히 많이 알려져 있는 그런 성경 말씀 중에 하나입니다"
+    k = kinds([loop_en, loop_de, phrase, real1, real2, real3])
+    check("a single repeated token is caught", k[0] == "halluc", k[0])
+    check("a foreign repeated token is caught", k[1] == "halluc", k[1])
+    check("a repeated phrase is caught", k[2] == "halluc", k[2])
+    check("real English is left alone", k[3] == "speech", k[3])
+    check("repetition of a normal word is not a loop", k[4] == "speech", k[4])
+    check("real Korean is left alone", k[5] == "speech", k[5])
+
+    # short emphatic repetition is speech, not a loop
+    k2 = kinds(["Amen amen amen.", "Yes yes yes!"])
+    check("short emphatic repetition survives", all(x == "speech" for x in k2), str(k2))
+
+def test_offset_staleness_guard():
+    """Re-running prepare.py with a corrected start leaves the sentence files on
+    the old clock. The resulting track passes every QA check and is silently out
+    by the difference."""
+    print("\nbuild_srt: refuses to build from a stale clock")
+    import subprocess
+    def run(marked_offset, meta_offset):
+        with tempfile.TemporaryDirectory() as d:
+            w = pathlib.Path(d); (w / "batches").mkdir()
+            m = _marked([(0.0, 3.0, "speech")], offset=marked_offset)
+            (w / "sentences_marked.json").write_text(json.dumps(m), encoding="utf-8")
+            (w / "meta.json").write_text(json.dumps({"offset": meta_offset}), encoding="utf-8")
+            (w / "batches" / "zh_0.json").write_text(
+                json.dumps({"translations": [{"id": 0, "zh": "中文。"}]}), encoding="utf-8")
+            r = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "build_srt.py"),
+                                str(w / "sentences_marked.json"), str(w / "batches"),
+                                str(w / "o.srt")], capture_output=True, text=True)
+            return r.returncode, (r.stderr or "") + (r.stdout or ""), (w / "o.srt").exists()
+
+    rc, out, made = run(2481.0, 2481.0)
+    check("matching offsets build normally", rc == 0 and made, f"rc={rc}")
+    rc, out, made = run(0.0, 2481.0)
+    check("mismatched offsets refuse to build", rc != 0, f"rc={rc}")
+    check("nothing is written on refusal", not made)
+    check("the error names both numbers and the drift",
+          "0.0" in out and "2481.0" in out and "2481s" in out, out[:220])
+
 if __name__ == "__main__":
     for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
-              test_preview_uses_absolute_timeline, test_check_batches):
+              test_preview_uses_absolute_timeline, test_check_batches,
+              test_halluc_loops, test_offset_staleness_guard):
         try:
             t()
         except Exception as e:
