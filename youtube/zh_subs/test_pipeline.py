@@ -200,8 +200,168 @@ def test_apply_edits():
         check("dropped line is marked dropped", ed[3]["kind"] == "dropped", ed[3]["kind"])
         check("queue count is reported", queued == 2, str(queued))
 
+# ---------------------------------------------------------------- review regressions
+def test_no_overlap_ever():
+    """Randomised timings. The extension and merge passes both move cue ends
+    after the point where overlaps used to be checked, so the invariant has to
+    be enforced last -- a fixed example set will not catch that."""
+    print("\nbuild_srt: overlap invariant under randomised timings")
+    import random
+    random.seed(7)
+    ZH = ["对吗？", "阿们。", "是的。", "这就是福音的核心。", "你有没有想过这个问题呢？",
+          "神的恩典是白白赐给我们的。",
+          "我们今天要讲的这段经文其实非常重要，值得仔细思考它的含义和应用。"]
+    overlaps = bad_order = short = 0
+    for _ in range(4000):
+        n, t, sents = random.randint(2, 5), 0.0, []
+        for _i in range(n):
+            dur = random.choice([0.05, 0.08, 0.12, 0.3, 1.0, 2.5])
+            gap = random.choice([0.061, 0.07, 0.1, 0.141, 0.3, 0.8])
+            sents.append({"start": round(t, 3), "end": round(t + dur, 3),
+                          "kind": "speech", "text": "x", "en": "x"})
+            t += dur + gap
+        zh = {i: random.choice(ZH) for i in range(n)}
+        cues = build_srt.build({"offset": 0.0, "sentences": sents}, zh, 0.0)
+        for k in range(len(cues) - 1):
+            if cues[k][1] > cues[k+1][0] + 1e-9: overlaps += 1
+            if cues[k][0] > cues[k+1][0]: bad_order += 1
+        for a, b, _t in cues:
+            if b <= a: short += 1
+    check("no cue ever runs into the next", overlaps == 0, f"{overlaps} overlaps")
+    check("cues stay in start order", bad_order == 0, f"{bad_order} out of order")
+    check("no zero or negative duration cue", short == 0, f"{short} bad durations")
+
+    # the specific shape that used to fail: a fast interjection immediately
+    # before the next translated sentence
+    marked = _marked([(0.0, 0.08, "speech"), (0.141, 3.0, "speech")], offset=0.0)
+    cues = build_srt.build(marked, {0: "对吗？", 1: "我们今天要讲的是这个。"}, 0.0)
+    check("fast interjection does not overlap its neighbour",
+          all(cues[k][1] <= cues[k+1][0] + 1e-9 for k in range(len(cues) - 1)),
+          str([(round(a,3), round(b,3)) for a, b, _ in cues]))
+
+def test_416_keepalive():
+    """A 416 with no Content-Length is framed by connection close -- but this
+    server keeps the socket open, so the next request on it would stall."""
+    print("\nmake_editor: a 416 does not poison the connection")
+    import make_editor, functools, socketserver, socket
+    with tempfile.TemporaryDirectory() as d:
+        blob = bytes(range(256)) * 40
+        (pathlib.Path(d) / "f.bin").write_bytes(blob)
+
+        class S(socketserver.ThreadingTCPServer):
+            allow_reuse_address = True; daemon_threads = True
+        srv = S(("127.0.0.1", 0), functools.partial(make_editor.RangeHandler, directory=d))
+        port = srv.server_address[1]
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+
+        c = socket.create_connection(("127.0.0.1", port), timeout=10)
+        c.sendall(f"GET /f.bin HTTP/1.1\r\nHost: x\r\nRange: bytes={len(blob)+5}-{len(blob)+9}\r\n\r\n"
+                  f"GET /f.bin HTTP/1.1\r\nHost: x\r\nRange: bytes=0-9\r\nConnection: close\r\n\r\n"
+                  .encode())
+        got = b""
+        try:
+            while True:
+                chunk = c.recv(65536)
+                if not chunk: break
+                got += chunk
+        except socket.timeout:
+            got += b"<<TIMED OUT>>"
+        c.close(); srv.shutdown()
+
+        check("416 declares a zero-length body",
+              b"416" in got and b"Content-Length: 0" in got, got[:160].decode(errors="replace"))
+        check("the request after a 416 is still answered",
+              b"206 Partial Content" in got, got[:200].decode(errors="replace"))
+        check("connection did not stall", b"<<TIMED OUT>>" not in got)
+
+def test_apply_edits_exit_code():
+    """Exit code has to mean something, or `apply_edits && build_srt` builds a
+    track from translations the reviewer already superseded."""
+    print("\napply_edits: exit code reflects pending re-translation")
+    import subprocess
+    def run(edits):
+        with tempfile.TemporaryDirectory() as d:
+            w = pathlib.Path(d); (w / "batches").mkdir()
+            marked = _marked([(0.0, 2.0, "speech")] * 2, offset=0.0)
+            for i, sn in enumerate(marked["sentences"]): sn["text"] = sn["en"] = f"english {i}"
+            (w / "sentences_marked.json").write_text(json.dumps(marked), encoding="utf-8")
+            ef = w / "e.json"; ef.write_text(json.dumps({"edits": edits}), encoding="utf-8")
+            return subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "apply_edits.py"),
+                                   str(w), str(ef)], capture_output=True, text=True).returncode
+    check("queued re-translation exits non-zero",
+          run({"0": {"en": "fixed", "retranslate": True}}) != 0)
+    check("nothing queued exits zero",
+          run({"0": {"zh": "人手写的中文。"}}) == 0)
+
+def test_preview_cleans_up():
+    """preview() shells out per size with check=True; a failure used to escape
+    before the temp dir was removed."""
+    print("\nbake_subs: preview cleans up when ffmpeg fails")
+    import tempfile as _tf
+    made = []
+    real_mkdtemp, real_sh = _tf.mkdtemp, bake_subs.sh
+    def spy_mkdtemp(*a, **k):
+        d = real_mkdtemp(*a, **k); made.append(d); return d
+    def boom(*a, **k): raise subprocess.CalledProcessError(1, "ffmpeg")
+    bake_subs.tempfile.mkdtemp, bake_subs.sh = spy_mkdtemp, boom
+    try:
+        try:
+            bake_subs.preview("v.mp4", "s.srt", "Font", [22], 40, 10, "out.html")
+        except Exception:
+            pass
+    finally:
+        bake_subs.tempfile.mkdtemp, bake_subs.sh = real_mkdtemp, real_sh
+    check("temp dir was created during preview", len(made) == 1, str(made))
+    check("temp dir removed despite the failure",
+          all(not pathlib.Path(m).exists() for m in made), str(made))
+
+def test_preview_uses_absolute_timeline():
+    """preview() seeks the UNCUT source with -copyts, so the frame keeps its
+    absolute PTS. Hand it the re-based track and libass draws the sentence that
+    sits at that number in the cut, over a frame from somewhere else -- off by
+    exactly --start. Verified visually once; this locks it with a stub ffmpeg."""
+    print("\nbake_subs: preview frame and subtitle share one clock")
+    import os
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        srt = w / "full.srt"
+        srt.write_text("1\n00:00:30,000 --> 00:00:35,000\nCUE030\n\n"
+                       "2\n00:05:20,000 --> 00:05:30,000\nCUE320\n", encoding="utf-8")
+        (w / "v.mp4").write_bytes(b"\x00" * 16)
+        bindir = w / "bin"; bindir.mkdir()
+        log = w / "argv.log"
+        body = ("#!/bin/sh\n"
+                'printf "%s\\n" "$@" >> ' + str(log) + "\n"
+                'for a in "$@"; do\n'
+                '  case "$a" in\n'
+                '    subtitles=*) p=${a#subtitles=}; p=${p%%:*};'
+                '      echo "---TRACK---" >> ' + str(log) + '; cat "$p" >> ' + str(log) + ' ;;\n'
+                "  esac\n"
+                "  out=\"$a\"\n"
+                "done\n"
+                'printf x > "$out"\n')
+        fake = bindir / "ffmpeg"; fake.write_text(body); fake.chmod(0o755)
+
+        env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}")
+        subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "bake_subs.py"),
+                        "--video", str(w / "v.mp4"), "--srt", str(srt), "--start", "200",
+                        "--preview", "--preview-sizes", "22", "--preview-at", "320",
+                        "--out", str(w / "p.html")], capture_output=True, text=True, env=env)
+
+        args = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+        ss = args[args.index("-ss") + 1] if "-ss" in args else None
+        track = "\n".join(args[args.index("---TRACK---") + 1:]) if "---TRACK---" in args else ""
+        check("preview seeks the absolute time, not the cut-relative one",
+              ss is not None and abs(float(ss) - 320.0) < 1e-6, f"-ss {ss}")
+        check("preview is handed the track on that same absolute clock",
+              "00:05:20,000" in track, repr(track[:120]))
+        check("preview is NOT handed the re-based track",
+              "00:02:00,000" not in track, repr(track[:120]))
+
 if __name__ == "__main__":
-    for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits):
+    for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
+              test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
+              test_preview_uses_absolute_timeline):
         try:
             t()
         except Exception as e:

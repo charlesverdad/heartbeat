@@ -74,4 +74,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("workdir"); ap.add_argument("edits")
     a = ap.parse_args()
-    sys.exit(0 if main(a.workdir, a.edits) == 0 else 0)
+    # Non-zero while lines are still queued for re-translation, so that a
+    # chained `apply_edits.py ... && build_srt.py ...` cannot quietly build a
+    # track from translations the reviewer has already superseded.
+    sys.exit(1 if main(a.workdir, a.edits) else 0)

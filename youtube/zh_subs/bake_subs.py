@@ -93,6 +93,12 @@ def fetch(video_id, workdir):
 def preview(video, srtfile, font, sizes, margin, at, out):
     """Render one frame per size so a human can choose before a long encode."""
     tmp = pathlib.Path(tempfile.mkdtemp())
+    try:
+        return _preview(video, srtfile, font, sizes, margin, at, out, tmp)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+def _preview(video, srtfile, font, sizes, margin, at, out, tmp):
     shots = []
     for sz in sizes:
         f = tmp / f"s{sz}.jpg"
@@ -125,7 +131,6 @@ B.forEach((b,k)=>b.setAttribute('aria-pressed',k===i));}};
 B.forEach((b,k)=>b.onclick=()=>show(k));
 onkeydown=e=>{{if(e.key==='ArrowRight')show(i+1);if(e.key==='ArrowLeft')show(i-1);}};show(0);
 </script>""", encoding="utf-8")
-    shutil.rmtree(tmp, ignore_errors=True)
     print(f"wrote {out}  ({len(shots)} sizes: {', '.join(str(s) for s,_ in shots)})")
 
 def bake(video, srtfile, out, font, size, margin, start, end, crf):
@@ -179,9 +184,15 @@ if __name__ == "__main__":
 
     try:
         if a.preview:
+            # The preview seeks into the *uncut* source with -copyts, so the frame
+            # keeps its absolute PTS. The track handed to it therefore has to be on
+            # that same clock: give it the re-based one and libass draws whatever
+            # sentence sits at that number in the cut, over a frame from somewhere
+            # else entirely -- off by exactly --start.
             at = a.preview_at if a.preview_at is not None else (a.start or 0) + 120
-            if a.start or a.end: at -= a.start          # preview runs on the cut timeline
-            preview(video, staged, font, [int(s) for s in a.preview_sizes.split(",")],
+            whole = tmp / "subs_full.srt"
+            whole.write_text(pathlib.Path(a.srt).read_text(encoding="utf-8"), encoding="utf-8")
+            preview(video, whole, font, [int(s) for s in a.preview_sizes.split(",")],
                     a.margin, at, a.out or "subtitle_size_zh.html")
         else:
             out = a.out or str(video.with_suffix("")) + ".subbed.mp4"

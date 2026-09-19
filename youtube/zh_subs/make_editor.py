@@ -180,6 +180,11 @@ class RangeHandler(http.server.SimpleHTTPRequestHandler):
             f.close()
             self.send_response(416)
             self.send_header("Content-Range", f"bytes */{size}")
+            # Without a Content-Length an HTTP/1.1 response is framed by "read
+            # until close" -- and this server keeps the connection open, so the
+            # client would stall waiting for a body that never ends. Browsers do
+            # issue ranges past EOF while buffering near the end of the audio.
+            self.send_header("Content-Length", "0")
             self.end_headers(); return None
         f.seek(start)
         self.send_response(206)

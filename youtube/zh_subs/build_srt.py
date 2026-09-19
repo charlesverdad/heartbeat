@@ -27,39 +27,54 @@ def load_translations(batchdir):
                 origin[int(t["id"])] = p.stem
     return zh, origin
 
+SEP = 0.04      # gap that must remain between one cue and the next
+
 def build(marked, zh, offset):
     sents = marked["sentences"]
     cues = []
     for i, s in enumerate(sents):
         if s["kind"] != "speech" or i not in zh:
             continue
-        # never run into the next subtitled sentence
-        ceiling = s["end"]
+        # Never run into the next subtitled sentence. The ceiling always wins:
+        # a cue left too short here is lengthened by the MIN_DISPLAY pass below,
+        # which respects the same ceiling. Letting a readability floor overrule
+        # the ceiling is exactly how two cues end up on screen at once.
+        t1 = s["end"]
         for j in range(i + 1, len(sents)):
             if sents[j]["kind"] == "speech" and j in zh:
-                ceiling = min(max(s["end"], s["start"] + 0.3), sents[j]["start"] - 0.04)
+                t1 = min(t1, sents[j]["start"] - SEP)
                 break
-        t1 = max(s["start"] + 0.3, min(s["end"], ceiling))
+        t1 = max(t1, s["start"] + 0.01)
         for a, b, text in cjk.cues_for(zh[i], s["start"], t1):
             cues.append([a + offset, min(b, t1) + offset, text])
     cues.sort(key=lambda c: c[0])
-    # final safety clamp against any residual overlap
-    for k in range(len(cues) - 1):
-        if cues[k][1] > cues[k+1][0]:
-            cues[k][1] = max(cues[k][0] + 0.2, cues[k+1][0] - 0.04)
     # A short interjection ("Amen.") inherits a sub-second ASR span, which is
     # too fast to read. Hold it longer by borrowing the silence that follows,
     # never by overlapping the next cue.
-    MIN_DISPLAY, SEP = 1.0, 0.04
+    MIN_DISPLAY = 1.0
     for k, c in enumerate(cues):
         chars  = cjk.visual_len(c[2].replace("\n", ""))
         needed = max(MIN_DISPLAY, chars / cjk.CHARS_PER_SEC)
         if c[1] - c[0] >= needed:
             continue
         ceiling = (cues[k+1][0] - SEP) if k + 1 < len(cues) else c[1] + needed
-        cues[k][1] = min(max(c[1], c[0] + needed), max(ceiling, c[0] + 0.2))
+        cues[k][1] = max(c[1], min(c[0] + needed, ceiling))
     cues = _merge_slivers(cues)
-    return [tuple(c) for c in cues]
+    return [tuple(c) for c in _enforce_order(cues)]
+
+def _enforce_order(cues, sep=SEP):
+    """Last word on timing: no cue may still be on screen when the next begins.
+
+    Every earlier pass has a readability motive for lengthening a cue, and both
+    the extension pass and _merge_slivers can move an end after the point where
+    overlaps were last checked. This one runs last and has no such motive --
+    shortening a cue is always preferable to showing two at once.
+    """
+    for k in range(len(cues) - 1):
+        limit = cues[k+1][0] - sep
+        if cues[k][1] > limit:
+            cues[k][1] = max(cues[k][0] + 0.05, limit)
+    return cues
 
 def _merge_slivers(cues, min_dur=0.55, max_gap=0.45):
     """Fold away cues too short to read.
