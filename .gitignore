@@ -101,3 +101,10 @@ website/ghost/content/
 # Sermon pipeline generated content
 youtube/transcripts/
 youtube/blog-posts/
+# Per-sermon working files: audio, video review copies and regenerable JSON.
+# A single sermon's review copy is ~300 MB, so this must never be tracked.
+youtube/work/
+__pycache__/
+
+# Local DB dumps / pre-deploy backups (never commit)
+backups/
