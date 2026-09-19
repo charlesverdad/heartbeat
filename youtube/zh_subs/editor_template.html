@@ -1,0 +1,463 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<style>
+:root{
+  --bg:#14161a; --panel:#1d2027; --panel2:#23272f; --line:#2e333d; --fg:#e9ecf1;
+  --dim:#98a1b0; --acc:#5b9dff; --warn:#e0a94a; --ok:#4ec08a; --edit:#b985f2; --drop:#e0665a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+     font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,
+          "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+
+/* ---------- layout: video rail left, lines right ---------- */
+.app{display:grid;grid-template-columns:minmax(360px,38%) 1fr;height:100vh}
+.rail{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.list{overflow-y:auto;min-width:0}
+@media (max-width:1000px){
+  .app{grid-template-columns:1fr;height:auto}
+  .rail{border-right:0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:var(--bg)}
+}
+
+/* ---------- video ---------- */
+.vidbox{position:relative;width:100%;aspect-ratio:16/9;background:#000}
+.vidbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.now{padding:14px 16px;border-top:1px solid var(--line);min-height:96px}
+.now .lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.now .en{color:var(--dim);font-size:13.5px;margin-bottom:6px}
+.now .zh{font-size:19px;line-height:1.55}
+.railfoot{margin-top:auto;padding:14px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+
+/* ---------- header / toolbar ---------- */
+header{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+h1{margin:0 0 3px;font-size:17px;font-weight:600}
+.sub{color:var(--dim);font-size:13px}
+.bar{position:sticky;top:0;z-index:10;background:rgba(20,22,26,.96);backdrop-filter:blur(10px);
+     border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:6px 12px;
+       border-radius:7px;font:inherit;font-size:13px;cursor:pointer}
+button:hover{background:var(--panel2)}
+button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.primary{background:var(--ok);border-color:var(--ok);color:#0d1f17;font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:6px 11px;
+      border-radius:7px;font:inherit;font-size:13px;min-width:190px}
+.spacer{flex:1}
+.pill{font-size:12px;color:var(--dim);white-space:nowrap}
+
+/* ---------- rows ---------- */
+.rows{padding:0 0 55vh}
+.row{display:grid;grid-template-columns:78px 1fr 1fr 30px;gap:12px;
+     padding:9px 20px;border-bottom:1px solid var(--line);align-items:start}
+.row:hover{background:#181b21}
+.row.flag{background:rgba(224,169,74,.07)}
+.row.cur{background:rgba(91,157,255,.14);box-shadow:inset 3px 0 0 var(--acc)}
+.row.dropped{opacity:.4}
+.row.dropped .zh,.row.dropped .en{text-decoration:line-through}
+.t{color:var(--acc);font-variant-numeric:tabular-nums;font-size:13px;cursor:pointer;
+   user-select:none;padding-top:2px;white-space:nowrap}
+.t:hover{text-decoration:underline}
+.t .mk{color:var(--warn);font-weight:700}
+.en,.zh{border:1px solid transparent;border-radius:6px;padding:3px 7px;margin:-3px -7px;
+        outline:none;white-space:pre-wrap;word-break:break-word;min-height:1.6em}
+.en{color:var(--dim);font-size:14px}
+.zh{font-size:16.5px;line-height:1.7}
+.en:hover,.zh:hover{border-color:var(--line)}
+.en:focus,.zh:focus{border-color:var(--acc);background:#11141a}
+.en.dirty{color:var(--edit);border-color:rgba(185,133,242,.4)}
+.zh.dirty{color:var(--ok);border-color:rgba(78,192,138,.4)}
+.x{background:none;border:0;color:var(--dim);font-size:15px;line-height:1;padding:3px 5px;
+   cursor:pointer;opacity:0;border-radius:5px}
+.row:hover .x{opacity:.65}
+.x:hover{opacity:1;color:var(--drop);background:var(--panel)}
+.row.dropped .x{opacity:1;color:var(--drop)}
+
+/* ---------- notes / legend ---------- */
+.note{margin:14px 20px;padding:11px 14px;background:var(--panel);border:1px solid var(--line);
+      border-left:3px solid var(--warn);border-radius:6px;color:var(--dim);font-size:13px}
+.note b{color:var(--fg)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:7px;font-size:12px}
+.legend i{font-style:normal;display:inline-flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+       background:var(--ok);color:#0d1f17;font-weight:600;font-size:13.5px;padding:9px 18px;
+       border-radius:8px;opacity:0;transition:.22s;pointer-events:none;z-index:50}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+
+<div class="app">
+  <div class="rail">
+    <div class="vidbox" id="vidbox"></div>
+    <div class="now">
+      <div class="lbl">On screen now</div>
+      <div class="en" id="nowEn">&mdash;</div>
+      <div class="zh" id="nowZh">&mdash;</div>
+    </div>
+    <div class="railfoot">
+      <div><b id="pEdit">0</b> lines edited &middot; <b id="pDrop">0</b> dropped &middot; <b id="pRetr">0</b> queued for re-translation</div>
+      <div style="margin-top:6px">Saved in this browser automatically. Press <b>Export</b> when you are done and give me the file.</div>
+    </div>
+  </div>
+
+  <div class="list">
+    <header>
+      <h1>__HEADING__</h1>
+      <div class="sub">__SUBTITLE__</div>
+    </header>
+
+    <div class="bar">
+      <button id="fAll"  aria-pressed="true">All <span class="pill" id="cAll"></span></button>
+      <button id="fFlag" aria-pressed="false">Needs a check <span class="pill" id="cFlag"></span></button>
+      <button id="fEdit" aria-pressed="false">Edited <span class="pill" id="cEdit"></span></button>
+      <input type="search" id="q" placeholder="search English or Chinese">
+      <button id="follow" aria-pressed="true" title="Scroll the list to keep up with the video">Follow</button>
+      <span class="spacer"></span>
+      <button id="imp">Import&hellip;</button>
+      <button id="exp" class="primary">Export edits</button>
+    </div>
+
+    <div class="note">
+      <b>Click a timestamp</b> to jump the video there. <b>Click the English or Chinese text</b> to edit it.
+      Lines marked <span style="color:var(--warn);font-weight:700">?</span> are ones the translator flagged
+      itself, usually where the speech recognition was garbled.
+      <div class="legend">
+        <i><span class="dot" style="background:var(--edit)"></span> English edited &rarr; I re-translate it</i>
+        <i><span class="dot" style="background:var(--ok)"></span> Chinese edited &rarr; I use yours as-is</i>
+        <i><span class="dot" style="background:var(--drop)"></span> dropped &rarr; no subtitle for that line</i>
+      </div>
+    </div>
+
+    <div class="rows" id="rows"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="file" accept="application/json" hidden>
+
+<script>
+const ROWS  = __ROWS__;
+const VIDEO = "__VID__";
+const MEDIA = __MEDIA__;          // local file next to this page, or null
+const MOFF  = __MOFF__;           // second of the full video where MEDIA starts
+const MSIZE = __MSIZE__;          // bytes, so we know whether to hold it in memory
+const KEY   = "zhsub:" + VIDEO;
+
+/* ---------------- edit state ----------------
+   edits[id] = { en, zh, en_at, zh_at, drop }
+   A line needs re-translation when its English was edited more recently than
+   its Chinese, i.e. the human changed the source after the Chinese was set.  */
+let edits = {};
+try { edits = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { edits = {}; }
+
+const byId   = Object.fromEntries(ROWS.map(r => [r.id, r]));
+const enOf   = r => (edits[r.id]?.en ?? r.en);
+const zhOf   = r => (edits[r.id]?.zh ?? r.zh);
+const dirtyEn= r => edits[r.id]?.en != null && edits[r.id].en !== r.en;
+const dirtyZh= r => edits[r.id]?.zh != null && edits[r.id].zh !== r.zh;
+const dropped= r => !!edits[r.id]?.drop;
+const needsRetranslate = r => {
+  const e = edits[r.id]; if (!e || e.drop) return false;
+  return e.en != null && e.en !== r.en && (e.en_at || 0) > (e.zh_at || 0);
+};
+
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    for (const k of Object.keys(edits)) {            // drop no-op entries
+      const e = edits[k], r = byId[k];
+      if (!e.drop && (e.en == null || e.en === r.en) && (e.zh == null || e.zh === r.zh)) delete edits[k];
+    }
+    try { localStorage.setItem(KEY, JSON.stringify(edits)); } catch (e) {}
+    progress();
+  }, 250);
+}
+function touch(id){ return (edits[id] ||= {}); }
+
+/* ---------------- render ---------------- */
+let mode = "all", cur = null;
+const box = document.getElementById("rows");
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function visible(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  return ROWS.filter(r =>
+       (mode === "all" || (mode === "flag" && r.flag)
+                       || (mode === "edit" && (dirtyEn(r) || dirtyZh(r) || dropped(r))))
+    && (!q || enOf(r).toLowerCase().includes(q) || zhOf(r).includes(q)));
+}
+
+function render(){
+  const rows = visible();
+  box.innerHTML = rows.map(r => `
+    <div class="row ${r.flag?'flag':''} ${dropped(r)?'dropped':''}" data-id="${r.id}">
+      <div class="t" data-seek="${r.t}">${r.hhmm}${r.flag?' <span class="mk">?</span>':''}</div>
+      <div class="en ${dirtyEn(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
+           data-f="en" data-id="${r.id}">${esc(enOf(r))}</div>
+      <div class="zh ${dirtyZh(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
+           data-f="zh" data-id="${r.id}">${esc(zhOf(r))}</div>
+      <button class="x" data-drop="${r.id}" title="Drop this line from the subtitles">&times;</button>
+    </div>`).join("");
+  counts(); progress(); mark();
+}
+function counts(){
+  document.getElementById("cAll").textContent  = ROWS.length;
+  document.getElementById("cFlag").textContent = ROWS.filter(r => r.flag).length;
+  document.getElementById("cEdit").textContent =
+    ROWS.filter(r => dirtyEn(r) || dirtyZh(r) || dropped(r)).length;
+}
+function progress(){
+  document.getElementById("pEdit").textContent = ROWS.filter(r => dirtyEn(r) || dirtyZh(r)).length;
+  document.getElementById("pDrop").textContent = ROWS.filter(dropped).length;
+  document.getElementById("pRetr").textContent = ROWS.filter(needsRetranslate).length;
+  counts();
+}
+
+/* ---------------- editing ---------------- */
+box.addEventListener("input", e => {
+  const el = e.target;
+  if (!el.dataset.f) return;
+  const id = +el.dataset.id, f = el.dataset.f, r = byId[id];
+  const val = el.innerText.replace(/ /g, " ").replace(/\n+$/, "");
+  const rec = touch(id);
+  if (val === r[f]) { delete rec[f]; delete rec[f + "_at"]; }
+  else              { rec[f] = val;  rec[f + "_at"] = Date.now(); }
+  el.classList.toggle("dirty", val !== r[f]);
+  save();
+});
+box.addEventListener("click", e => {
+  const seek = e.target.closest("[data-seek]");
+  if (seek) { jump(+seek.dataset.seek); return; }
+  const drop = e.target.closest("[data-drop]");
+  if (drop) {
+    const id = +drop.dataset.drop, rec = touch(id);
+    rec.drop = !rec.drop;
+    drop.closest(".row").classList.toggle("dropped", rec.drop);
+    save();
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { document.activeElement?.blur?.(); return; }
+  // space plays/pauses, but only when you are not in the middle of a word
+  if (e.key === " " && !e.target.isContentEditable && e.target.tagName !== "INPUT") {
+    e.preventDefault(); P?.toggle();
+  }
+});
+
+/* ---------------- player ----------------
+   Two backends behind one tiny interface. A local file is the better one for
+   this job: seeking is instant and there are no ads between you and the line
+   you are checking. YouTube is the fallback when no file has been downloaded. */
+let P = null;
+
+const AUDIO_EXT = /\.(m4a|mp3|aac|opus|oga|wav)$/i;
+
+function localPlayer(src){
+  const isAudio = AUDIO_EXT.test(src);
+  const el = document.createElement(isAudio ? "audio" : "video");
+  el.controls = true; el.preload = "auto"; el.playsInline = true;
+  el.style.cssText = isAudio
+    ? "position:absolute;left:0;right:0;bottom:0;width:100%"
+    : "position:absolute;inset:0;width:100%;height:100%;background:#000";
+  const bx = document.getElementById("vidbox");
+  if (isAudio) bx.insertAdjacentHTML("beforeend",
+    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                 color:#4a5261;font-size:13px">audio only &mdash; ${src}</div>`);
+  bx.appendChild(el);
+
+  // Small enough: pull it once and play it from memory, so each of the hundreds
+  // of seeks this page exists for costs nothing. Too big for that and we stream
+  // it instead -- a range request per seek is slower, but it starts playing at
+  // once and does not park a third of a gigabyte in the tab.
+  const PREFETCH_MAX = 80e6;
+  let url = null;
+  if (MSIZE && MSIZE > PREFETCH_MAX) {
+    el.src = src;
+  } else (async () => {
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const total = +res.headers.get("content-length") || 0;
+      const reader = res.body.getReader();
+      const parts = []; let got = 0;
+      for (;;) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        parts.push(value); got += value.length;
+        if (total) progress(got / total);
+      }
+      progress(1);
+      url = URL.createObjectURL(new Blob(parts, {type: res.headers.get("content-type") || ""}));
+      el.src = url;
+    } catch (e) {
+      // Fall back to streaming it: slower to seek, but it plays.
+      el.src = src;
+      progress(1);
+    }
+  })();
+  function progress(f){
+    let b = document.getElementById("dlbar");
+    if (f >= 1) { b?.remove(); return; }
+    if (!b) { b = document.createElement("div"); b.id = "dlbar";
+      b.style.cssText = "position:absolute;left:0;top:0;height:3px;background:var(--acc);" +
+                        "transition:width .2s;z-index:3";
+      bx.appendChild(b); }
+    b.style.width = (f * 100).toFixed(1) + "%";
+  }
+  addEventListener("pagehide", () => url && URL.revokeObjectURL(url));
+
+  el.addEventListener("error", () => fail(
+    `Could not load <code>${src}</code>. Serve the page with <code>--serve</code> from the ` +
+    `folder holding the file, or drop <code>--media</code> to use YouTube.`));
+  return {
+    kind: isAudio ? "local-audio" : "local-video",
+    get ready(){ return el.readyState > 0; },
+    time: () => el.currentTime + MOFF,
+    seek: t => { el.currentTime = Math.max(t - MOFF, 0); el.play().catch(()=>{}); },
+    toggle: () => el.paused ? el.play().catch(()=>{}) : el.pause(),
+  };
+}
+
+function ytPlayer(){
+  const host = document.createElement("div");
+  host.id = "yt";
+  document.getElementById("vidbox").appendChild(host);
+  let yt = null, up = false;
+  const boot = () => {
+    yt = new YT.Player("yt", {
+      videoId: VIDEO,
+      playerVars: {playsinline: 1, rel: 0, modestbranding: 1},
+      events: {
+        onReady: () => { up = true; },
+        onError: () => fail(
+          "YouTube will not embed this video here. Download it instead and rebuild " +
+          "the page with <code>--fetch</code>, which also makes seeking instant."),
+      }
+    });
+  };
+  if (window.YT && window.YT.Player) boot(); else window.onYouTubeIframeAPIReady = boot;
+  return {
+    kind: "youtube",
+    get ready(){ return up; },
+    time: () => (up && yt.getCurrentTime) ? yt.getCurrentTime() : 0,
+    seek: t => { if (up) { yt.seekTo(t, true); yt.playVideo(); } },
+    toggle: () => { if (up) (yt.getPlayerState() === 1 ? yt.pauseVideo() : yt.playVideo()); },
+  };
+}
+
+function fail(msg){
+  document.getElementById("vidbox").innerHTML =
+    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                 padding:26px;text-align:center;color:#98a1b0;font-size:13.5px;line-height:1.7">
+       <div><b style="color:#e0665a">No video</b><br>${msg}<br><br>
+       The lines below still work; only the player is missing.</div></div>`;
+}
+
+P = MEDIA ? localPlayer(MEDIA) : ytPlayer();
+setInterval(tick, 250);
+
+function jump(sec){ P.seek(sec); }
+
+function tick(){
+  if (!P || !P.ready) return;
+  const now = P.time();
+  // last row whose start is at or before now
+  let lo = 0, hi = ROWS.length - 1, hit = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1;
+    if (ROWS[m].t <= now) { hit = m; lo = m + 1; } else hi = m - 1; }
+  const id = hit >= 0 ? ROWS[hit].id : null;
+  if (id === cur) return;
+  cur = id; mark();
+  const r = hit >= 0 ? ROWS[hit] : null;
+  document.getElementById("nowEn").textContent = r ? enOf(r) : "\u2014";
+  document.getElementById("nowZh").textContent = r ? (dropped(r) ? "\u2014" : zhOf(r)) : "\u2014";
+}
+function mark(){
+  box.querySelectorAll(".row.cur").forEach(el => el.classList.remove("cur"));
+  if (cur == null) return;
+  const el = box.querySelector(`.row[data-id="${cur}"]`);
+  if (!el) return;
+  el.classList.add("cur");
+  if (document.getElementById("follow").getAttribute("aria-pressed") === "true"
+      && !box.contains(document.activeElement)) {
+    el.scrollIntoView({block: "center", behavior: "smooth"});
+  }
+}
+
+/* ---------------- import / export ---------------- */
+document.getElementById("exp").onclick = () => {
+  const out = {
+    video_id: VIDEO,
+    saved_at: new Date().toISOString(),
+    edits: {},
+  };
+  for (const r of ROWS) {
+    const e = edits[r.id]; if (!e) continue;
+    const rec = {};
+    if (e.drop) rec.drop = true;
+    if (dirtyEn(r)) { rec.en = e.en; rec.en_orig = r.en; }
+    if (dirtyZh(r)) { rec.zh = e.zh; }
+    if (needsRetranslate(r)) rec.retranslate = true;
+    if (Object.keys(rec).length) { rec.t = r.t; out.edits[r.id] = rec; }
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `edits.${VIDEO}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(`Exported ${Object.keys(out.edits).length} edited lines`);
+};
+document.getElementById("imp").onclick = () => document.getElementById("file").click();
+document.getElementById("file").onchange = ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result);
+      const src = d.edits || d;
+      for (const [id, rec] of Object.entries(src)) {
+        if (!byId[id]) continue;
+        const e = touch(id);
+        if (rec.drop) e.drop = true;
+        if (rec.en != null) { e.en = rec.en; e.en_at = rec.retranslate ? Date.now() : 1; }
+        if (rec.zh != null) { e.zh = rec.zh; e.zh_at = Date.now(); }
+      }
+      save(); render();
+      toast(`Imported ${Object.keys(src).length} lines`);
+    } catch (err) { toast("Could not read that file"); }
+  };
+  rd.readAsText(f);
+  ev.target.value = "";
+};
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2200);
+}
+
+/* ---------------- toolbar ---------------- */
+const setMode = m => {
+  mode = m;
+  for (const [k, id] of [["all","fAll"],["flag","fFlag"],["edit","fEdit"]])
+    document.getElementById(id).setAttribute("aria-pressed", String(mode === k));
+  render();
+};
+document.getElementById("fAll").onclick  = () => setMode("all");
+document.getElementById("fFlag").onclick = () => setMode("flag");
+document.getElementById("fEdit").onclick = () => setMode("edit");
+document.getElementById("q").oninput     = render;
+document.getElementById("follow").onclick = e => {
+  const on = e.currentTarget.getAttribute("aria-pressed") === "true";
+  e.currentTarget.setAttribute("aria-pressed", String(!on));
+};
+window.addEventListener("beforeunload", e => {
+  if (Object.keys(edits).length) { e.preventDefault(); e.returnValue = ""; }
+});
+
+render();
+</script>
+<script>if (!MEDIA) { const t = document.createElement("script");
+  t.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(t); }</script>

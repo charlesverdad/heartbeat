@@ -236,3 +236,93 @@ numpy. Pass the HF token via `HF_TOKEN=$(tr -d '\n' < ~/.cache/huggingface/token
 - `exec cmd | grep | tail` does not do what it looks like: the process vanished with
   an empty log. Run the command plainly and redirect to a file. Also, `tail -N` in a
   background pipeline buffers everything until exit, so there is no live progress.
+
+## Chinese subtitles for English sermons (2026-09-17)
+
+Goal: a zh-Hans subtitle track on a published sermon within 2-3 hours, for
+broadcast to a Chinese-speaking location watching a YouTube link on a screen.
+
+**Do not burn subtitles in.** It seems obvious for a room (nothing to enable,
+you control the size) but it is the wrong call: burning in requires re-uploading,
+and YouTube's transcode for a ~45 min video reaches 720p only after roughly 1-3
+hours. That is the entire budget. Burned-in text also looks worst at the low
+resolutions YouTube serves first. A caption track needs no transcode at all and
+renders crisply at any resolution.
+
+**The "someone has to press CC" objection is solvable.** An embed URL with
+`cc_load_policy=1&cc_lang_pref=zh-Hans` forces captions on. Both parameters are
+current. This removes the only real advantage burn-in had.
+
+**YouTube already auto-translates into zh-Hans**, so there is a free baseline to
+beat. It is beatable: its English ASR keeps filler ("um"/"uh": 68 vs Whisper's 2),
+has a third of the commas, and 84% of its cues end mid-sentence versus Whisper's
+45%. Machine translation is then fed sentence fragments. Note YouTube throttles
+auto-translated tracks (HTTP 429 on repeat fetches) -- fine for a viewer, not
+scriptable.
+
+**Whisper is far cheaper than assumed**: mlx-whisper large-v3-turbo did 69.8 min
+of audio in 107s, i.e. **39x realtime**. Do not estimate this from memory; an
+earlier guess of 8 minutes was 4x too pessimistic and led to the wrong
+architecture.
+
+**Translate sentences, never cues.** Same lesson as the Korean bilingual cut.
+English/Chinese word order differs too much for fragment translation. Re-cut the
+ASR into sentences using word timestamps, translate those, then split the Chinese
+across the English sentence's span.
+
+**Detecting sung worship: use rate and length, not repetition.** A repetition
+test flags a preacher's deliberate rhetorical repetition as lyrics (it flagged
+"It's not the ground that is holy..." as song). Measured separation on a real
+sermon: sung ~1.18 words/sec over ~13.4s; speech ~2.94 words/sec over ~3.6s.
+Require slow AND long AND adjacent to another such line.
+
+**Whisper hallucinates on silence** exactly as the transcribe skill warns:
+"Thank you." repeated 12x on a ~30s cycle after the service ended. Detect by
+identical short text in *adjacent* sentences; scattered "Right?" through a sermon
+is real speech, not hallucination.
+
+**CJK subtitles need their own wrapper**: 16 full-width chars/line, 2 lines,
+break after Chinese punctuation, never start a line with closing punctuation,
+~9 chars/sec reading speed. Sub-second cues cannot simply be stretched (there may
+be no silence to borrow) -- merge them into a neighbour instead.
+
+Code: `youtube/zh_subs/` (README there). Trial output for 2026-08-09:
+`youtube/work/S-A7wyAHLxk/`.
+
+## Subtitle review editor + local media playback (2026-09-19)
+
+**Python's `http.server` has no Range support.** `SimpleHTTPRequestHandler` ignores
+the `Range` header and returns 200 with the whole file, so an HTML5 `<video>`/`<audio>`
+served from it cannot seek. `make_editor.py` carries a `RangeHandler` that adds 206
+responses, `Accept-Ranges`, suffix ranges and 416. Also set
+`protocol_version = "HTTP/1.1"` and use `ThreadingTCPServer`, or streaming media
+blocks every other request on the page.
+
+**Chrome will not load media in a hidden tab.** `visibilityState === "hidden"` means a
+`<video>`/`<audio>` element never issues its network request at all: `readyState` stays
+0, `networkState` stays 2 (LOADING), and **no error fires**. `fetch()` to the same URL
+works fine in the same tab, which makes it look like a media/codec bug. Any browser
+automation running in a backgrounded window cannot verify media playback, full stop —
+diagnose with `document.visibilityState` before chasing codecs.
+
+**`-f "bestvideo[ext=mp4]"` also matches VP9-in-MP4.** yt-dlp now offers VP9 with
+`ext=mp4` (format 605), which Safari will not play. Pin `vcodec^=avc1` when the output
+is for a browser you don't control.
+
+**Progressive format 18 is the one SABR blocks.** It is tempting because it is already
+muxed, but it 403s; DASH video+audio works. See [[ytdlp_sabr_hls_workaround]].
+
+**For a review tool, download audio and prefetch it to a blob.** 32k mono AAC of a
+110-minute service is 29 MB (vs 282 MB for 360p video). Small enough to `fetch()` once
+and `URL.createObjectURL()`, after which every seek is a local demux with zero network —
+faster than both YouTube and a range-served file. Pass `-movflags +faststart` or the
+browser must fetch the file's tail before it can report a duration.
+
+**Don't cut to the sermon span to save bytes.** A cut that isn't frame-accurate shifts
+every timestamp; making it frame-accurate (`--force-keyframes-at-cuts`) costs a full
+re-encode of the span. Download the whole stream and keep the offset at 0.
+
+**Translation provenance matters.** When a human corrects the English, the Chinese under
+it is stale. `build_srt.py`'s `load_translations` returns which batch file each string
+came from, so a re-translation (`zh_retrans.json`) can be told apart from the stale
+string it replaces. Without that the "needs re-translating" warning fires forever.
