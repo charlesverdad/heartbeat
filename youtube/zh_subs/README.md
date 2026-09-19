@@ -27,14 +27,17 @@ site an **embed** URL rather than a watch URL:
     filter_song.py         # drop sung worship and ASR hallucination
     make_batches.py        # split into batches of 200, carrying context across the seam
     (translate)            # Claude subagents, batched, see TRANSLATION_BRIEF.md
+    check_batches.py       # every sentence came back? a truncated batch fails silently
     build_srt.py           # lay each Chinese sentence across its English span
     qa_srt.py              # overlaps, line width, reading speed
     make_editor.py         # bilingual editor + a range-capable server, for a native check
     apply_edits.py         # fold the reviewer's edits back in
     bake_subs.py           # only if a caption track is not an option (see below)
 
-`translate_nanogpt.py` can stand in for the manual translate step, but it has never
-completed a successful API call -- treat it as unverified until it has.
+The translate step is done by Claude subagents, not by an external API. That is
+the whole point of running it as a skill: the model driving the pipeline is the one
+that translates, with `TRANSLATION_BRIEF.md` and `glossary_zh.json` in front of it.
+No third-party translation service is involved, and none should be added here.
 
 Every step runs inside the repo's nix shell:
 

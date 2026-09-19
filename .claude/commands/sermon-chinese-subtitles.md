@@ -1,8 +1,12 @@
 # Chinese Subtitles for an English Sermon (End-to-End)
 
-Takes a YouTube sermon and produces a Simplified Chinese subtitle track, then
-optionally burns it into the video. Everything runs locally: Whisper on this
-machine, translation by Claude subagents, ffmpeg for the burn-in.
+Takes a YouTube sermon and produces **a Simplified Chinese subtitle track and a
+subtitled video**. Everything runs on this machine and in this session: Whisper
+locally, the translation done by you or subagents you spawn, ffmpeg for the
+burn-in. No external translation service is used at any point.
+
+Unless the user says they only want the SRT, run all the way through step 8 and
+hand back the burned video -- that is usually what they actually need.
 
 Target: subtitles ready **2-3 hours after the service is published**. The compute
 is about 10 minutes; the rest is translation and your review.
@@ -86,14 +90,26 @@ python make_batches.py ../work/<VIDEO_ID>
 Speech only, 200 sentences per batch, each carrying the tail of the previous one
 as `context_before`.
 
-### 5. Translate (Claude subagents)
+### 5. Translate it yourself, or with subagents
+
+**The translation is this skill's own work.** Do not call a third-party
+translation API and do not add one -- the model running this pipeline is the
+translator. That is what makes this a skill rather than a wrapper around
+somebody else's endpoint, and it is why there is no API key to configure.
 
 Read `youtube/zh_subs/TRANSLATION_BRIEF.md` -- it is binding -- and
-`glossary_zh.json`. Spawn **one subagent per batch**, in parallel; translation is
-not CPU-bound, unlike transcription.
+`glossary_zh.json`. Spawn **one subagent per batch, all in parallel**;
+translation is not CPU-bound, unlike transcription, so parallel is safe here. A
+65-minute sermon is about 4 batches.
 
-Give each subagent the brief, the glossary, and one `batch_N.json`. It writes
-`batches/zh_N.json` as `{"translations":[{"id":N,"zh":"..."}]}`.
+Give each subagent, inline in its prompt:
+- the full text of `TRANSLATION_BRIEF.md`
+- the full text of `glossary_zh.json`
+- the contents of exactly one `batches/batch_N.json`
+- the output path `batches/zh_N.json` and the shape
+  `{"translations":[{"id":<int>,"zh":"<text>"}]}`
+
+Tell it to return **every id it was given**, in order, and nothing else.
 
 Rules that matter most:
 - **Sentence by sentence, never word by word.** English and Chinese word order
@@ -108,6 +124,23 @@ Rules that matter most:
 
 **Confirm proper nouns with the user** before shipping names -- past mistakes
 include Wonki (not Wongi) and Jason (not John).
+
+### 5b. Check every batch came back whole
+
+```bash
+python check_batches.py ../work/<VIDEO_ID>/batches
+```
+
+A subagent that truncates its reply returns valid JSON covering only part of its
+batch. `build_srt.py` will then build a track with a hole in it, and the hole is
+a stretch of sermon with no subtitle at all -- which nobody notices until it is
+on screen. This names the batch to re-run and exits non-zero, so it chains:
+
+```bash
+python check_batches.py ../work/<VIDEO_ID>/batches && python build_srt.py ...
+```
+
+Re-run the short batch rather than proceeding.
 
 ### 6. Build the track and QA it
 
@@ -156,11 +189,15 @@ rather than shipping the old Chinese under new English.
 ### 8. Burn the subtitles into the video
 
 ```bash
-# choose a size first -- renders one frame per size, no encoding
-python bake_subs.py --download <VIDEO_ID> --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --workdir ../work/<VIDEO_ID> --preview
+# choose a size first -- renders one frame per size, no encoding.
+# --download caches the source as ../work/<VIDEO_ID>/<VIDEO_ID>.source.mp4
+python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
+  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --preview
 
-# then the real render
-python bake_subs.py --video <FILE> --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --size 22 --out ../work/<VIDEO_ID>/sermon.zh-subbed.mp4
+# then the real render -- same --download, so it reuses the file already fetched
+python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
+  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --size 22 \
+  --out ../work/<VIDEO_ID>/sermon.zh-subbed.mp4
 ```
 
 About **22x realtime**, so a 64-minute sermon renders in roughly three minutes.
