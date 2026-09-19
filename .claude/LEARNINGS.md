@@ -326,3 +326,52 @@ re-encode of the span. Download the whole stream and keep the offset at 0.
 it is stale. `build_srt.py`'s `load_translations` returns which batch file each string
 came from, so a re-translation (`zh_retrans.json`) can be told apart from the stale
 string it replaces. Without that the "needs re-translating" warning fires forever.
+
+## Subtitle timing invariants and how they break (2026-09-19)
+
+**Enforce a timing invariant in a pass that runs last and wants nothing else.**
+`build_srt.py` checked for overlapping cues in the middle of `build()`, and then two
+later passes — minimum-display extension and sliver merging — both moved cue ends past
+the point that had just been validated. Every one of those passes has a readability
+motive for making a cue longer; only a final pass with no competing motive can hold the
+line. A randomised search over plausible sentence timings found a real overlap in
+**4084 of 20000** runs against code that looked correct and passed a fixed example set.
+
+Related: never write `max(<readability floor>, <hard ceiling>)`. That lets the floor win.
+A cue that ends up too short is a smaller problem than two cues on screen at once.
+
+**Fuzz timing code; example-based tests will not find this.** The failing shapes were
+sentences 60–150 ms apart, which is ordinary fast speech (the sentence splitter only
+needs a 60 ms gap) but is nowhere near what anyone writes into a fixture by hand.
+Twenty lines of randomised span generation found in seconds what hand-written cases
+missed entirely.
+
+**`-ss` with `-copyts` seeks the *absolute* source position.** `-copyts` preserves the
+seek target as the frame's PTS instead of rebasing to zero — it does not make `-ss`
+relative to anything. So a preview that seeks an uncut video with `-copyts` must be
+handed a subtitle track on full-video time. Give it the track already re-based onto a
+cut and libass draws whatever sentence sits at that number in the cut, over a frame from
+somewhere else entirely — misaligned by exactly `--start`, silently, in the one tool
+whose whole job is letting a human eyeball the result. `bake()` does not use `-copyts`,
+rebases to zero, and is correct with the re-based track.
+
+To check alignment claims like this, render a synthetic video with `drawtext` showing
+`%{pts:hms}` and an SRT whose text names its own timestamp. The frame then states which
+second it came from and which cue was drawn on it; one look settles it.
+
+**A hand-rolled HTTP response must frame its body.** The 416 branch in `make_editor.py`
+sent no `Content-Length`. Under HTTP/1.1 keep-alive that means "read until the server
+closes", and the server does not close, so the next range request on that socket has
+ambiguous framing. `BaseHTTPRequestHandler.send_error()` gets this right (it sets
+`Connection: close` and a real length) — anything written by hand alongside it has to
+do the same. Browsers do request past EOF while buffering, so this was reachable just by
+scrubbing near the end.
+
+**`sys.exit(0 if f() == 0 else 0)` is not a conditional.** Both arms were `0`, so
+`apply_edits.py` could not tell a caller that lines were still queued for re-translation.
+
+**`/codex:review` and `/kimi:review` cannot be invoked by an agent.** Both set
+`disable-model-invocation: true`, as do `status`, `result`, `cancel` and
+`adversarial-review`; only `rescue` and `setup` are open. On an unattended run the
+review step in CLAUDE.md silently does not happen unless you substitute
+`feature-dev:code-reviewer` and say so.
