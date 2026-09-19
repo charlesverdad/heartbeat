@@ -358,10 +358,44 @@ def test_preview_uses_absolute_timeline():
         check("preview is NOT handed the re-based track",
               "00:02:00,000" not in track, repr(track[:120]))
 
+def test_check_batches():
+    """A truncated subagent reply is valid JSON covering half a batch. It has to
+    be caught before build_srt.py turns the gap into unsubtitled sermon."""
+    print("\ncheck_batches: a short batch is caught, not built")
+    import check_batches
+    def setup(d, zh_ids, blank=()):
+        b = pathlib.Path(d) / "batches"; b.mkdir()
+        (b / "batch_0.json").write_text(json.dumps(
+            {"batch": 0, "sentences": [{"id": i, "start": i, "end": i+1, "en": "x"} for i in range(3)]}))
+        (b / "batch_1.json").write_text(json.dumps(
+            {"batch": 1, "sentences": [{"id": i, "start": i, "end": i+1, "en": "x"} for i in range(3, 6)]}))
+        (b / "zh_0.json").write_text(json.dumps({"translations": [
+            {"id": i, "zh": ("" if i in blank else "中文")} for i in zh_ids if i < 3]}), encoding="utf-8")
+        (b / "zh_1.json").write_text(json.dumps({"translations": [
+            {"id": i, "zh": ("" if i in blank else "中文")} for i in zh_ids if i >= 3]}), encoding="utf-8")
+        return b
+
+    with tempfile.TemporaryDirectory() as d:
+        b = setup(d, range(6))
+        check("a complete set passes", check_batches.main(str(b)) == 0)
+    with tempfile.TemporaryDirectory() as d:
+        b = setup(d, [0, 1, 2, 3])            # batch_1 truncated after one line
+        check("a truncated batch fails", check_batches.main(str(b)) == 1)
+        asked, per, got, blank = check_batches.load(str(b))
+        check("the short batch is identified",
+              sorted(set(asked) - got) == [4, 5] and asked[4] == "batch_1", str(sorted(set(asked)-got)))
+    with tempfile.TemporaryDirectory() as d:
+        b = setup(d, range(6), blank=[2])     # present but empty
+        check("an empty translation counts as missing", check_batches.main(str(b)) == 1)
+    with tempfile.TemporaryDirectory() as d:
+        (pathlib.Path(d) / "batches").mkdir()
+        check("an empty directory is an error, not a pass",
+              check_batches.main(str(pathlib.Path(d) / "batches")) == 2)
+
 if __name__ == "__main__":
     for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
-              test_preview_uses_absolute_timeline):
+              test_preview_uses_absolute_timeline, test_check_batches):
         try:
             t()
         except Exception as e:
