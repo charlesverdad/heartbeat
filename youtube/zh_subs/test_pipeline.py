@@ -43,6 +43,15 @@ def test_cjk():
     z = cjk.cues_for("短句。", 5.0, 5.0)
     check("zero-length span survives", all(b >= a for a, b, _ in z), str(z))
 
+    # Chinese carries no spaces, so cues_for strips them -- but a Latin name is
+    # two words and stays two words. "JoshuaChoi" on screen is how this was found.
+    for src, want in (("我叫 Joshua Choi。",            "我叫Joshua Choi。"),
+                      ("宝宝叫Hannah Bow，",            "宝宝叫Hannah Bow，"),
+                      ("我们  今天   要讲。",            "我们今天要讲。"),
+                      ("John Mark Comer 说过。",        "John Mark Comer说过。")):
+        got = "".join(t.replace("\n", "") for _, _, t in cjk.cues_for(src, 0, 20))
+        check(f"name spacing survives: {want}", got == want, f"got {got!r}")
+
 # ---------------------------------------------------------------- build_srt
 def _marked(sents, offset=100.0):
     return {"offset": offset,

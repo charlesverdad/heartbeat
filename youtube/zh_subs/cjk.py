@@ -70,7 +70,13 @@ def split_text(text, n):
 
 def cues_for(text, t0, t1):
     """Lay one translated sentence across [t0,t1] as one or more timed cues."""
-    text = re.sub(r"\s+", "", text.strip())
+    # Chinese does not use spaces and the translator leaves stray ones behind,
+    # so whitespace goes -- except between two Latin word characters, where it
+    # is part of a name. Without this exception "Joshua Choi" reaches the screen
+    # as "JoshuaChoi", and every member named in the announcements is mangled.
+    text = re.sub(r"\s+", " ", text.strip())
+    text = re.sub(r"(?<=[0-9A-Za-z]) (?=[0-9A-Za-z])", "\x00", text)
+    text = text.replace(" ", "").replace("\x00", " ")
     if not text:
         return []
     dur = max(t1 - t0, 0.01)
