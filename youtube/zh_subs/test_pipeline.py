@@ -438,9 +438,9 @@ def test_preview_honours_style_flags():
 def test_to_traditional():
     """Converting to zh-Hant must change the script and nothing else.
 
-    The congregation praised the Simplified wording and asked only for
-    Traditional characters, so a converter that rewrites vocabulary would undo
-    the thing that worked. It must also leave the SRT skeleton alone -- a
+    The viewer praised the Simplified wording and asked only for Traditional
+    characters, so a converter that rewrites vocabulary would undo the thing
+    that worked. It must also leave the SRT skeleton alone -- a
     mangled timestamp is invisible until it is on screen."""
     print("\nto_traditional: script converts, wording and timing do not")
     import to_traditional as T

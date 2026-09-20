@@ -190,9 +190,15 @@ python to_traditional.py ../work/<VIDEO_ID>/sermon.zh-Hans.srt
 # -> ../work/<VIDEO_ID>/sermon.zh-Hant.srt
 ```
 
-**The congregation reads Traditional.** They said so after watching a Simplified
-burn-in they otherwise praised, and a Taiwanese viewer wants Traditional too. So
-`zh-Hant` is the deliverable; `zh-Hans` is now an intermediate.
+**The viewer reads Traditional.** She said so after watching a Simplified
+burn-in she otherwise praised, and a second, prospective viewer from Taiwan would
+want Traditional too. So `zh-Hant` is the deliverable; `zh-Hans` is now an
+intermediate.
+
+Who this is for matters when you write anything down about it: **one viewer on
+the Gold Coast.** The sermon being subtitled is usually filmed elsewhere — the
+first one was the Melbourne service — so the campus in the video is not the
+audience for the subtitles. Do not conflate them.
 
 **Translation still happens in Simplified, and the conversion is the last step.**
 That is deliberate, not laziness: the wording is the part they praised, one

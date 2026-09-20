@@ -171,7 +171,7 @@ figure{{margin:0;display:none}}figure.on{{display:block}}
 img{{width:100%;max-width:1280px;border-radius:9px;display:block}}
 figcaption{{color:#98a1b0;font-size:13px;margin-top:8px}}</style>
 <h1>Chinese subtitle size at {at:.0f}s &mdash; {font}</h1>
-<p>Use &larr;/&rarr; or the buttons. Judge it at the distance the congregation sits from the screen.</p>
+<p>Use &larr;/&rarr; or the buttons. Judge it at viewing distance, not at arm&apos;s length.</p>
 <div class=bar>{buttons}</div>{cards}
 <script>
 const F=[...document.querySelectorAll('figure')],B=[...document.querySelectorAll('button')];

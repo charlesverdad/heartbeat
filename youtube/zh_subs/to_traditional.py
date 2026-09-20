@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Convert a Simplified Chinese subtitle track to Traditional (zh-Hant).
 
-The Melbourne congregation reads Traditional, and said so after watching a
-Simplified burn-in they otherwise liked a lot. That last part decides the
-method: **convert the script, do not re-translate the words.** The wording is
-what they praised, so a converter that swaps vocabulary for regional synonyms
-would quietly undo the thing that worked.
+These tracks are made for one viewer on the Gold Coast, and she reads
+Traditional. She said so after watching a Simplified burn-in she otherwise
+liked a lot. That last part decides the method: **convert the script, do not
+re-translate the words.** The wording is what she praised, so a converter that
+swaps vocabulary for regional synonyms would quietly undo the thing that worked.
 
 That rules out OpenCC's `s2twp`, which rewrites 軟件 to 軟體 and 信息 to 資訊.
-We use `s2tw` -- Taiwan character forms, wording untouched. Taiwan forms because
-Taiwan is the variant that was named; the visible difference from Hong Kong's
-`s2hk` is 裡 against 裏, which is frequent enough to notice (76 occurrences in a
-single sermon).
+We use `s2tw` -- Taiwan character forms, wording untouched. Taiwan forms are a
+default, not a finding: Taiwan is the only region anyone has named, and that was
+about a second, prospective viewer rather than the one we are actually writing
+for. The visible difference from Hong Kong's `s2hk` is 裡 against 裏, which is
+frequent enough to notice (76 occurrences in a single sermon), so it is worth
+asking her which she reads before assuming.
 
 Simplified merged several distinct Traditional characters, so conversion is not
 a table lookup and OpenCC disambiguates by phrase. It gets almost everything

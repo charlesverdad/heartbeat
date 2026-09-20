@@ -104,8 +104,8 @@ kbd{{background:#1d2027;border:1px solid #2e333d;border-radius:4px;padding:1px 5
 </style>
 <h1>Chinese subtitle styles &mdash; {font}</h1>
 <p class=sub>1080p source. <kbd>&larr;</kbd><kbd>&rarr;</kbd> step size, <kbd>&uarr;</kbd><kbd>&darr;</kbd>
-step placement, <kbd>1</kbd>&ndash;<kbd>{len(times)}</kbd> switch moment. Judge it at the distance the
-congregation sits from the screen, not at arm's length.</p>
+step placement, <kbd>1</kbd>&ndash;<kbd>{len(times)}</kbd> switch moment. Judge it at viewing
+distance, not at arm's length.</p>
 <div class=row><span class=lab>Moment</span>{"".join(
     f'<button data-k=at data-v="{t}">{i+1}. {int(t)//60}:{int(t)%60:02d}</button>'
     for i, t in enumerate(times))}</div>

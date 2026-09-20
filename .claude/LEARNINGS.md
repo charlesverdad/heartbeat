@@ -471,7 +471,15 @@ Re-encode from the finished bake rather than re-rendering subtitles.
 
 ## Delivering Traditional when the translation was done in Simplified (2026-09-21)
 
-The congregation praised the Simplified translation and asked for Traditional.
+**Know who the reader is before writing down why.** The subtitle work exists for
+**one viewer on the Gold Coast**. The first sermon subtitled was the Melbourne
+service, and I wrote "the Melbourne congregation reads Traditional" into four
+files — the campus in the video is not the audience for the subtitles, and a
+single reader is not a congregation. It changes what you can generalise: one
+person's preference is not a campus policy, and the next request may come from
+someone who reads something else.
+
+The viewer praised the Simplified translation and asked for Traditional.
 **That first half decides the method.** Convert the script, do not re-translate:
 the wording is the thing that worked, one glossary stays authoritative, and the
 whole back catalogue converts without anyone re-reading it.

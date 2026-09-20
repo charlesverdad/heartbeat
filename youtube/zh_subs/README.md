@@ -59,8 +59,11 @@ edit-precedence rules and the byte-range server.
 
 ## Traditional, converted rather than re-translated
 
-The congregation reads Traditional. They said so after watching a Simplified
-burn-in they otherwise praised — and that second half decides the method.
+The viewer these are for reads Traditional. She said so after watching a
+Simplified burn-in she otherwise praised — and that second half decides the
+method. Note who this is: one person on the Gold Coast, not a room. The sermons
+are filmed at other campuses; the audience for the subtitles is not the audience
+in the video.
 
 Translation still happens in **Simplified**, and `to_traditional.py` converts as
 the last step. One glossary stays authoritative, the reviewed wording is carried
