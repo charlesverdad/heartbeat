@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Convert a Simplified Chinese subtitle track to Traditional (zh-Hant).
+
+The Melbourne congregation reads Traditional, and said so after watching a
+Simplified burn-in they otherwise liked a lot. That last part decides the
+method: **convert the script, do not re-translate the words.** The wording is
+what they praised, so a converter that swaps vocabulary for regional synonyms
+would quietly undo the thing that worked.
+
+That rules out OpenCC's `s2twp`, which rewrites 軟件 to 軟體 and 信息 to 資訊.
+We use `s2tw` -- Taiwan character forms, wording untouched. Taiwan forms because
+Taiwan is the variant that was named; the visible difference from Hong Kong's
+`s2hk` is 裡 against 裏, which is frequent enough to notice (76 occurrences in a
+single sermon).
+
+Simplified merged several distinct Traditional characters, so conversion is not
+a table lookup and OpenCC disambiguates by phrase. It gets almost everything
+right -- 头发/髮 against 发生/發, 干净/乾 against 树干/幹, 皇后/后 against
+后面/後, 一只/隻 against 只有/只 -- but a 里 whose preceding word is not in its
+phrase table stays 里 when it should be 裡. So every surviving 里 is reported
+with its context for a human to glance at; in a real sermon there were eight and
+all eight were 公里, which is correct.
+
+    python3 to_traditional.py sermon.zh-Hans.srt sermon.zh-Hant.srt
+"""
+import argparse, pathlib, re, sys
+
+CONFIGS = {"tw": "s2tw",      # Taiwan forms, wording untouched  (default)
+           "hk": "s2hk",      # Hong Kong forms (裏 rather than 裡)
+           "t":  "s2t",       # OpenCC standard forms
+           "twp": "s2twp"}    # Taiwan forms AND Taiwan vocabulary -- rewrites wording
+
+# 里 is the one merge OpenCC demonstrably gets wrong: it splits into 里 (the
+# distance unit) and 裡 (inside), and a 裡 whose preceding word is missing from
+# the phrase table stays 里 -- "教會里面" rather than "教會裡面".
+#
+# The other merges it handles, verified: 头发/髮 against 发生/發, 干净/乾 against
+# 干活/幹 and 树干/幹, 后面/後 against 皇后/后, 一只/隻 against 只有/只, 面条/麵
+# against 外面/面, 余下/餘 against 茶几/几. Reporting those too produced 73 hits
+# on one sermon, every one of them correct -- noise that teaches you to skip the
+# report. They are available behind --check-all when a conversion looks off.
+AMBIGUOUS       = "里"
+AMBIGUOUS_ALL   = "里后干只几余表面发"
+
+
+def convert(text, variant="tw"):
+    try:
+        from opencc import OpenCC
+    except ImportError:
+        sys.exit("opencc is not installed:\n"
+                 "  pip install -r youtube/subtitle_downloader/requirements.txt")
+    return OpenCC(CONFIGS[variant]).convert(text)
+
+
+def residuals(out, chars=AMBIGUOUS, width=5):
+    """Every surviving ambiguous character, with context, for eyeballing."""
+    found = []
+    for m in re.finditer(f"[{chars}]", out):
+        ctx = out[max(0, m.start() - width): m.start() + width + 1]
+        found.append((m.group(), ctx.replace("\n", "/")))
+    return found
+
+
+def srt_text_only(path):
+    """The subtitle text, without the indices and timestamps.
+
+    Converting the whole file would work -- digits and arrows are untouched --
+    but reporting residuals over the timestamps would bury the real hits.
+    """
+    blocks = re.split(r"\n\s*\n", pathlib.Path(path).read_text(encoding="utf-8").strip())
+    return "\n".join(b.split("\n", 2)[2] for b in blocks if len(b.split("\n")) > 2)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("src", help="Simplified .srt (or any UTF-8 text)")
+    ap.add_argument("out", nargs="?", help="default: <src with zh-Hans -> zh-Hant>")
+    ap.add_argument("--variant", choices=sorted(CONFIGS), default="tw",
+                    help="tw (default, Taiwan forms), hk, t, or twp. twp also rewrites "
+                         "vocabulary to Taiwan terms -- it changes the translator's wording, "
+                         "so do not use it on a track anyone has already approved.")
+    ap.add_argument("--quiet", action="store_true", help="skip the residual report")
+    ap.add_argument("--check-all", action="store_true",
+                    help="report every merged character, not just the one OpenCC misses")
+    a = ap.parse_args()
+
+    src = pathlib.Path(a.src)
+    out = pathlib.Path(a.out) if a.out else pathlib.Path(
+        str(src).replace("zh-Hans", "zh-Hant") if "zh-Hans" in str(src)
+        else str(src.with_suffix("")) + ".zh-Hant" + src.suffix)
+    if out == src:
+        sys.exit("refusing to overwrite the source in place -- give an output path")
+
+    text = src.read_text(encoding="utf-8")
+    converted = convert(text, a.variant)
+    out.write_text(converted, encoding="utf-8")
+
+    n_hant = sum(converted.count(c) for c in "裡裏們這說會為個來國學點麼樣現開發過還讓經給應該覺認識")
+    print(f"variant  : {CONFIGS[a.variant]}")
+    print(f"wrote    : {out}")
+    print(f"Traditional forms produced: {n_hant:,}")
+    print(f"裡 {converted.count('裡')}   裏 {converted.count('裏')}")
+
+    if not a.quiet:
+        # report over the subtitle text only, so timestamps do not drown the hits
+        body = convert(srt_text_only(src), a.variant) if src.suffix == ".srt" else converted
+        res = residuals(body, AMBIGUOUS_ALL if a.check_all else AMBIGUOUS)
+        print(f"\nambiguous characters left as-is: {len(res)}")
+        if res:
+            print("  each of these was a merge in Simplified; check the sense reads right:")
+            seen = {}
+            for ch, ctx in res:
+                seen.setdefault(ch, []).append(ctx)
+            for ch, ctxs in sorted(seen.items()):
+                print(f"    {ch}  x{len(ctxs)}")
+                for c in list(dict.fromkeys(ctxs))[:6]:
+                    print(f"        {c}")

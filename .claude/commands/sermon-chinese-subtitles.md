@@ -1,6 +1,6 @@
 # Chinese Subtitles for an English Sermon (End-to-End)
 
-Takes a YouTube sermon and produces **a Simplified Chinese subtitle track and a
+Takes a YouTube sermon and produces **a Traditional Chinese subtitle track and a
 subtitled video**. Everything runs on this machine and in this session: Whisper
 locally, the translation done by you or subagents you spawn, ffmpeg for the
 burn-in. No external translation service is used at any point.
@@ -183,6 +183,36 @@ and English wordplay the preacher made a point of.
 
 Report the coverage figure. Anything below ~99% means translations went missing.
 
+### 6b. Convert to Traditional -- this is what ships
+
+```bash
+python to_traditional.py ../work/<VIDEO_ID>/sermon.zh-Hans.srt
+# -> ../work/<VIDEO_ID>/sermon.zh-Hant.srt
+```
+
+**The congregation reads Traditional.** They said so after watching a Simplified
+burn-in they otherwise praised, and a Taiwanese viewer wants Traditional too. So
+`zh-Hant` is the deliverable; `zh-Hans` is now an intermediate.
+
+**Translation still happens in Simplified, and the conversion is the last step.**
+That is deliberate, not laziness: the wording is the part they praised, one
+glossary stays authoritative, and OpenCC's `s2tw` changes the script without
+touching a single word choice. Do **not** switch to `s2twp` to "localise" it --
+that rewrites 軟件 to 軟體 and 信息 to 資訊, undoing the reviewed wording.
+
+Simplified merged several distinct Traditional characters, so this is not a table
+lookup. OpenCC resolves nearly all of them by phrase (头发/髮 against 发生/發,
+干净/乾 against 树干/幹, 一只/隻 against 只有/只). The one it misses is 里, which
+splits into 里 (the distance unit) and 裡 (inside) -- a 裡 whose preceding word is
+absent from its phrase table stays 里. The script reports every survivor with its
+context; glance at them. On a real sermon there were eight and all eight were
+公里, which is correct.
+
+`--variant tw` (default) gives Taiwan forms, which use **裡**. `--variant hk`
+gives Hong Kong forms, which use **裏**. That character appeared 76 times in one
+sermon, so it is the most visible difference between them -- confirm which the
+receiving campus wants rather than assuming.
+
 ### 7. Review (recommended, and the point of the whole design)
 
 ```bash
@@ -228,6 +258,8 @@ Two things to get right when re-translating the queue:
 
 Write the rebuilt track to a **new filename** (`sermon.zh-Hans.v2.srt`) if the
 first one has already been handed over. Do not overwrite a delivered artifact.
+Then re-run step 6b -- the Traditional track is derived, so it has to be
+regenerated after every rebuild or it silently ships the pre-edit wording.
 
 ### 8. Choose a burn-in style
 
@@ -318,8 +350,10 @@ somebody -- `-b:v 700k` landed 428 MB against a 420 MB estimate.
 
 ## Deliverables
 
-- `youtube/work/<VIDEO_ID>/sermon.zh-Hans.srt` -- the subtitle track (suffix the
-  revision if an earlier one has already been handed over)
+- `youtube/work/<VIDEO_ID>/sermon.zh-Hant.srt` -- **the subtitle track that
+  ships** (suffix the revision if an earlier one has already been handed over)
+- `youtube/work/<VIDEO_ID>/sermon.zh-Hans.srt` -- the Simplified intermediate it
+  was converted from; keep it, the reviewer's edits are folded into this one
 - `youtube/work/<VIDEO_ID>/sermon.zh-subbed.mp4` -- the burned video
 - a delivery-sized re-encode of it (step 8c), which is usually the one they take
 
