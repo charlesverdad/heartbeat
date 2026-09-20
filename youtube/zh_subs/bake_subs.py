@@ -73,7 +73,7 @@ COLOURS = {"white":  "&H00FFFFFF",
            "yellow": "&H0000D7FF",   # RGB FFD700, the broadcast-subtitle yellow
            "cream":  "&H00E1F5FF"}   # RGB FFF5E1, softer than white on a bright wall
 
-def style(font, size, margin, border="box", colour="white", outline=2, shadow=0,
+def style(font, size, margin, border="box", colour="white", outline=2, shadow=None,
           back=None, align=2):
     """force_style string for libass.
 
@@ -97,10 +97,16 @@ def style(font, size, margin, border="box", colour="white", outline=2, shadow=0,
     has to wrap anything. Verified on mixed Latin/CJK two-line cues.
     """
     prim = COLOURS.get(colour, colour)
+    # shadow=None means "whatever suits this border": a filled box needs none,
+    # an outline needs one to lift the glyphs off a bright wall. An explicit
+    # value wins in BOTH modes -- `shadow or 1` silently turned a deliberate 0
+    # into a 1, and hard-coding 0 for the box made --shadow a no-op by default.
     if border == "box":
-        bs, ol, sh, _back = 3, outline, 0, "&H60000000"     # 62% black box
+        bs, ol, _back = 3, outline, "&H60000000"            # 62% black box
+        sh = 0 if shadow is None else shadow
     else:
-        bs, ol, sh, _back = 1, outline, (shadow or 1), "&HA0000000"
+        bs, ol, _back = 1, outline, "&HA0000000"
+        sh = 1 if shadow is None else shadow
     return (f"FontName={font},FontSize={size},PrimaryColour={prim},"
             f"OutlineColour={back or _back},BackColour=&H80000000,"
             f"BorderStyle={bs},Outline={ol},Shadow={sh},"
@@ -133,20 +139,20 @@ def fetch(video_id, workdir):
         "--merge-output-format", "mp4", "-o", str(out), f"https://www.youtube.com/watch?v={video_id}"])
     return out
 
-def preview(video, srtfile, font, sizes, margin, at, out):
+def preview(video, srtfile, font, sizes, margin, at, out, **st):
     """Render one frame per size so a human can choose before a long encode."""
     tmp = pathlib.Path(tempfile.mkdtemp())
     try:
-        return _preview(video, srtfile, font, sizes, margin, at, out, tmp)
+        return _preview(video, srtfile, font, sizes, margin, at, out, tmp, **st)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
-def _preview(video, srtfile, font, sizes, margin, at, out, tmp):
+def _preview(video, srtfile, font, sizes, margin, at, out, tmp, **st):
     shots = []
     for sz in sizes:
         f = tmp / f"s{sz}.jpg"
         sh(["ffmpeg", "-nostdin", "-v", "error", "-y", "-copyts", "-ss", str(at), "-i", str(video),
-            "-vf", f"subtitles={srtfile}:force_style='{style(font, sz, margin)}'",
+            "-vf", vfilter(srtfile, style(font, sz, margin, **{k: v for k, v in st.items() if k != "mask"}), st.get("mask", False)),
             "-frames:v", "1", "-q:v", "3", str(f)])
         shots.append((sz, base64.b64encode(f.read_bytes()).decode()))
     cards = "".join(
@@ -216,7 +222,8 @@ if __name__ == "__main__":
     ap.add_argument("--border", choices=["box", "outline"], default="box")
     ap.add_argument("--colour", default="white", help="white, yellow, cream, or a raw &HAABBGGRR")
     ap.add_argument("--outline", type=float, default=2)
-    ap.add_argument("--shadow", type=float, default=0)
+    ap.add_argument("--shadow", type=float, default=None,
+                    help="default: 0 behind a box, 1 behind an outline")
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preview", action="store_true", help="render sample frames instead of encoding")
     ap.add_argument("--preview-sizes", default="18,20,22,24,26")
@@ -249,7 +256,9 @@ if __name__ == "__main__":
             whole = tmp / "subs_full.srt"
             whole.write_text(pathlib.Path(a.srt).read_text(encoding="utf-8"), encoding="utf-8")
             preview(video, whole, font, [int(s) for s in a.preview_sizes.split(",")],
-                    a.margin, at, a.out or "subtitle_size_zh.html")
+                    a.margin, at, a.out or "subtitle_size_zh.html",
+                    border=a.border, colour=a.colour, outline=a.outline,
+                    shadow=a.shadow, align=a.align, mask=a.mask_english)
         else:
             out = a.out or str(video.with_suffix("")) + ".subbed.mp4"
             bake(video, staged, out, font, a.size, a.margin, a.start, a.end, a.crf,

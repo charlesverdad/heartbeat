@@ -50,7 +50,9 @@ def render(video, srt, font, at, place, border, size, tmp):
     """
     p = PLACEMENTS[place]
     f = tmp / f"{at}_{place}_{border}_{size}.jpg"
-    st = style(font, size, p["margin"], border, "white", 2, 0, p["back"], p["align"])
+    # shadow=None: let each border take its own default, so the sheet shows
+    # exactly what bake_subs.py renders with the same flags
+    st = style(font, size, p["margin"], border, "white", 2, None, p["back"], p["align"])
     subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-y", "-copyts", "-ss", str(at), "-i", str(video),
          "-vf", vfilter(srt, st, p["mask"]) + ",scale=1100:-2",
