@@ -375,3 +375,96 @@ scrubbing near the end.
 `adversarial-review`; only `rescue` and `setup` are open. On an unattended run the
 review step in CLAUDE.md silently does not happen unless you substitute
 `feature-dev:code-reviewer` and say so.
+
+## Burning Chinese subtitles into a broadcast that already has captions (2026-09-20)
+
+Melbourne 09/08 service, `mjHAolwGpoA`. First end-to-end run through review, edits
+and burn-in. Most of what follows was found by rendering a frame and looking at it,
+after asserting something different.
+
+### Latin text inside Chinese lines
+
+**`cues_for` stripped every space in the line.** Right for Chinese, which does not use
+spaces and picks up stray ones from the translator — and it welded names together, so a
+man who introduces himself as Joshua Choi appeared as `我叫JoshuaChoi。`. Whitespace still
+goes, except between two Latin word characters.
+
+**Then the same bug in the other axis.** When no punctuation break fits, `wrap()` picks
+the break by width alone, which is fine for Chinese and cuts Latin words in half:
+`Practi / cing the Way`, `Na / than Choi`, `Kevin Ki / m`. Both fixes are one idea —
+Chinese breaks anywhere, Latin does not.
+
+The test for this has to be per word, not per adjacent character pair. `Kevin / Kim`
+breaks at a space that `.strip()` then eats, so the two lines end `n` and begin `K` and
+look identical to a mid-word cut. Assert instead that every Latin word in the source
+survives whole on some line.
+
+### libass geometry, measured rather than assumed
+
+**PlayResY is 288 whatever the source height.** So `FontSize` and `MarginV` are
+fractions of frame height — size 22 is 7.6% of it — and a size chosen on a 720p preview
+renders identically on the 1080p master. Measured by rendering the same style twice: on
+a 720p source `MarginV 38` put the box 91px up and `MarginV 10` put it 21px up, and the
+28-unit difference is exactly 70px = 28 × 720/288. Assuming the script resolution was
+the video height made every margin wrong by 3.75×.
+
+**`Alignment` is read in legacy SSA numbering**, where 4 is "toptitle" and 8 is
+"midtitle". ASS-style `Alignment=8` therefore renders middle-**left**, not top-centre,
+because 8 carries no horizontal bit. Top-centre is 6.
+
+### The church burns its own English captions into the broadcast
+
+Two different overlays, and they constrain placement more than size does:
+
+- the spoken caption sits at **84.0%–87.4% of frame height**, bottom-anchored, so a
+  two-line English caption grows upward and its bottom edge stays put;
+- scripture slides fill the **left half** and reach down to ~92%.
+
+**There is no room beneath the English caption.** It leaves 36 script units of clear
+space and a two-line Chinese cue needs about 51 even at size 22. The real options are
+above it, over it, or top of frame — and "below" should not be offered.
+
+**A `BorderStyle=3` box cannot mask anything.** It is only as wide as its own text, so
+Chinese laid over a longer English line leaves the ends of that line poking out either
+side. Covering the English needs the band painted edge to edge first (`drawbox`), which
+is what `--mask-english` does.
+
+### Choosing a style
+
+Put the frames behind buttons, not down a page. Two points of font size is invisible
+side by side and obvious when the frames swap in place. Pick the sample moments for
+**what is already on screen** — clean shot, spoken caption, scripture slide — not for
+what is being said; the right answer differs between them. `preview_styles.py` renders
+the placement × border × size cross product for this.
+
+### Reviewer edits
+
+The reviewer's corrections doubled as proper-noun confirmation, which is worth more than
+asking: Yoonah, Narae, Pios/Pius, Gold Coast (ASR "Cocos"), and "my wife" in place of a
+mis-heard name. Ask for the review before asking about the names.
+
+**Most corrected lines are mid-sentence fragments**, so check the seams, not the lines.
+`…超过你` / `所能想象。` only works as a join. One pair said "influenced" twice across the
+seam and read fine line by line.
+
+**Where the reviewer leaves an ASR error uncorrected and context contradicts it, flag
+it rather than silently follow the corrected English.** Two survived this run:
+`who's gonna live` (parallel with "who's come to church" makes it *leave*) and `a home
+that you will never have` (the sense is plainly *never lose*).
+
+### Getting a big file to someone
+
+**`yt-dlp -F`'s FILESIZE column is a peak-bitrate estimate and can be wildly high.** It
+predicted 1.65 GiB for the 720p track of this stream; the file came down at 346 MB. A
+service stream sits on static wide shots and compresses far below its quoted bitrate, so
+do not refuse a resolution on that column's say-so.
+
+**Uploading to Drive or GCS does not route around an uplink bottleneck.** When the
+tailnet path is already `direct` (check `tailscale status`), the bytes leave the machine
+at full uplink speed; pushing them to Google sends them up that same pipe first and adds
+a second download. The only lever is file size.
+
+**CRF is quality-targeted, so its output size varies with content.** CRF 20 at 1080p
+produced 1.04 GB for 64.6 minutes. When a size has been quoted to someone, target the
+bitrate instead: `-b:v 700k -maxrate 1200k` landed 428 MB against a 420 MB estimate.
+Re-encode from the finished bake rather than re-rendering subtitles.

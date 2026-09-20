@@ -32,6 +32,7 @@ site an **embed** URL rather than a watch URL:
     qa_srt.py              # overlaps, line width, reading speed
     make_editor.py         # bilingual editor + a range-capable server, for a native check
     apply_edits.py         # fold the reviewer's edits back in
+    preview_styles.py      # contact sheet of placements/sizes over real frames
     bake_subs.py           # only if a caption track is not an option (see below)
 
 The translate step is done by Claude subagents, not by an external API. That is
@@ -166,23 +167,65 @@ Uploading a caption track is still the right default -- it needs no re-encode an
 viewers can switch it off. Bake only when the player will not cooperate: a
 projector fed from a file, or a re-upload somewhere that ignores `cc_load_policy`.
 
-```bash
-# choose a size first -- renders one frame per size, no encoding
-python3 bake_subs.py --video sermon.mp4 --srt sermon.zh-Hans.srt --preview
+### The frame is already occupied
 
-python3 bake_subs.py --video sermon.mp4 --srt sermon.zh-Hans.srt --size 22
-python3 bake_subs.py --download VIDEO_ID --srt sermon.zh-Hans.srt --start 2451 --end 6300
+Heartbeat burns its own English captions into the broadcast, so placement is not a
+free choice. Measured on the 2026-08-09 Melbourne service:
+
+- the spoken caption sits at **84.0%-87.4% of frame height**, bottom-anchored, so a
+  two-line English caption grows upward and its bottom edge does not move;
+- scripture slides fill the **left half** and reach down to ~92%.
+
+That leaves **36 script units of clear space beneath the English caption**, and a
+two-line Chinese cue needs about 51 even at size 22 -- so there is no "below the
+English" option. Chinese goes above it, over it, or at the top of frame.
+
+`preview_styles.py` renders the placement x border x size cross product over
+several moments and puts them behind buttons, because two points of font size is
+invisible side by side and obvious when the frames swap in place. Choose the sample
+moments for what is already on screen, not for what is being said.
+
+```bash
+python3 preview_styles.py --video sermon.mp4 --srt sermon.zh-Hans.srt \
+    --at 2000 3397 1450 2598 --sizes 14,18,22,26 --out styles.html
 ```
 
-`--start/--end` cut the video and re-base the subtitle track onto the cut in one
-step, because the track is written in full-video time while a cut file starts at
-zero.
+### libass geometry
+
+Three things here were each wrong on the first attempt and settled by rendering a
+frame and measuring it:
+
+**`FontSize` and `MarginV` are fractions of frame height, not pixels.** libass fixes
+the script at `PlayResY=288` whatever the source height. Size 22 is 7.6% of the
+frame at 720p and at 1080p alike, so a size chosen on a 720p preview holds on the
+1080p master. Assuming the script resolution was the video height made every margin
+wrong by 3.75x.
+
+**`Alignment` is legacy SSA numbering** -- 4 is "toptitle", 8 is "midtitle" -- so
+ASS-style `Alignment=8` renders middle-**left**, not top-centre. Top-centre is 6.
+
+**A `BorderStyle=3` box cannot mask the English caption.** It is only as wide as its
+own text, so a longer English line pokes out both sides of it. `--mask-english`
+paints the band edge to edge with `drawbox` first.
 
 The font is picked at runtime from the Simplified Chinese faces actually installed
 (`Hiragino Sans GB W6` first) rather than hard-coded. A missing family does not
 error -- libass just draws empty boxes, and you would only find out by watching the
 finished render.
 
-Size is not inherited from the English burn-in. English was settled at FontSize 24;
-Chinese starts at 22 because full-width glyphs occupy more of the line at the same
-nominal size. Run `--preview` and judge it at congregation distance.
+```bash
+python3 bake_subs.py --video sermon.mp4 --srt sermon.zh-Hans.srt \
+    --start 1396 --size 18 --margin 50 --border box --align 2
+```
+
+`--start/--end` cut the video and re-base the subtitle track onto the cut in one
+step, because the track is written in full-video time while a cut file starts at
+zero.
+
+### Sizing it for delivery
+
+CRF is quality-targeted, so its output size varies with content: the default CRF 20
+at 1080p produced **1.04 GB** for a 64.6-minute sermon. Re-encode the finished bake
+-- do not re-render the subtitles -- and target the bitrate rather than the quality
+whenever a size has been quoted to somebody. `-b:v 700k -maxrate 1200k` landed
+428 MB against a 420 MB estimate; the same at 720p and `-b:v 520k` landed 291 MB.
