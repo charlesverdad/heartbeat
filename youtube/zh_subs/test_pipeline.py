@@ -8,7 +8,7 @@ assert timing invariants rather than outputs.
 
     python3 test_pipeline.py
 """
-import json, pathlib, subprocess, sys, tempfile, threading, urllib.request, urllib.error
+import re, json, pathlib, subprocess, sys, tempfile, threading, urllib.request, urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import cjk, build_srt, bake_subs
@@ -42,6 +42,27 @@ def test_cjk():
     # a zero-length span must not produce a zero or negative duration cue
     z = cjk.cues_for("短句。", 5.0, 5.0)
     check("zero-length span survives", all(b >= a for a, b, _ in z), str(z))
+
+    # Chinese carries no spaces, so cues_for strips them -- but a Latin name is
+    # two words and stays two words. "JoshuaChoi" on screen is how this was found.
+    for src, want in (("我叫 Joshua Choi。",            "我叫Joshua Choi。"),
+                      ("宝宝叫Hannah Bow，",            "宝宝叫Hannah Bow，"),
+                      ("我们  今天   要讲。",            "我们今天要讲。"),
+                      ("John Mark Comer 说过。",        "John Mark Comer说过。")):
+        got = "".join(t.replace("\n", "") for _, _, t in cjk.cues_for(src, 0, 20))
+        check(f"name spacing survives: {want}", got == want, f"got {got!r}")
+
+    # ... and the line break must not land inside one either. These three are
+    # the cues that shipped as "Practi / cing", "Kevin Ki / m", "Na / than Choi".
+    for t in ("两周之后，我们要开始一个叫Practicing the Way的课程。",
+              "墨尔本的Pius、黄金海岸的Kevin Kim，还有悉尼的Joshua Lee。",
+              "我知道你们有些人认识黄金海岸的Nathan Choi，"):
+        lines = [ln for _, _, part in cjk.cues_for(t, 0, 20) for ln in part.split("\n")]
+        # breaking at the space in "Kevin Kim" is fine; breaking "Kim" is not,
+        # so the invariant is per word, not per adjacent character pair
+        words = re.findall(r"[A-Za-z][0-9A-Za-z'.]*", t)
+        lost  = [w for w in words if not any(w in ln for ln in lines)]
+        check(f"no mid-word break: {t[:10]}...", not lost, f"{lost} split across {lines}")
 
 # ---------------------------------------------------------------- build_srt
 def _marked(sents, offset=100.0):
@@ -358,6 +379,62 @@ def test_preview_uses_absolute_timeline():
         check("preview is NOT handed the re-based track",
               "00:02:00,000" not in track, repr(track[:120]))
 
+def test_style_shadow():
+    """--shadow must reach the render in BOTH border modes.
+
+    `shadow or 1` turned a deliberate 0 into a 1, and the box branch hard-coded
+    0, so --shadow was a no-op at the CLI default. None still means "whatever
+    suits this border" -- that is the part worth keeping."""
+    print("\nbake_subs: shadow is honoured, not overridden")
+    import bake_subs as B
+    cases = [(dict(border="box"),                "Shadow=0"),
+             (dict(border="box", shadow=3),      "Shadow=3"),
+             (dict(border="outline"),            "Shadow=1"),
+             (dict(border="outline", shadow=0),  "Shadow=0"),
+             (dict(border="outline", shadow=2),  "Shadow=2")]
+    for kw, want in cases:
+        got = B.style("F", 18, 50, **kw)
+        check(f"{kw} -> {want}", want in got, got)
+
+def test_preview_honours_style_flags():
+    """--preview exists so a human can judge the look before a long encode.
+
+    It called style(font, size, margin) and dropped every other flag, so the
+    contact sheet was always box/white/bottom-centre/unmasked however it was
+    invoked -- the one failure mode that makes a preview worse than none."""
+    print("\nbake_subs: preview renders the style the flags asked for")
+    import os
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        srt = w / "full.srt"
+        srt.write_text("1\n00:00:30,000 --> 00:00:35,000\nCUE\n", encoding="utf-8")
+        (w / "v.mp4").write_bytes(b"\x00" * 16)
+        bindir = w / "bin"; bindir.mkdir()
+        log = w / "argv.log"
+        fake = bindir / "ffmpeg"
+        fake.write_text("#!/bin/sh\n"
+                        'printf "%s\\n" "$@" >> ' + str(log) + "\n"
+                        'for a in "$@"; do out="$a"; done\n'
+                        'printf x > "$out"\n')
+        fake.chmod(0o755)
+        env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}")
+        subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "bake_subs.py"),
+                        "--video", str(w / "v.mp4"), "--srt", str(srt),
+                        "--preview", "--preview-sizes", "22", "--preview-at", "30",
+                        "--border", "outline", "--colour", "yellow", "--align", "6",
+                        "--shadow", "0", "--mask-english",
+                        "--out", str(w / "p.html")], capture_output=True, text=True, env=env)
+        vf = ""
+        args = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+        if "-vf" in args:
+            vf = args[args.index("-vf") + 1]
+        for want, why in (("BorderStyle=1", "--border outline"),
+                          ("Alignment=6",   "--align 6"),
+                          ("Shadow=0",      "--shadow 0"),
+                          ("&H0000D7FF",    "--colour yellow"),
+                          ("drawbox",       "--mask-english")):
+            check(f"preview honours {why}", want in vf, f"-vf was {vf!r}")
+
 def test_check_batches():
     """A truncated subagent reply is valid JSON covering half a batch. It has to
     be caught before build_srt.py turns the gap into unsubtitled sermon."""
@@ -451,7 +528,8 @@ if __name__ == "__main__":
     for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
               test_preview_uses_absolute_timeline, test_check_batches,
-              test_halluc_loops, test_offset_staleness_guard):
+              test_halluc_loops, test_offset_staleness_guard,
+              test_style_shadow, test_preview_honours_style_flags):
         try:
             t()
         except Exception as e:

@@ -5,7 +5,7 @@ subtitled video**. Everything runs on this machine and in this session: Whisper
 locally, the translation done by you or subagents you spawn, ffmpeg for the
 burn-in. No external translation service is used at any point.
 
-Unless the user says they only want the SRT, run all the way through step 8 and
+Unless the user says they only want the SRT, run all the way through step 8c and
 hand back the burned video -- that is usually what they actually need.
 
 Target: subtitles ready **2-3 hours after the service is published**. The compute
@@ -148,7 +148,10 @@ Rules that matter most:
   surface first in the review page.
 
 **Confirm proper nouns with the user** before shipping names -- past mistakes
-include Wonki (not Wongi) and Jason (not John).
+include Wonki (not Wongi) and Jason (not John). In practice the review in step 7
+settles most of them for free: a reviewer correcting the English writes the names
+out correctly as a side effect. Ask for the review first and only ask about the
+names still standing afterwards.
 
 ### 5b. Check every batch came back whole
 
@@ -211,49 +214,114 @@ python build_srt.py ../work/<VIDEO_ID>/sentences_edited.json ../work/<VIDEO_ID>/
 It warns if a line's English was corrected but no re-translation covers it,
 rather than shipping the old Chinese under new English.
 
-### 8. Burn the subtitles into the video
+Two things to get right when re-translating the queue:
+
+- **Check the seams, not the lines.** Most corrected lines are mid-sentence
+  fragments that only work as joins -- `...超过你` / `所能想象。`. Translate each
+  with its neighbours in view and then read the joins; one pair this run said
+  "influenced" twice across the seam and read fine line by line.
+- **The corrected English is the truth, except where the reviewer plainly missed
+  one.** If they left an ASR error and context contradicts it, translate the sense
+  and `flag` the line rather than silently following the text. `who's gonna live`
+  next to "who's come to church" is *leave*; "a home that you will never have" is
+  *never lose*.
+
+Write the rebuilt track to a **new filename** (`sermon.zh-Hans.v2.srt`) if the
+first one has already been handed over. Do not overwrite a delivered artifact.
+
+### 8. Choose a burn-in style
+
+**Look at the source before choosing anything.** Heartbeat burns its own English
+captions into the broadcast, and where they sit decides placement:
+
+- the spoken caption sits at **84.0%-87.4% of frame height**, bottom-anchored, so
+  a two-line English caption grows upward and its bottom edge stays put;
+- scripture slides fill the **left half** and reach down to ~92%.
+
+Render the cross product and flip between the frames:
 
 ```bash
-# choose a size first -- renders one frame per size, no encoding.
-# --download caches the source as ../work/<VIDEO_ID>/<VIDEO_ID>.source.mp4
-# PASS --start, or --preview-at defaults to 120s and you get a frame from the
-# pre-service holding screen, 40 minutes before the sermon -- which reads as
-# "the preview is broken" when it is working perfectly.
-python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
-  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --start <SECONDS> --preview
+python preview_styles.py --video ../work/<VIDEO_ID>/<VIDEO_ID>.source.mp4 \
+  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt \
+  --at 2000 3397 1450 2598 --sizes 14,18,22,26 --out styles.html
+```
 
-# then the real render -- same --download, so it reuses the file already fetched
-python bake_subs.py --download <VIDEO_ID> --workdir ../work/<VIDEO_ID> \
-  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.srt --size 22 \
+Pick the `--at` moments for **what is already on screen** -- a clean shot, one with
+the spoken caption, one with a scripture slide -- not for what is being said. The
+right answer differs between them. Buttons rather than a scrolling page, because
+two points of font size is invisible side by side and obvious when frames swap in
+place.
+
+Three placements, and **"below the English" is not one of them**: the caption
+leaves 36 script units of clear space and a two-line Chinese cue needs ~51 even at
+size 22.
+
+| | `--align` | `--margin` | |
+|---|---|---|---|
+| **above** | 2 | 50 | Chinese above the English, both readable. Crosses a scripture slide when one is up. |
+| **over** | 2 | 30 | With `--mask-english`. Chinese replaces the English entirely. |
+| **top** | 6 | 16 | Top of frame, clear of both. Unusual to read. |
+
+Chosen on the 2026-08-09 Melbourne service: **above, box, size 18**.
+
+### 8b. Burn it in
+
+```bash
+python bake_subs.py --video ../work/<VIDEO_ID>/<VIDEO_ID>.source1080.mp4 \
+  --srt ../work/<VIDEO_ID>/sermon.zh-Hans.v2.srt \
+  --start <SECONDS> --size 18 --margin 50 --border box --align 2 \
   --out ../work/<VIDEO_ID>/sermon.zh-subbed.mp4
 ```
 
-Roughly **10-22x realtime** depending on source resolution -- a 1080p source is
-the slow end. A 39-minute sermon took about 3.5 minutes at 1080p.
-
 `--start/--end` cut the video and re-base the subtitle track onto the cut in one
 step, since the track is written in full-video time.
+
+Roughly **10-22x realtime**; a 64.6-minute sermon at 1080p took about 7 minutes.
+
+Three things that are easy to get wrong here, all verified by rendering a frame:
+
+- **`FontSize` and `MarginV` are fractions of frame height, not pixels.** libass
+  fixes the script at `PlayResY=288` whatever the source height, so size 22 is
+  7.6% of the frame at 720p and at 1080p alike, and **a size chosen on a 720p
+  preview holds on the 1080p master.** Treating the script resolution as the video
+  height makes every margin wrong by 3.75x.
+- **`Alignment` uses legacy SSA numbering.** 4 is "toptitle", 8 is "midtitle", so
+  ASS-style `Alignment=8` lands middle-**left**. Top-centre is **6**.
+- **A `BorderStyle=3` box cannot cover the English caption.** It is only as wide as
+  its own text, so a longer English line pokes out both sides. `--mask-english`
+  paints the band edge to edge first.
 
 The font is chosen at runtime from the Simplified Chinese faces installed
 (`Hiragino Sans GB W6` first). A missing family does not error -- libass draws
 empty boxes and you only find out by watching, so do not hard-code one.
 
-**Check the source for captions it already has.** Some services go out with the
-church's own English captions burned in, sometimes only over part of the service.
-A second layer at the default `--margin 38` lands on top of them. Sample a frame
-from the middle of the sermon before committing to the render; `--margin 100`
-lifts the Chinese clear of a bottom-anchored English caption. Very large margins
-silently render no text at all rather than erroring, so check the preview.
+### 8c. Make a version that can actually be delivered
 
-Size is **not** inherited from the English burn-ins. English was settled at
-FontSize 24; Chinese starts at 22 because full-width glyphs take more of the line.
-Run `--preview` and judge it at the distance the congregation sits.
+**CRF is quality-targeted, so its size varies with content.** The default CRF 20 at
+1080p produced **1.04 GB** for 64.6 minutes. When someone is waiting on a download,
+re-encode the finished bake -- do not re-render the subtitles:
+
+```bash
+# 1080p, ~430 MB
+ffmpeg -i sermon.zh-subbed.mp4 -c:v libx264 -preset veryfast \
+  -b:v 700k -maxrate 1200k -bufsize 2400k -pix_fmt yuv420p -c:a copy \
+  -movflags +faststart sermon.zh-subbed.1080p-small.mp4
+
+# 720p, ~290 MB
+ffmpeg -i sermon.zh-subbed.mp4 -vf scale=1280:-2 -c:v libx264 -preset veryfast \
+  -b:v 520k -maxrate 900k -bufsize 1800k -pix_fmt yuv420p -c:a aac -b:a 64k \
+  -movflags +faststart sermon.zh-subbed.720p.mp4
+```
+
+Target the bitrate rather than the quality whenever a size has been quoted to
+somebody -- `-b:v 700k` landed 428 MB against a 420 MB estimate.
 
 ## Deliverables
 
-Report paths for both:
-- `youtube/work/<VIDEO_ID>/sermon.zh-Hans.srt` -- the subtitle track
+- `youtube/work/<VIDEO_ID>/sermon.zh-Hans.srt` -- the subtitle track (suffix the
+  revision if an earlier one has already been handed over)
 - `youtube/work/<VIDEO_ID>/sermon.zh-subbed.mp4` -- the burned video
+- a delivery-sized re-encode of it (step 8c), which is usually the one they take
 
 Plus the line count, coverage percentage, and any QA warnings you did not resolve.
 
@@ -265,6 +333,17 @@ Plus the line count, coverage percentage, and any QA warnings you did not resolv
   somewhere that ignores `cc_load_policy`. Do not write to YouTube without asking.
 - Embedded video clips inside a sermon (a testimony video, a news insert) need
   handling as a special case; their audio is not the preacher.
+- **`yt-dlp -F`'s FILESIZE column is a peak-bitrate estimate and can be wildly
+  high.** It predicted 1.65 GiB for the 720p track of a service stream that came
+  down at 346 MB -- a service sits on static wide shots and compresses far below
+  its quoted bitrate. Do not refuse a resolution on that column's say-so.
+- **Uploading to Drive or GCS does not route around an uplink bottleneck.** If the
+  recipient is on the tailnet and `tailscale status` shows their node as `direct`,
+  the bytes already leave at full uplink speed; pushing to Google sends them up the
+  same pipe first and adds a second download. The only lever is file size (8c).
+- Serving over the tailnet works well for handing a large file to someone who is
+  not at this machine: `tailscale serve --bg <port>` in front of a range-capable
+  static server. Range support is required or the video will not seek.
 - Disk fills fast. A 360p review copy is ~300 MB per sermon; clean up
   `youtube/work/<VIDEO_ID>/*.review.*` and `sermon16k.wav` when done. The WAV
   regenerates in seconds.
