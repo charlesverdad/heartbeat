@@ -67,17 +67,60 @@ def shift_srt(path, start, end):
         out.append(f"{n}\n{_fmt(a)} --> {_fmt(z)}\n{text}")
     return "\n\n".join(out) + "\n", n
 
-def style(font, size, margin):
-    # BorderStyle=3 draws a soft box behind the text instead of an outline, which
-    # is what keeps CJK strokes readable over a bright stage wash.
-    #
-    # ffmpeg here warns "libass wasn't built with ASS_FEATURE_WRAP_UNICODE". That
-    # only disables automatic line breaking inside CJK runs, and our cues already
-    # carry explicit breaks from cjk.wrap() at 16 full-width characters, so libass
-    # never has to wrap anything. Verified on mixed Latin/CJK two-line cues.
-    return (f"FontName={font},FontSize={size},PrimaryColour=&H00FFFFFF,"
-            f"OutlineColour=&H60000000,BorderStyle=3,Outline=2,Shadow=0,"
-            f"MarginV={margin},Alignment=2")
+# ASS colours are &HAABBGGRR -- byte-reversed from RGB, and AA is TRANSPARENCY,
+# so 00 is opaque. Getting either backwards yields a plausible-looking wrong colour.
+COLOURS = {"white":  "&H00FFFFFF",
+           "yellow": "&H0000D7FF",   # RGB FFD700, the broadcast-subtitle yellow
+           "cream":  "&H00E1F5FF"}   # RGB FFF5E1, softer than white on a bright wall
+
+def style(font, size, margin, border="box", colour="white", outline=2, shadow=0,
+          back=None, align=2):
+    """force_style string for libass.
+
+    BorderStyle=3 draws a filled box behind the text; BorderStyle=1 draws an
+    outline around each glyph. The box wins over a bright, busy stage wash --
+    CJK strokes are thin and an outline alone lets the background through the
+    counters. The outline is lighter over clean footage and does not cover the
+    picture, which matters here because the church burns its own English caption
+    into the frame and a box drawn under the Chinese can crop it.
+
+    FontSize and MarginV are in SCRIPT units, and libass fixes the script at
+    PlayResY=288 whatever the source height -- so both are a fraction of frame
+    height (size 22 is 7.6% of it) and a size chosen on a 720p preview renders
+    identically on the 1080p master. Measured, not assumed: on a 720p source,
+    MarginV 38 put the box 91px up and MarginV 10 put it 21px up, and the 28-unit
+    difference is exactly 70px = 28 x 720/288.
+
+    ffmpeg warns "libass wasn't built with ASS_FEATURE_WRAP_UNICODE". That only
+    disables automatic line breaking inside CJK runs, and our cues already carry
+    explicit breaks from cjk.wrap() at 16 full-width characters, so libass never
+    has to wrap anything. Verified on mixed Latin/CJK two-line cues.
+    """
+    prim = COLOURS.get(colour, colour)
+    if border == "box":
+        bs, ol, sh, _back = 3, outline, 0, "&H60000000"     # 62% black box
+    else:
+        bs, ol, sh, _back = 1, outline, (shadow or 1), "&HA0000000"
+    return (f"FontName={font},FontSize={size},PrimaryColour={prim},"
+            f"OutlineColour={back or _back},BackColour=&H80000000,"
+            f"BorderStyle={bs},Outline={ol},Shadow={sh},"
+            f"MarginV={margin},Alignment={align}")
+
+# The church burns its own English caption into the broadcast at 84.0%-87.4% of
+# frame height. A BorderStyle=3 box is only as wide as the text it sits behind,
+# so Chinese laid over a longer English line leaves its ends poking out either
+# side. Painting the band edge to edge first is the only way to actually retire
+# it. Fractions, not pixels, so it holds at any source height.
+MASK_BAND = (0.823, 0.064)      # (top, height) as a fraction of frame height
+
+def vfilter(srtfile, st, mask=False):
+    """subtitles filter, optionally over a masked-out English caption band."""
+    chain = []
+    if mask:
+        top, h = MASK_BAND
+        chain.append(f"drawbox=x=0:y=ih*{top}:w=iw:h=ih*{h}:color=black:t=fill")
+    chain.append(f"subtitles={srtfile}:force_style='{st}'")
+    return ",".join(chain)
 
 # ------------------------------------------------------------------ steps
 def fetch(video_id, workdir):
@@ -133,12 +176,15 @@ onkeydown=e=>{{if(e.key==='ArrowRight')show(i+1);if(e.key==='ArrowLeft')show(i-1
 </script>""", encoding="utf-8")
     print(f"wrote {out}  ({len(shots)} sizes: {', '.join(str(s) for s,_ in shots)})")
 
-def bake(video, srtfile, out, font, size, margin, start, end, crf):
+def bake(video, srtfile, out, font, size, margin, start, end, crf,
+         border="box", colour="white", outline=2, shadow=0, back=None, align=2,
+         mask=False):
     cmd = ["ffmpeg", "-nostdin", "-v", "warning", "-stats", "-y"]
     if start: cmd += ["-ss", str(start)]
     if end:   cmd += ["-to", str(end)] if not start else ["-t", str(end - start)]
     cmd += ["-i", str(video),
-            "-vf", f"subtitles={srtfile}:force_style='{style(font, size, margin)}'",
+            "-vf", vfilter(srtfile, style(font, size, margin, border, colour,
+                                         outline, shadow, back, align), mask),
             "-c:v", "libx264", "-preset", "medium", "-crf", str(crf), "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)]
     print("  " + " ".join(cmd[:6]) + " ...")
@@ -161,6 +207,16 @@ if __name__ == "__main__":
     ap.add_argument("--font", default=None, help=f"default: first of {FONT_CANDIDATES[0]!r} available")
     ap.add_argument("--size", type=int, default=22)
     ap.add_argument("--margin", type=int, default=38, help="bottom margin in SSA units")
+    ap.add_argument("--mask-english", action="store_true",
+                    help="paint out the church's own burned-in English caption band first")
+    ap.add_argument("--align", type=int, default=2,
+                    help="SSA alignment: 2 bottom-centre (default), 6 top-centre. LEGACY "
+                         "numbering -- libass reads 4 as 'toptitle' and 8 as 'midtitle', so "
+                         "ASS-style 8 lands middle-LEFT, not top-centre. Verified by render.")
+    ap.add_argument("--border", choices=["box", "outline"], default="box")
+    ap.add_argument("--colour", default="white", help="white, yellow, cream, or a raw &HAABBGGRR")
+    ap.add_argument("--outline", type=float, default=2)
+    ap.add_argument("--shadow", type=float, default=0)
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preview", action="store_true", help="render sample frames instead of encoding")
     ap.add_argument("--preview-sizes", default="18,20,22,24,26")
@@ -196,6 +252,8 @@ if __name__ == "__main__":
                     a.margin, at, a.out or "subtitle_size_zh.html")
         else:
             out = a.out or str(video.with_suffix("")) + ".subbed.mp4"
-            bake(video, staged, out, font, a.size, a.margin, a.start, a.end, a.crf)
+            bake(video, staged, out, font, a.size, a.margin, a.start, a.end, a.crf,
+                 a.border, a.colour, a.outline, a.shadow, None, a.align,
+                 a.mask_english)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
