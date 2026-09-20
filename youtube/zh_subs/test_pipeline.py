@@ -8,7 +8,7 @@ assert timing invariants rather than outputs.
 
     python3 test_pipeline.py
 """
-import json, pathlib, subprocess, sys, tempfile, threading, urllib.request, urllib.error
+import re, json, pathlib, subprocess, sys, tempfile, threading, urllib.request, urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import cjk, build_srt, bake_subs
@@ -51,6 +51,18 @@ def test_cjk():
                       ("John Mark Comer 说过。",        "John Mark Comer说过。")):
         got = "".join(t.replace("\n", "") for _, _, t in cjk.cues_for(src, 0, 20))
         check(f"name spacing survives: {want}", got == want, f"got {got!r}")
+
+    # ... and the line break must not land inside one either. These three are
+    # the cues that shipped as "Practi / cing", "Kevin Ki / m", "Na / than Choi".
+    for t in ("两周之后，我们要开始一个叫Practicing the Way的课程。",
+              "墨尔本的Pius、黄金海岸的Kevin Kim，还有悉尼的Joshua Lee。",
+              "我知道你们有些人认识黄金海岸的Nathan Choi，"):
+        lines = [ln for _, _, part in cjk.cues_for(t, 0, 20) for ln in part.split("\n")]
+        # breaking at the space in "Kevin Kim" is fine; breaking "Kim" is not,
+        # so the invariant is per word, not per adjacent character pair
+        words = re.findall(r"[A-Za-z][0-9A-Za-z'.]*", t)
+        lost  = [w for w in words if not any(w in ln for ln in lines)]
+        check(f"no mid-word break: {t[:10]}...", not lost, f"{lost} split across {lines}")
 
 # ---------------------------------------------------------------- build_srt
 def _marked(sents, offset=100.0):

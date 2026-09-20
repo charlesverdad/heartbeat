@@ -26,6 +26,13 @@ def visual_len(s):
     """Full-width chars count 1; ASCII counts half a cell."""
     return sum(0.5 if ord(c) < 0x2E80 else 1.0 for c in s)
 
+_WORDCHAR = re.compile(r"[0-9A-Za-z'\u2019.-]")
+
+def _midword(text, i):
+    """True if breaking the line before text[i] would cut a Latin word in half."""
+    return (0 < i < len(text)
+            and bool(_WORDCHAR.match(text[i-1])) and bool(_WORDCHAR.match(text[i])))
+
 def _breaks(text):
     return [i + 1 for i, c in enumerate(text) if c in BREAK_AFTER and i + 1 < len(text)]
 
@@ -43,9 +50,17 @@ def wrap(text, max_chars=MAX_CHARS_PER_LINE, max_lines=MAX_LINES):
         p = 1
         while p < len(text) and visual_len(text[:p + 1]) <= max_chars:
             p += 1
-        while p > 1 and p < len(text) and (text[p] in NO_LINE_START or text[p-1] in NO_LINE_END):
+        # CJK breaks anywhere, so a width-only break is fine for Chinese and
+        # wrong for the Latin runs embedded in it -- this is what set the book
+        # "Practicing the Way" as "Practi / cing" and a shepherd's name as
+        # "Na / than Choi". Back out of the word, unless the word is itself
+        # longer than the line, in which case it has to break somewhere.
+        p0 = p
+        while p > 1 and p < len(text) and (text[p] in NO_LINE_START
+                                           or text[p-1] in NO_LINE_END
+                                           or _midword(text, p)):
             p -= 1
-        best = p
+        best = p if p > 1 else p0
     head, tail = text[:best].strip(), text[best:].strip()
     if max_lines > 2:
         return head + "\n" + wrap(tail, max_chars, max_lines - 1)
@@ -64,6 +79,11 @@ def split_text(text, n):
         target = len(text) * k / n
         cand = [p for p in pts if p > start]
         p = max(min(cand, key=lambda x: abs(x - target)) if cand else int(target), start + 1)
+        # the same mid-word cut, but across two cues instead of two lines
+        q = p
+        while q > start + 1 and _midword(text, q):
+            q -= 1
+        p = q if q > start + 1 else p
         out.append(text[start:p].strip()); start = p
     out.append(text[start:].strip())
     return [c for c in out if c]
