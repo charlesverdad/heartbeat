@@ -435,6 +435,71 @@ def test_preview_honours_style_flags():
                           ("drawbox",       "--mask-english")):
             check(f"preview honours {why}", want in vf, f"-vf was {vf!r}")
 
+def test_to_traditional():
+    """Converting to zh-Hant must change the script and nothing else.
+
+    The viewer praised the Simplified wording and asked only for Traditional
+    characters, so a converter that rewrites vocabulary would undo the thing
+    that worked. It must also leave the SRT skeleton alone -- a
+    mangled timestamp is invisible until it is on screen."""
+    print("\nto_traditional: script converts, wording and timing do not")
+    import to_traditional as T
+
+    check("s2tw converts Simplified to Traditional",
+          T.convert("我们这个礼拜在教会", "tw") == "我們這個禮拜在教會")
+
+    # Taiwan uses 裡, Hong Kong 裏. 76 occurrences in one sermon, so this is
+    # not a detail -- it is the most visible difference between the variants.
+    check("tw variant uses 裡", T.convert("心里面", "tw") == "心裡面",
+          T.convert("心里面", "tw"))
+    check("hk variant uses 裏", T.convert("心里面", "hk") == "心裏面",
+          T.convert("心里面", "hk"))
+
+    # the guard that matters: the default must not touch vocabulary
+    vocab = "软件和网络的信息"
+    check("default variant leaves wording alone",
+          T.convert(vocab, "tw") == "軟件和網絡的信息", T.convert(vocab, "tw"))
+    check("twp DOES rewrite wording, which is why it is not the default",
+          T.convert(vocab, "twp") == "軟體和網路的資訊", T.convert(vocab, "twp"))
+
+    # merges OpenCC resolves correctly -- these are why conversion is not a lookup
+    for simp, trad in (("头发", "頭髮"), ("发生", "發生"), ("干净", "乾淨"),
+                       ("干活", "幹活"), ("树干", "樹幹"), ("后面", "後面"),
+                       ("皇后", "皇后"), ("一只", "一隻"), ("只有", "只有")):
+        check(f"merge resolved: {simp} -> {trad}", T.convert(simp, "tw") == trad,
+              T.convert(simp, "tw"))
+
+    check("residuals finds an unresolved 里", 
+          any(c == "里" for c, _ in T.residuals(T.convert("教会里面", "tw"))))
+    check("residuals stays quiet on a resolved one",
+          not T.residuals(T.convert("心里面", "tw")))
+
+    # an SRT must come back with its skeleton intact
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        src = w / "a.zh-Hans.srt"
+        src.write_text("1\n00:23:16,000 --> 00:23:17,500\n我们来了。\n\n"
+                       "2\n01:27:54,020 --> 01:27:59,000\n这个教会里\n第二行。\n",
+                       encoding="utf-8")
+        out = w / "a.zh-Hant.srt"
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "to_traditional.py"),
+                            str(src), str(out)], capture_output=True, text=True)
+        got = out.read_text(encoding="utf-8") if out.exists() else ""
+        check("srt: timestamps survive untouched",
+              "00:23:16,000 --> 00:23:17,500" in got and "01:27:54,020 --> 01:27:59,000" in got,
+              repr(got[:90]))
+        check("srt: cue indices survive", got.startswith("1\n") and "\n2\n" in got, repr(got[:40]))
+        check("srt: line breaks inside a cue survive", "\n第二行。" in got, repr(got))
+        check("srt: text is Traditional", "我們來了。" in got, repr(got[:60]))
+        check("srt: cue count unchanged",
+              len(re.split(r"\n\s*\n", got.strip())) == 2, repr(got))
+
+        # overwriting the source in place would destroy the reviewed Simplified track
+        r2 = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "to_traditional.py"),
+                             str(src), str(src)], capture_output=True, text=True)
+        check("refuses to overwrite the source in place", r2.returncode != 0,
+              f"rc={r2.returncode}")
+
 def test_check_batches():
     """A truncated subagent reply is valid JSON covering half a batch. It has to
     be caught before build_srt.py turns the gap into unsubtitled sermon."""
@@ -529,7 +594,8 @@ if __name__ == "__main__":
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
               test_preview_uses_absolute_timeline, test_check_batches,
               test_halluc_loops, test_offset_staleness_guard,
-              test_style_shadow, test_preview_honours_style_flags):
+              test_style_shadow, test_preview_honours_style_flags,
+              test_to_traditional):
         try:
             t()
         except Exception as e:

@@ -1,7 +1,7 @@
-# Chinese sermon subtitles (zh-Hans)
+# Chinese sermon subtitles (zh-Hant)
 
-Produces a Simplified Chinese subtitle track for an English sermon, for broadcast
-to a Chinese-speaking location. Output is an SRT to upload as a YouTube caption
+Produces a **Traditional** Chinese subtitle track for an English sermon, for
+broadcast to a Chinese-speaking location. Output is an SRT to upload as a YouTube caption
 track on the **existing published video** — nothing is re-encoded or re-uploaded.
 
 ## Why a caption track and not burned-in subtitles
@@ -30,6 +30,7 @@ site an **embed** URL rather than a watch URL:
     check_batches.py       # every sentence came back? a truncated batch fails silently
     build_srt.py           # lay each Chinese sentence across its English span
     qa_srt.py              # overlaps, line width, reading speed
+    to_traditional.py      # zh-Hans -> zh-Hant; this is what ships
     make_editor.py         # bilingual editor + a range-capable server, for a native check
     apply_edits.py         # fold the reviewer's edits back in
     preview_styles.py      # contact sheet of placements/sizes over real frames
@@ -55,6 +56,33 @@ it is on a screen in front of a congregation. So the tests assert timing invaria
 (no overlaps, no negative or zero-length cues, every cue inside its sentence span,
 song and dropped lines emitting nothing) rather than diffing output files, plus the
 edit-precedence rules and the byte-range server.
+
+## Traditional, converted rather than re-translated
+
+The viewer these are for reads Traditional. She said so after watching a
+Simplified burn-in she otherwise praised — and that second half decides the
+method. Note who this is: one person on the Gold Coast, not a room. The sermons
+are filmed at other campuses; the audience for the subtitles is not the audience
+in the video.
+
+Translation still happens in **Simplified**, and `to_traditional.py` converts as
+the last step. One glossary stays authoritative, the reviewed wording is carried
+over untouched, and the whole back catalogue can be converted without anyone
+re-reading it. OpenCC's `s2tw` changes the script and not a single word choice;
+`s2twp` would "localise" 軟件 to 軟體 and 信息 to 資訊, which is exactly the
+wording that was approved, so it is not the default and should not become it.
+
+Simplified merged several distinct Traditional characters, so this is not a table
+lookup — 发 is both 發 and 髮, 干 is 乾 and 幹, 后 is 后 and 後, 只 is 只 and 隻.
+OpenCC resolves these by phrase and gets them right. The one it misses is **里**,
+which splits into 里 (the distance unit) and 裡 (inside): a 裡 whose preceding
+word is absent from its phrase table stays 里, so `教會里面` comes out wrong while
+`心裡面` comes out right. Every survivor is reported with context for a human to
+glance at. On a real sermon there were eight, all `公里`, all correct.
+
+Variant matters more than it looks: Taiwan writes **裡**, Hong Kong **裏**, and
+that character appeared 76 times in a single sermon. `--variant tw` is the
+default because Taiwan is the variant that was named; `--variant hk` is there.
 
 ## Design decisions worth keeping
 

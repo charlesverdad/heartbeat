@@ -1,8 +1,15 @@
 # Brief: English sermon -> Simplified Chinese subtitles
 
 You are translating one batch of a sermon transcript into **Simplified Chinese
-(zh-Hans)** for on-screen subtitles. A Chinese-speaking congregation will read
-these on a projector while the English sermon plays.
+(zh-Hans)** for on-screen subtitles. A Chinese-speaking viewer reads these while
+the English sermon plays.
+
+**The audience actually reads Traditional**, and the track that ships is
+`zh-Hant`. You still write Simplified: `to_traditional.py` converts the finished
+track with OpenCC afterwards, which changes the script without touching a single
+word choice, and keeps one glossary authoritative. Do not hand-convert, and do
+not reach for Taiwan or Hong Kong regional vocabulary — write the same neutral
+Chinese you always have, and the conversion handles the rest.
 
 ## Inputs
 - Your batch file (given in your task) — JSON with `context_before` (untranslated,

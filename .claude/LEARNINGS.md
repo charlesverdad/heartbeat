@@ -468,3 +468,42 @@ a second download. The only lever is file size.
 produced 1.04 GB for 64.6 minutes. When a size has been quoted to someone, target the
 bitrate instead: `-b:v 700k -maxrate 1200k` landed 428 MB against a 420 MB estimate.
 Re-encode from the finished bake rather than re-rendering subtitles.
+
+## Delivering Traditional when the translation was done in Simplified (2026-09-21)
+
+**Know who the reader is before writing down why.** The subtitle work exists for
+**one viewer on the Gold Coast**. The first sermon subtitled was the Melbourne
+service, and I wrote "the Melbourne congregation reads Traditional" into four
+files — the campus in the video is not the audience for the subtitles, and a
+single reader is not a congregation. It changes what you can generalise: one
+person's preference is not a campus policy, and the next request may come from
+someone who reads something else.
+
+The viewer praised the Simplified translation and asked for Traditional.
+**That first half decides the method.** Convert the script, do not re-translate:
+the wording is the thing that worked, one glossary stays authoritative, and the
+whole back catalogue converts without anyone re-reading it.
+
+**OpenCC config choice is not cosmetic.** `s2tw` changes characters only.
+`s2twp` also swaps vocabulary to Taiwan terms — 軟件 to 軟體, 信息 to 資訊 — which
+is precisely the reviewed wording. Reaching for the "more localised" config would
+have quietly undone the approved text.
+
+**Simplified merged characters, so conversion is not a lookup**: 发 is both 發 and
+髮, 干 is 乾 and 幹, 后 is 后 and 後, 只 is 只 and 隻, 面 is 面 and 麵. OpenCC
+resolves these by phrase and gets them right. The one it misses is **里** (里 the
+distance unit vs 裡 inside): a 裡 whose preceding word is absent from the phrase
+table stays 里, so `教會里面` converts wrong while `心裡面` converts right.
+
+**Report the narrow thing, not everything.** Flagging all nine merged characters
+produced 73 hits on one sermon, every one correct — noise that teaches you to skip
+the report. Narrowed to 里 it produced eight, all `公里`, all correct and checkable
+in three seconds. A report nobody reads is worse than no report.
+
+**Variant is visible.** Taiwan writes 裡, Hong Kong 裏, and it appeared 76 times in
+one sermon. Defaulting is fine; assuming silently is not — ask which the receiving
+campus wants.
+
+**A derived artifact has to be regenerated after every rebuild.** The zh-Hant track
+comes from the zh-Hans one, so re-running `apply_edits`/`build_srt` without
+re-running the conversion silently ships the pre-edit wording.

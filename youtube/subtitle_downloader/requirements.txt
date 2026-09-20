@@ -5,3 +5,6 @@ webvtt-py>=0.4.6
 openai-whisper
 mlx-whisper; platform_machine == "arm64" and sys_platform == "darwin"
 streamlit>=1.28.0
+# Simplified -> Traditional for the zh-Hant subtitle track. The pure-Python
+# reimplementation, not the C++ binding, so it needs no compiler in the nix shell.
+opencc-python-reimplemented>=0.1.7
