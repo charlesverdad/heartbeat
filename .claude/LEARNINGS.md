@@ -507,3 +507,17 @@ campus wants.
 **A derived artifact has to be regenerated after every rebuild.** The zh-Hant track
 comes from the zh-Hans one, so re-running `apply_edits`/`build_srt` without
 re-running the conversion silently ships the pre-edit wording.
+
+## Google Drive access (2026-09-22)
+
+**Use rclone, not a Drive MCP, to move files to and from Drive.** Remote `gdrive:`
+(full `drive` scope, rclone's own OAuth app) is set up; `rclone` is in `shell.nix`.
+The config at `~/.config/rclone/rclone.conf` is encrypted; `.envrc` sets
+`RCLONE_PASSWORD_COMMAND` to read keychain item `heartbeat-rclone-config`, so no
+prompt. Agents whose shell skips direnv (Claude Code's Bash tool) run
+`direnv exec . rclone ...` from the repo root. Google's official Drive MCP
+(`drivemcp.googleapis.com`) was a dead end for this: it needs your own OAuth client,
+consent screen and scopes in a Cloud project (none of which Terraform can create),
+and it passes file bytes as inline base64 through the model's context, so large
+files can't go through it at all. The OAuth consent screen is per project: a client
+made in the BookStack project shows "bookstack" on Google's sign-in page.

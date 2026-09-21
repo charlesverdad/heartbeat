@@ -35,6 +35,9 @@ pkgs.mkShell {
     
     # Video processing tools
     ffmpeg
+
+    # Google Drive uploads/downloads
+    rclone
   ];
 
   shellHook = ''
