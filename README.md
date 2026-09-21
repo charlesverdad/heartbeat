@@ -60,7 +60,7 @@ heartbeat/
 │   └── subtitle_downloader/    #   Subtitle downloader
 ├── .claude/                    # Claude Code skills (sermon-to-blog pipeline)
 ├── shell.nix                   # Nix dev environment definition
-├── .envrc                      # Direnv config (loads nix + .env)
+├── .envrc                      # Direnv config (loads nix + .env, rclone keychain password)
 └── .env                        # Environment variables (not committed)
 ```
 
@@ -106,6 +106,33 @@ Claude Code skills in `.claude/commands/` automate turning YouTube sermon record
 | `/sermon-to-blog` | End-to-end: transcribe, generate, and publish |
 
 These skills require the `GHOST_ADMIN_API_KEY` and `GHOST_URL` environment variables set in `.env`.
+
+## Google Drive (rclone)
+
+Uploads to and downloads from Google Drive go through [rclone](https://rclone.org/drive/), which is in `shell.nix`. rclone signs in with its own Google app, so there is no Cloud project or OAuth client to set up.
+
+One-time setup on each machine:
+
+```bash
+direnv allow                                                             # loads rclone and RCLONE_PASSWORD_COMMAND
+security add-generic-password -a "$USER" -s heartbeat-rclone-config -w   # pick any password; it only encrypts rclone's config
+rclone config create gdrive drive scope=drive                            # signs in to Google in the browser
+rclone config encryption set                                             # encrypts the saved login with that password
+```
+
+The Google login is saved, encrypted, in `~/.config/rclone/rclone.conf`. `.envrc` sets `RCLONE_PASSWORD_COMMAND` to read the password from the macOS keychain item `heartbeat-rclone-config`, so rclone never prompts for it.
+
+```bash
+rclone lsd gdrive:                                    # folders in My Drive
+rclone copy ./sermon.mp3 gdrive:Sermons/              # upload
+rclone copy gdrive:Sermons/notes.docx ./downloads/    # download (Google Docs export as .docx/.xlsx)
+rclone backend drives gdrive:                         # list shared drives and their IDs
+rclone lsf "gdrive,team_drive=<ID>:"                  # work inside a shared drive
+```
+
+In a shell where direnv hasn't loaded, such as Claude Code's Bash tool, prefix commands with `direnv exec .`, e.g. `direnv exec . rclone lsd gdrive:`.
+
+Google's Drive MCP server was tried and dropped. It needs a Cloud project, OAuth client and consent screen, and it passes file contents through the model's context as base64, so large files can't go through it.
 
 ## Adding Dependencies
 
