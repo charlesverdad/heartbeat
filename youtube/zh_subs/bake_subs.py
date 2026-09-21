@@ -220,6 +220,12 @@ if __name__ == "__main__":
                          "numbering -- libass reads 4 as 'toptitle' and 8 as 'midtitle', so "
                          "ASS-style 8 lands middle-LEFT, not top-centre. Verified by render.")
     ap.add_argument("--border", choices=["box", "outline"], default="box")
+    ap.add_argument("--back", default=None, metavar="&HAABBGGRR",
+                    help="box/outline colour, e.g. &H78000000 for a softer box than the "
+                         "&H60000000 default. The leading byte is TRANSPARENCY, not opacity, "
+                         "so a HIGHER value is lighter. Against a pale, low-contrast design "
+                         "the default box reads as a hard slab; lifting it to 0x78 keeps the "
+                         "text legible while sitting back into the picture.")
     ap.add_argument("--colour", default="white", help="white, yellow, cream, or a raw &HAABBGGRR")
     ap.add_argument("--outline", type=float, default=2)
     ap.add_argument("--shadow", type=float, default=None,
@@ -258,11 +264,11 @@ if __name__ == "__main__":
             preview(video, whole, font, [int(s) for s in a.preview_sizes.split(",")],
                     a.margin, at, a.out or "subtitle_size_zh.html",
                     border=a.border, colour=a.colour, outline=a.outline,
-                    shadow=a.shadow, align=a.align, mask=a.mask_english)
+                    shadow=a.shadow, back=a.back, align=a.align, mask=a.mask_english)
         else:
             out = a.out or str(video.with_suffix("")) + ".subbed.mp4"
             bake(video, staged, out, font, a.size, a.margin, a.start, a.end, a.crf,
-                 a.border, a.colour, a.outline, a.shadow, None, a.align,
+                 a.border, a.colour, a.outline, a.shadow, a.back, a.align,
                  a.mask_english)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

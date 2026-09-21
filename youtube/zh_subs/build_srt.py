@@ -95,7 +95,8 @@ def _merge_slivers(cues, min_dur=0.55, max_gap=0.45):
                 a, b = (k, j) if j > k else (j, k)
                 if cues[b][0] - cues[a][1] > max_gap:
                     continue
-                joined = (cues[a][2] + cues[b][2]).replace("\n", "")
+                joined = cjk.join(cues[a][2].replace("\n", ""),
+                                  cues[b][2].replace("\n", ""))
                 if not cjk.fits(joined):
                     continue
                 cues[a] = [cues[a][0], cues[b][1], cjk.wrap(joined)]

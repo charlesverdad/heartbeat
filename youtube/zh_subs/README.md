@@ -24,7 +24,8 @@ site an **embed** URL rather than a watch URL:
     prepare.py             # fetch DASH audio, cut the sermon span, write meta.json
     asr.py                 # mlx-whisper large-v3-turbo, word timestamps (~39x realtime)
     sentences.py           # re-cut into sentences with accurate spans
-    filter_song.py         # drop sung worship and ASR hallucination
+    filter_song.py         # drop sung worship and ASR hallucination (--no-song: no singing in it)
+    build_srt_en.py        # English track from the same sentences, via latin.py
     make_batches.py        # split into batches of 200, carrying context across the seam
     (translate)            # Claude subagents, batched, see TRANSLATION_BRIEF.md
     check_batches.py       # every sentence came back? a truncated batch fails silently
@@ -49,6 +50,11 @@ Every step runs inside the repo's nix shell:
 ## Tests
 
     nix-shell shell.nix --run "cd youtube/zh_subs && python test_pipeline.py"
+
+Run it as a script, not under pytest. The file has its own `check()` harness that
+records a failure and carries on, so pytest collects the test *functions* and
+passes all of them even when a check inside one has failed. The script prints the
+real count and exits non-zero on any failure.
 
 The failure this guards against is not a crash -- it is a track that builds cleanly
 and is two seconds out, or attached to the wrong sentence. Nobody catches that until

@@ -508,6 +508,90 @@ campus wants.
 comes from the zh-Hans one, so re-running `apply_edits`/`build_srt` without
 re-running the conversion silently ships the pre-edit wording.
 
+## Subtitling a produced course instead of a service stream (2026-09-21)
+
+Eight Practicing the Way sessions, 218 minutes, English SRT + Traditional SRT +
+burn-in each. The pipeline was built for Heartbeat's own service streams and
+mostly transferred; what follows is where the assumptions did not.
+
+**`prepare.py` is YouTube-only.** It fetches with yt-dlp and there is no local-file
+path. For files already on disk, extract the 16 kHz mono WAV with ffmpeg and write
+`meta.json` by hand with `offset: 0` — a produced video has no worship set to skip
+past, so there is no sermon start to find. Everything downstream only reads the
+workdir, so it does not care where the WAV came from.
+
+**The song detector is a liability on material with no singing.** It fires on
+`wps < 2.0` over `> 8s` in runs, which is sung worship — and is also exactly what a
+quotation read slowly over a music bed looks like. On session 05 it swallowed five
+lines of ordinary teaching, which would have been 84 seconds with no subtitle at
+all. Added `--no-song` to `filter_song.py`. The hallucination detector stays on and
+earned its place: session 06 had ten "Thank you." loops, and checking the
+neighbouring indices confirmed the stretches really were silent (the loops were
+*consecutive* sentences with nothing between them, 940s–1008s).
+
+**Fourteen parallel translators will not agree with each other.** Within a batch a
+term is consistent; across a course it is not. Dallas Willard came back as 魏乐德
+from three agents and 达拉斯·威拉德 from a fourth — in the *same session*. One agent
+dropped a name entirely (Tozer), leaving "called it…" with no subject. Wrote
+`check_consistency.py`, which surveys watched terms across every batch and reports
+each rendering with the sessions it appeared in. Pin recurring proper nouns in the
+glossary *before* fanning out; a name with no settled Chinese form should stay in
+Latin script, because a plausible transliteration the reader has never seen is
+worse than the English — they cannot look it up.
+
+**Check what the consistency report flags before "fixing" it.** Of five flagged
+terms, three were correct: lowercase "practicing the way of Jesus" is the ordinary
+verb and not the course title; "apprentice in the family trade" is the ordinary
+verb and not the course's 学徒; and "whoever wants to be my disciple" is CUV wording
+(若有人要跟从我), where Scripture outranks the glossary by the brief's own rule.
+
+**The 里 survivor rate depends entirely on the subject matter.** On one sermon all
+eight were 公里 and correct. On this course seven of nine were wrong, every one the
+locative after a noun the course says constantly — 教會里, 指南里. Added a narrow
+post-conversion fix table to `to_traditional.py` keyed on those nouns, which leaves
+transliterated names alone (拉里 for Larry, 諾里奇 for Norwich both survived
+correctly). Fix it in the converter, not the output: the Hant track is derived and
+regenerating it discards any hand edit.
+
+**An English track needs its own shaper, not the CJK one.** `latin.py` mirrors
+`cjk.py`'s API so `build_srt.py`'s timing machinery — the overlap ceiling, the
+minimum-display pass, the sliver merge — is reused by pointing its module-global at
+the other module (`build_srt.cjk = latin`). Two bugs this surfaced, both invisible
+until measured:
+
+- `_merge_slivers` joined two cues' text with no separator. Correct for Chinese,
+  and it glues English words together ("onyour", "doeslook"). Now goes through a
+  `join()` hook that each shaper defines.
+- Splitting a long sentence by *target position* rather than by width degenerates
+  badly at high n: a 348-character sentence became 35 cues, most 0.2s holding one
+  or two letters. Greedy width packing cannot do that.
+
+Measure the output rather than reading it. 3080 cues across eight tracks, checked
+for over-wide lines, >2-line cues, sub-0.55s cues, glued words, reading speed and
+overlaps — and then check the checker, because two of the eight "defects" were the
+QA script's own bugs (a CamelCase book title, and a trailing newline on the final
+cue that split into a phantom third line).
+
+**`fc-list` decides which fonts exist, not the Mac.** PingFang TC is installed and
+fontconfig matches *zero* of it, so libass cannot use it — and naming a font libass
+cannot find draws empty boxes rather than erroring. `Heiti TC` is the Traditional
+sans that is actually visible; `Songti TC` is the serif. Verify by rendering a frame
+and looking at it.
+
+**Choose burn-in style against the frames, not the defaults.** This course cuts
+between talking heads on pale plaster, cream motion-graphic cards, and letterboxed
+B-roll. White text vanishes on the cream cards, which forces a backing and rules
+out an outline. The sermon defaults (size 22, margin 38, 62% box) are tuned for a
+bright stage wash and read as a slab here; size 17 / margin 18 / `--back &H78000000`
+sits back into the picture. Added `--back` to `bake_subs.py`. Full notes in
+`youtube/ptw-course/TYPOGRAPHY.md`.
+
+**A `nohup`'d job inside a backgrounded Bash tool call does outlive the wrapper.**
+The task reported "completed" with three sessions unbaked, and the encode was still
+running — `pgrep` showed it. An mp4 mid-encode has no moov atom yet, so `ffprobe`
+calling it invalid means "still writing", not "corrupt". Poll for the artifacts, not
+for the task status.
+
 ## Google Drive access (2026-09-22)
 
 **Use rclone, not a Drive MCP, to move files to and from Drive.** Remote `gdrive:`
@@ -521,3 +605,9 @@ consent screen and scopes in a Cloud project (none of which Terraform can create
 and it passes file bytes as inline base64 through the model's context, so large
 files can't go through it at all. The OAuth consent screen is per project: a client
 made in the BookStack project shows "bookstack" on Google's sign-in page.
+
+**Run `test_pipeline.py` as a script, never under pytest.** Its `check()` harness
+records a failure and carries on, so pytest reports "17 passed" — one per function
+— while a check inside one of them is failing. The script reported 113 passed,
+1 failed on the same code. Then mutate the fix back out and confirm the new test
+fails: the join test caught `'onyour mark'`, the exact string seen in the wild.
