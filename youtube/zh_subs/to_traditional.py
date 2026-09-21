@@ -44,6 +44,24 @@ CONFIGS = {"tw": "s2tw",      # Taiwan forms, wording untouched  (default)
 AMBIGUOUS       = "里"
 AMBIGUOUS_ALL   = "里后干只几余表面发"
 
+# Nouns after which 里 is the locative "inside" and OpenCC leaves it alone,
+# because the compound is absent from its phrase table. Each is a word a
+# subtitle says constantly -- "in the church", "in the guide", "in your heart" --
+# so the miss is not rare. On the first sermon all eight survivors were 公里 and
+# correct; on an eight-session course seven of nine were wrong, all of this
+# shape. Applied AFTER conversion, so it cannot disturb anything OpenCC got
+# right, and deliberately narrow: a transliterated name keeps its 里 (拉里 for
+# Larry, 諾里奇 for Norwich), which a blanket 里->裡 would wreck.
+LOCATIVE_BEFORE_LI = ["教會", "指南", "心", "家", "手冊", "房間", "城市",
+                      "世界", "生活", "生命", "聖經", "書", "課程", "群體"]
+
+
+def fix_locative_li(text, inside="裡"):
+    """Repair 里 that should be the locative, leaving the distance unit alone."""
+    for noun in LOCATIVE_BEFORE_LI:
+        text = text.replace(noun + "里", noun + inside)
+    return text
+
 
 def convert(text, variant="tw"):
     try:
@@ -51,7 +69,9 @@ def convert(text, variant="tw"):
     except ImportError:
         sys.exit("opencc is not installed:\n"
                  "  pip install -r youtube/subtitle_downloader/requirements.txt")
-    return OpenCC(CONFIGS[variant]).convert(text)
+    out = OpenCC(CONFIGS[variant]).convert(text)
+    # Hong Kong forms use 裏 for the same word, so follow the variant.
+    return fix_locative_li(out, "裏" if variant == "hk" else "裡")
 
 
 def residuals(out, chars=AMBIGUOUS, width=5):

@@ -422,7 +422,7 @@ def test_preview_honours_style_flags():
                         "--video", str(w / "v.mp4"), "--srt", str(srt),
                         "--preview", "--preview-sizes", "22", "--preview-at", "30",
                         "--border", "outline", "--colour", "yellow", "--align", "6",
-                        "--shadow", "0", "--mask-english",
+                        "--shadow", "0", "--mask-english", "--back", "&H78000000",
                         "--out", str(w / "p.html")], capture_output=True, text=True, env=env)
         vf = ""
         args = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
@@ -432,8 +432,161 @@ def test_preview_honours_style_flags():
                           ("Alignment=6",   "--align 6"),
                           ("Shadow=0",      "--shadow 0"),
                           ("&H0000D7FF",    "--colour yellow"),
+                          ("OutlineColour=&H78000000", "--back"),
                           ("drawbox",       "--mask-english")):
             check(f"preview honours {why}", want in vf, f"-vf was {vf!r}")
+
+def test_back_reaches_the_encode():
+    """--back must reach the real encode, not just style().
+
+    The CLI passed a literal None into bake() where the backing colour goes, so
+    the box was always the default 0x60 however it was invoked -- a style flag
+    that works in a unit test and nowhere else."""
+    print("\nbake_subs: --back reaches the full encode")
+    import os
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        srt = w / "t.srt"
+        srt.write_text("1\n00:00:01,000 --> 00:00:02,000\nCUE\n", encoding="utf-8")
+        (w / "v.mp4").write_bytes(b"\x00" * 16)
+        bindir = w / "bin"; bindir.mkdir()
+        log = w / "argv.log"
+        fake = bindir / "ffmpeg"
+        fake.write_text("#!/bin/sh\n"
+                        'printf "%s\\n" "$@" >> ' + str(log) + "\n"
+                        'for a in "$@"; do out="$a"; done\n'
+                        'printf x > "$out"\n')
+        fake.chmod(0o755)
+        env = dict(os.environ, PATH=f"{bindir}:{os.environ['PATH']}")
+        def vf_for(*extra):
+            if log.exists():
+                log.unlink()
+            subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "bake_subs.py"),
+                            "--video", str(w / "v.mp4"), "--srt", str(srt), "--font", "F",
+                            *extra, "--out", str(w / "o.mp4")],
+                           capture_output=True, text=True, env=env)
+            args = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+            return args[args.index("-vf") + 1] if "-vf" in args else ""
+        got = vf_for("--back", "&H78000000")
+        check("encode uses the --back colour", "OutlineColour=&H78000000" in got, repr(got))
+        got = vf_for()
+        check("encode default box is unchanged", "OutlineColour=&H60000000" in got, repr(got))
+
+# ---------------------------------------------------------------- latin
+def test_latin():
+    """The English shaper: breaks on spaces, and a long sentence is cut into
+    readable pieces rather than slivers."""
+    print("\nlatin: English line breaking and cue layout")
+    import latin
+    for t in ("Who are you following?",
+              "Everybody is following somebody or something, whether they know it or not.",
+              "Put another way, everyone is a disciple; the question is who or what of."):
+        lines = latin.wrap(t).split("\n")
+        check(f"wrap fits box: {t[:20]}...",
+              len(lines) <= latin.MAX_LINES and all(len(l) <= latin.MAX_CHARS_PER_LINE for l in lines),
+              f"{[len(l) for l in lines]}")
+        check(f"wrap never cuts a word: {t[:20]}...",
+              " ".join(" ".join(lines).split()) == " ".join(t.split()))
+
+    # A line that cannot fit two lines must say so, not come back over-wide:
+    # an over-wide line returned here goes straight into the file.
+    too_long = "word " * 40
+    check("fits() is honest about text too long for the box", not latin.fits(too_long))
+    check("wrap never returns a line wider than the box",
+          all(len(l) <= latin.MAX_CHARS_PER_LINE for l in latin.wrap(too_long).split("\n")))
+
+    # The regression: split by target position degenerated at high n, and a
+    # 348-character sentence came out as 35 cues of one or two letters.
+    long_en = ("Dallas Willard once said this, the greatest issue facing the world today "
+               "with all its heartbreaking needs is whether those who are identified as "
+               "Christians will become disciples, students, apprentices, practitioners of "
+               "Jesus Christ, steadily learning from him how to live the life of the kingdom "
+               "of the heavens into every corner of human existence, and that is the question.")
+    cues = latin.cues_for(long_en, 100.0, 126.0)
+    check("long sentence: a handful of cues, not dozens", 3 <= len(cues) <= 8, f"{len(cues)} cues")
+    check("long sentence: no sliver cues", all(len(t.replace("\n", " ")) >= 15 for _, _, t in cues),
+          str([t for _, _, t in cues if len(t) < 15]))
+    check("long sentence: every cue fits the box", all(latin.fits(t) for _, _, t in cues))
+    check("long sentence: no word lost or reordered",
+          " ".join(t.replace("\n", " ") for _, _, t in cues).split() == long_en.split())
+    check("long sentence: stays in span, in order",
+          all(100.0 <= a < b <= 126.0 + 1e-6 for a, b, _ in cues)
+          and all(cues[i][1] <= cues[i+1][0] + 1e-9 for i in range(len(cues) - 1)))
+    parts = latin.split_text(long_en, 5)
+    check("split_text returns at most n pieces", len(parts) <= 5, f"{len(parts)}")
+
+def test_merge_join():
+    """The sliver merge concatenated with no separator. Right for Chinese,
+    and it glued English words together -- "onyour", "doeslook"."""
+    print("\nbuild_srt: sliver merge joins text the way the script needs")
+    import latin
+    check("cjk join abuts, as before", cjk.join("我们", "来了") == "我们来了")
+    check("latin join keeps a space", latin.join("on", "your mark") == "on your mark")
+    check("latin join tolerates an empty side", latin.join("", "mark") == "mark")
+    saved = build_srt.cjk
+    try:
+        build_srt.cjk = latin
+        merged = build_srt._merge_slivers([[0.0, 0.3, "on"], [0.35, 2.0, "your mark"]])
+        check("merged English keeps its space", merged[0][2] == "on your mark", repr(merged))
+    finally:
+        build_srt.cjk = saved
+    merged = build_srt._merge_slivers([[0.0, 0.3, "我们"], [0.35, 2.0, "来了"]])
+    check("merged Chinese is unchanged by the hook", merged[0][2] == "我们来了", repr(merged))
+
+def test_english_track():
+    """build_srt_en.py end to end: speech only, spaces intact, timing guarded."""
+    print("\nbuild_srt_en: English track from the marked sentences")
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        sents = [{"start": 1.0, "end": 3.0, "text": "Who are you following?", "kind": "speech"},
+                 {"start": 4.0, "end": 5.0, "text": "Thank you.", "kind": "halluc"},
+                 {"start": 6.0, "end": 9.0, "text": "Everybody is following somebody.", "kind": "speech"}]
+        (w / "sentences_marked.json").write_text(
+            json.dumps({"offset": 0.0, "sentences": sents}), encoding="utf-8")
+        (w / "meta.json").write_text(json.dumps({"offset": 0.0}), encoding="utf-8")
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "build_srt_en.py"),
+                            str(w / "sentences_marked.json"), str(w / "o.srt")],
+                           capture_output=True, text=True)
+        got = (w / "o.srt").read_text(encoding="utf-8") if (w / "o.srt").exists() else ""
+        check("builds", r.returncode == 0, r.stderr[-200:])
+        check("speech is subtitled with its spaces", "Who are you following?" in got, repr(got[:80]))
+        check("hallucination is not subtitled", "Thank you." not in got, repr(got))
+        check("two cues", got.count("-->") == 2, repr(got))
+
+        (w / "meta.json").write_text(json.dumps({"offset": 2481.0}), encoding="utf-8")
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "build_srt_en.py"),
+                            str(w / "sentences_marked.json"), str(w / "o2.srt")],
+                           capture_output=True, text=True)
+        check("refuses on an offset mismatch", r.returncode != 0 and not (w / "o2.srt").exists(),
+              f"rc={r.returncode}")
+
+def test_no_song():
+    """Slow-and-long is sung worship, and also a quotation read over a music
+    bed. On material with no singing, --no-song keeps those lines subtitled."""
+    print("\nfilter_song: --no-song keeps slow narration, still catches loops")
+    import filter_song
+    def sents():
+        slow = "This is often a slow painful process but it is the crucible of our formation"
+        out = [{"start": i*12.0, "end": i*12.0 + 11.0, "text": slow, "n_words": len(slow.split())}
+               for i in range(3)]
+        loop = " ".join(["Jesus'"] * 60)
+        out.append({"start": 40.0, "end": 44.0, "text": loop, "n_words": 60})
+        return out
+    k = [s["kind"] for s in filter_song.mark(sents())]
+    check("default: slow long run is marked song", k[:3] == ["song"] * 3, str(k))
+    k = [s["kind"] for s in filter_song.mark(sents(), detect_song=False)]
+    check("no-song: slow narration stays speech", k[:3] == ["speech"] * 3, str(k))
+    check("no-song: loops are still caught", k[3] == "halluc", k[3])
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d)
+        (w / "in.json").write_text(json.dumps({"offset": 0.0, "sentences": sents()}), encoding="utf-8")
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).parent / "filter_song.py"),
+                            str(w / "in.json"), str(w / "out.json"), "--no-song"],
+                           capture_output=True, text=True)
+        kinds = [s["kind"] for s in json.loads((w / "out.json").read_text())["sentences"]] \
+            if (w / "out.json").exists() else []
+        check("--no-song on the command line", r.returncode == 0 and kinds[:3] == ["speech"] * 3,
+              f"rc={r.returncode} {kinds} {r.stderr[-160:]}")
 
 def test_to_traditional():
     """Converting to zh-Hant must change the script and nothing else.
@@ -469,10 +622,25 @@ def test_to_traditional():
         check(f"merge resolved: {simp} -> {trad}", T.convert(simp, "tw") == trad,
               T.convert(simp, "tw"))
 
-    check("residuals finds an unresolved 里", 
-          any(c == "里" for c, _ in T.residuals(T.convert("教会里面", "tw"))))
+    # 公里 is a 里 that is right to survive, so it is what the report should
+    # surface. (This fixture used to be 教会里面 -- the very miss that
+    # fix_locative_li now repairs.)
+    check("residuals finds a surviving 里",
+          any(c == "里" for c, _ in T.residuals(T.convert("走了五公里", "tw"))))
     check("residuals stays quiet on a resolved one",
           not T.residuals(T.convert("心里面", "tw")))
+
+    # the locative OpenCC leaves behind, after nouns a subtitle says constantly.
+    # Seven of nine survivors on one eight-session course were this shape.
+    for simp, trad in (("在教会里", "在教會裡"), ("课程指南里有", "課程指南裡有")):
+        check(f"locative 里 repaired: {simp}", T.convert(simp, "tw") == trad,
+              T.convert(simp, "tw"))
+    check("locative follows the hk variant", T.convert("在教会里", "hk") == "在教會裏",
+          T.convert("在教会里", "hk"))
+    # ...and deliberately narrow: a transliterated name keeps its 里
+    for name in ("拉里·克拉布", "诺里奇的朱利安"):
+        check(f"name keeps 里: {name}", "里" in T.convert(name, "tw"), T.convert(name, "tw"))
+    check("distance unit keeps 里", T.convert("五公里", "tw") == "五公里", T.convert("五公里", "tw"))
 
     # an SRT must come back with its skeleton intact
     with tempfile.TemporaryDirectory() as d:
@@ -595,7 +763,8 @@ if __name__ == "__main__":
               test_preview_uses_absolute_timeline, test_check_batches,
               test_halluc_loops, test_offset_staleness_guard,
               test_style_shadow, test_preview_honours_style_flags,
-              test_to_traditional):
+              test_back_reaches_the_encode, test_to_traditional,
+              test_latin, test_merge_join, test_english_track, test_no_song):
         try:
             t()
         except Exception as e:

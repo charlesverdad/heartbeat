@@ -123,6 +123,11 @@ def cues_for(text, t0, t1):
         t = cues[-1][1]
     return cues
 
+def join(a, b):
+    """Concatenate two cues' text when merging them. Chinese has no word
+    spaces, so the two runs simply abut."""
+    return a + b
+
 def ts(t):
     return f"{int(t//3600):02d}:{int(t//60)%60:02d}:{int(t)%60:02d},{int(round((t-int(t))*1000)):03d}"
 

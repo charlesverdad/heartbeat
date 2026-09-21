@@ -30,12 +30,17 @@ LOOP_MIN_WORDS  = 8     # shorter than this and repetition is just emphasis
 LOOP_UNIQUE_MAX = 0.35  # unique words / total; real speech measured 1.00, loops 0.017
 LOOP_TOP_MIN    = 0.5   # share taken by the single commonest word
 
-def mark(sents):
+def mark(sents, detect_song=True):
     for s in sents:
         s["kind"] = "speech"
 
     # --- song: contiguous runs of slow, long lines ---
-    cand = [i for i, s in enumerate(sents) if wps(s) < WPS_MAX and (s["end"]-s["start"]) > DUR_MIN]
+    # Slow-and-long is what sung worship looks like, and it is also what a
+    # quotation read deliberately over a music bed looks like. On material
+    # with no singing in it at all -- a produced teaching video, say -- every
+    # hit is therefore a false positive, and each one silences a real line.
+    cand = ([i for i, s in enumerate(sents) if wps(s) < WPS_MAX and (s["end"]-s["start"]) > DUR_MIN]
+            if detect_song else [])
     runs, run = [], []
     for i in cand:
         if run and i - run[-1] <= 2:      # allow a short spoken aside inside a song block
@@ -85,9 +90,11 @@ def mark(sents):
     return sents
 
 if __name__ == "__main__":
-    d = json.load(open(sys.argv[1]))
-    sents = mark(d["sentences"])
-    json.dump({**d, "sentences": sents}, open(sys.argv[2], "w"), ensure_ascii=False, indent=1)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    detect_song = "--no-song" not in sys.argv
+    d = json.load(open(args[0]))
+    sents = mark(d["sentences"], detect_song=detect_song)
+    json.dump({**d, "sentences": sents}, open(args[1], "w"), ensure_ascii=False, indent=1)
     print("classified:", dict(Counter(s["kind"] for s in sents)))
     for kind in ("song", "halluc"):
         got = [s for s in sents if s["kind"] == kind]
