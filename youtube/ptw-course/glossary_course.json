@@ -1,0 +1,94 @@
+{
+  "_note": "Course-specific addendum to youtube/zh_subs/glossary_zh.json for the Practicing the Way course. Simplified Chinese (zh-Hans); the shipped track is converted to Traditional afterwards. Eight sessions taught by several speakers, so a term rendered two ways across sessions is the most likely defect -- these bindings exist to prevent that. Where this file and the Heartbeat glossary disagree, this one wins; where it is silent, the Heartbeat glossary applies.",
+
+  "_does_not_apply": [
+    "The Heartbeat glossary's `church` block is about Heartbeat: Pastor Josh, the campuses, Gold Coast/Brisbane/Melbourne. None of it appears in this course -- do not import those names.",
+    "The brief says the sermon is mainly Exodus 3 (the burning bush). That is a different job. This course ranges across the Gospels, with Genesis, the Psalms and the Epistles alongside.",
+    "`shepherd` as Heartbeat's lay leadership title (小组长) is irrelevant here. In this course the word is a Scripture metaphor -- follow the CUV wording of the verse being quoted."
+  ],
+
+  "core_terms": {
+    "Practicing the Way": "Practicing the Way",
+    "the Way": "这道",
+    "apprentice (noun)": "学徒",
+    "apprentice to Jesus": "耶稣的学徒",
+    "apprenticeship": "学徒之路",
+    "disciple": "门徒",
+    "discipleship": "作门徒",
+    "spiritual formation": "属灵塑造",
+    "formation": "塑造",
+    "Rule of Life": "生活准则",
+    "practice (a spiritual practice)": "操练",
+    "the practices": "各样操练",
+    "spiritual disciplines": "属灵操练"
+  },
+
+  "_core_terms_note": "The apprentice/disciple distinction is the one that matters most. This course deliberately says `apprentice` where most teaching says `disciple`, to recover the sense of learning a trade by working beside a master. Collapsing both to 门徒 erases the whole point, so keep 学徒 for `apprentice` and 门徒 for `disciple`, and never swap them even when they appear in the same sentence. `Practicing the Way` is the course's own name: leave it in Latin script rather than translating it, and keep the spaces -- cjk.wrap() protects Latin words from being broken mid-word.",
+
+  "practices": {
+    "Sabbath": "安息日",
+    "solitude": "独处",
+    "silence": "静默",
+    "prayer": "祷告",
+    "fasting": "禁食",
+    "generosity": "慷慨",
+    "simplicity": "简朴",
+    "community": "群体",
+    "hospitality": "款待",
+    "witness": "见证",
+    "service": "服事",
+    "scripture (the practice of reading)": "读经"
+  },
+
+  "first_century": {
+    "rabbi": "拉比",
+    "Torah": "妥拉",
+    "yoke": "轭",
+    "Bet Midrash": "研习院",
+    "Galilee": "加利利",
+    "Nazareth": "拿撒勒",
+    "Pharisee": "法利赛人",
+    "synagogue": "会堂",
+    "Twelve (the disciples)": "十二门徒"
+  },
+
+  "themes": {
+    "hurry": "匆忙",
+    "busyness": "忙碌",
+    "distraction": "分心",
+    "rest": "安息",
+    "suffering": "苦难",
+    "pain": "痛苦",
+    "grief": "哀伤",
+    "lament": "哀歌",
+    "healing": "医治",
+    "sin": "罪",
+    "temptation": "试探",
+    "confession": "认罪",
+    "repentance": "悔改",
+    "transformation": "生命改变",
+    "character": "品格",
+    "intimacy with God": "与神亲密",
+    "the kingdom of God": "神的国"
+  },
+
+  "people": {
+    "A.W. Tozer": "陶恕",
+    "Dallas Willard": "魏乐德",
+    "Brother Lawrence": "劳伦斯弟兄",
+    "the practice of the presence of God": "与神同在",
+    "Madame Guyon": "盖恩夫人",
+    "John Mark Comer": "John Mark Comer",
+    "Ken Shigematsu": "Ken Shigematsu",
+    "Kosuke Koyama": "Kosuke Koyama"
+  },
+
+  "_people_note": "Writers quoted across more than one session. These four -- 陶恕, 魏乐德, 劳伦斯弟兄, 盖恩夫人 -- are the established renderings in Chinese Christian publishing and are safe. A name with no settled Chinese form stays in Latin script: a plausible-looking transliteration a reader has never seen is worse than the English, because they cannot look it up. `Thomas a Kempis` has two competing forms (Protestant 托马斯·肯培 against Catholic 金碧士) and was NOT settled here -- leave it in Latin script or confirm before shipping. Batches are translated in parallel by different agents, so any name not pinned here WILL come back rendered two ways; normalise across sessions before building the tracks.",
+
+  "_ambiguous": {
+    "practice": "As a noun in this course it is almost always one of the nine practices: 操练. As an ordinary verb (`we practice what we love`) translate normally -- 练习 or 实践 -- and do not force 操练.",
+    "formation": "属灵塑造 when it means spiritual formation, which is nearly always. Plain 形成 is wrong here.",
+    "Rule of Life": "生活准则 every time, including when the speaker shortens it to `your Rule` or `a Rule`. Never 规则 -- it is a trellis for growth, not a list of rules, and 规则 inverts the meaning the session spends its length establishing.",
+    "way": "Capital-W `the Way` (the early church's name for itself, Acts 9:2) is 这道. Lowercase `a way of life` is ordinary: 生活方式."
+  }
+}

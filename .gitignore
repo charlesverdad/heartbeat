@@ -109,3 +109,7 @@ __pycache__/
 # Local DB dumps / pre-deploy backups (never commit)
 backups/
 youtube/zh_subs/subtitle_size_zh.html
+# Practicing the Way course: source videos, burned-in copies and delivered
+# tracks (~4 GB), plus per-session working files. The tooling beside them is tracked.
+youtube/ptw-course/session-*/
+youtube/ptw-course/.work/
