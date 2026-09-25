@@ -1,0 +1,6 @@
+# Never commit secrets
+.env
+*.env
+
+# Node modules (if testing locally)
+node_modules/
