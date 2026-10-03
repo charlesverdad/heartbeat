@@ -1,0 +1,13 @@
+{
+  "name": "heartbeat-brand",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "motion": "node logo-motion/render.mjs",
+    "kit": "node media-kit/render-kit.mjs",
+    "report": "python3 -m http.server 8765"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.12.0"
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Heartbeat logo stage</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
+<script type="module">
+  // Render target for render.mjs: ?anim=<id>&aspect=16x9&theme=dark
+  import { buildScene } from './core.js';
+  import { byId } from './anims.js';
+  const q = new URLSearchParams(location.search);
+  const anim = byId(q.get('anim') || 'mark-stack');
+  await Promise.all([document.fonts.load('500 40px "Inter Tight"'), document.fonts.load('700 40px "Inter Tight"')]);
+  const scene = buildScene(document.getElementById('stage'), { aspect: q.get('aspect') || '16x9', theme: q.get('theme') || 'dark' });
+  const st = anim.setup(scene) || {};
+  window.seek = t => anim.frame(scene, st, t);
+  window.ANIM = { id: anim.id, duration: anim.duration, loop: !!anim.loop, W: scene.W, H: scene.H };
+  window.seek(Number(q.get('t') ?? 0));
+  window.READY = true;
+  if (q.has('play')) {
+    const t0 = performance.now();
+    const tick = now => { const t = (now - t0) / 1000; window.seek(anim.loop ? t % anim.duration : Math.min(t, anim.duration + 1)); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+</script>
+</body>
+</html>

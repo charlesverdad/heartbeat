@@ -611,3 +611,11 @@ records a failure and carries on, so pytest reports "17 passed" — one per func
 — while a check inside one of them is failing. The script reported 113 passed,
 1 failed on the same code. Then mutate the fix back out and confirm the new test
 fails: the join test caught `'onyour mark'`, the exact string seen in the wild.
+
+## Logo motion + media kit (2026-10-04)
+
+- **Render motion graphics as a pure function of time.** `brand/logo-motion` drives SVG via `frame(scene, state, t)` and captures each frame with puppeteer-core (system Chrome) piped to ffmpeg. The same code plays live in `brand/report.html`, so preview and MP4 never drift. 96 MP4s (16 anims × 3 aspects × 2 backgrounds) render in ~8 min and weigh ~100 KB each.
+- **Review motion with contact sheets, not videos.** `npm run motion -- --sheet` tiles 12 frames per animation into one PNG; `--at <t>` gives one full-size still. This caught a clip that moved with its content, a 0.5-unit sliver leaking from a mask, and a zoom that sat on a white frame too long.
+- **SVG ids are document-global.** Several live stages on one page all resolved `url(#clip)` to the first stage's clip. Prefix ids per scene (`scene.uid()`).
+- **Clip in the parent's space when the content moves.** A `clip-path` on a transformed group moves with the group, so put the clip on a wrapper.
+- **Hand-copying SVG path data corrupts it** (stray zeros got inserted: `13.630-14.2`). Generate constants from the source file with a script.
