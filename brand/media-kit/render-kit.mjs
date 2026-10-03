@@ -30,6 +30,7 @@ const SAMPLES = [
   { id: 'pp-scripture', w: 1920, h: 1080, alpha: true },
   { id: 'pp-bug', w: 1920, h: 1080, alpha: true },
   { id: 'pp-holding', w: 1920, h: 1080 },
+  { id: 'banner-art', w: 800, h: 2000, alpha: true, noPreview: true },
 ];
 
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -63,7 +64,7 @@ const snap = async (s, query, file, transparent) => {
 try {
   for (const s of SAMPLES.filter(x => !only || x.id === only)) {
     await snap(s, '', `${s.id}.png`, !!s.alpha);
-    if (s.alpha || s.preview) await snap(s, '?preview', `${s.id}_preview.png`, false);
+    if ((s.alpha && !s.noPreview) || s.preview) await snap(s, '?preview', `${s.id}_preview.png`, false);
   }
 } finally {
   await browser.close();

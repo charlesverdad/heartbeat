@@ -14,7 +14,7 @@
 <script type="module">
   // Render target for render.mjs: ?anim=<id>&aspect=16x9&theme=dark
   import { buildScene } from './core.js';
-  import { byId } from './anims.js';
+  import { byId } from './catalogue.js';
   const q = new URLSearchParams(location.search);
   const anim = byId(q.get('anim') || 'mark-stack');
   await Promise.all([document.fonts.load('500 40px "Inter Tight"'), document.fonts.load('700 40px "Inter Tight"')]);

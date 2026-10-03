@@ -47,7 +47,7 @@ const server = createServer(async (req, res) => {
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const BASE = `http://127.0.0.1:${server.address().port}`;
 
-const { ANIMS } = await import(join(SRC, 'anims.js')).catch(() => ({ ANIMS: null }));
+const { ALL: ANIMS } = await import(join(SRC, 'catalogue.js'));
 // anims.js touches the DOM only inside setup/frame, so importing it in node is safe.
 const list = ANIMS.filter(a => !ONLY || ONLY.split(',').includes(a.id));
 

@@ -2,7 +2,7 @@
 
 Logo files, logo animations, and a starter media kit for socials, slides and ProPresenter.
 
-Open `report.html` to see everything: every animation plays live and links to its MP4. Serve the folder, because ES modules don't load over `file://`:
+Open `report.html` for the first round and `report-v2.html` for the second (new loops, kinetic vision variations, merch mockups): every animation plays live and links to its MP4. Serve the folder, because ES modules don't load over `file://`:
 
 ```sh
 cd brand && python3 -m http.server 8765   # then open http://localhost:8765/report.html
@@ -17,7 +17,9 @@ cd brand && python3 -m http.server 8765   # then open http://localhost:8765/repo
 | `logo-motion/out/` | Rendered MP4s (`<id>_<aspect>_<theme>.mp4`) and last-frame posters |
 | `media-kit/templates/` | HTML templates for the sample social posts, slides and ProPresenter overlays |
 | `media-kit/samples/` | Rendered PNGs. `pp-*.png` are transparent; `*_preview.png` show them over a stand-in stage |
-| `report.html` | Gallery of both |
+| `logo-motion/src/anims-v2.js` | Second-round animations; `catalogue.js` joins both lists for the renderer and reports |
+| `mockups/` | Merch mockups: AI-generated blanks in `raw/`, logo placements in `mockups.json`, results in `out/` |
+| `report.html`, `report-v2.html` | Galleries for each round |
 
 ## Rendering
 
@@ -31,9 +33,13 @@ npm run motion -- --only mark-pulse --alpha      # adds a ProRes 4444 .mov with 
 npm run motion -- --sheet                        # contact sheets of 12 frames each, for reviewing motion
 npm run motion -- --only mark-ecg --at 1.5       # one full-size still
 npm run kit                                      # media-kit sample PNGs
+node mockups/compose.mjs                         # put the logo on every blank in mockups.json
+python3 mockups/draw.py --id mug-green --prompt "..."   # new blank via NanoGPT (key from keychain: nanogpt-api-key)
 ```
 
-Each animation is a pure function of time (`frame(scene, state, t)`), so the browser preview and the rendered video match frame for frame. To add one, append an entry to `ANIMS` in `logo-motion/src/anims.js`; the renderer and the report pick it up.
+Mockups: the blank product photo comes from an image model, but the logo is never drawn by AI. `compose.mjs` warps the real SVG onto the photo (a perspective quad for flat items, a cylinder for mugs and bottles) and shades it with the photo's own light. To place a logo on a new blank, read pixel coordinates off the photo and add an entry to `mockups.json`.
+
+Each animation is a pure function of time (`frame(scene, state, t)`), so the browser preview and the rendered video match frame for frame. To add one, append an entry to `ANIMS_V2` in `logo-motion/src/anims-v2.js`; the renderer and the report pick it up.
 
 ## Notes
 

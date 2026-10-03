@@ -619,3 +619,10 @@ fails: the join test caught `'onyour mark'`, the exact string seen in the wild.
 - **SVG ids are document-global.** Several live stages on one page all resolved `url(#clip)` to the first stage's clip. Prefix ids per scene (`scene.uid()`).
 - **Clip in the parent's space when the content moves.** A `clip-path` on a transformed group moves with the group, so put the clip on a wrapper.
 - **Hand-copying SVG path data corrupts it** (stray zeros got inserted: `13.630-14.2`). Generate constants from the source file with a script.
+
+### Merch mockups (brand/mockups)
+- Don't ask an image model to draw the logo: Gemini (agy) and Canva both redraw the letters. Generate blank products with AI, then warp the real SVG on with a canvas triangle mesh (homography quad or cylinder) and shade it by the photo's luminance.
+- White ink on dark fabric: use only ~18% of the photo's luminance variation, or the weave turns the print speckled. Dark ink on light surfaces can take the full variation.
+- Mesh triangles leave hairline seams on large solid fills; grow each triangle ~1.2px radially and draw the mesh twice.
+- NanoGPT images: call `POST /v1/images/generations` directly with `qwen-image` (subscription-covered). The NanoGPT MCP image tool refuses ("subscription-only billing").
+- agy headless needs `--sandbox --dangerously-skip-permissions` to save an image; run it in a scratch dir. Canva's generate-image via MCP returns only a 200px preview.
