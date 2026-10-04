@@ -24,6 +24,9 @@
 - **Verify a stream carries the whole sermon before writing, not after.** Compare the last transcript timestamp to the video duration, and read the final lines: an unfinished sentence at the very end means the stream died mid-message. The 16/08 Sydney recording cut off during the closing application, and the first draft invented a conclusion to fill the gap. Aligning two recordings is easy: grep a distinctive phrase from the end of the short one against the long one to find the splice point.
 - **Use YouTube's current copy-paste embed markup verbatim; a hand-built iframe can throw player error 153.** The template previously used in this pipeline omitted `referrerpolicy="strict-origin-when-cross-origin"` (and the `title` attribute and `si=` share token), and the 2026-08-16 post hit error 153 until the exact string from YouTube's Share > Embed dialog was used. Append `&amp;start=<seconds>` to the src (HTML-escaped ampersand, since `si=` already occupies the query string). Ghost preserves the whole tag, `referrerpolicy` included, as long as it stays wrapped in `<!--kg-card-begin: html-->` / `<!--kg-card-end: html-->`.
 - **A Sunday service may exist ONLY on the Gold Coast channel even when Pastor Josh preaches from Sydney.** On 2026-08-23 `@HeartbeatChurch/streams` had nothing newer than 16/08, while `@heartbeatgoldcoast2173/streams` carried the whole service as "Heartbeat Church QLD Sunday Service (August 23)". Josh was in Sydney (he apologised to "Melbourne and Queensland" on the multicampus feed), so the relaying campus was the only one that kept a recording. Always list both channels before concluding a Sunday was not streamed.
+- **A main-channel stream only a few seconds long means that Sunday lives on the Gold Coast channel.** 27/09/2026 on `@HeartbeatChurch/streams` was 9 seconds; `@heartbeatgoldcoast2173` had the afternoon service (`TmyRtlCi6AI`, 73 min, release 15:25 AEST). Treat `duration < 60` as "not streamed here", not "no service".
+- **Whisper cannot transcribe a Korean sermon with live English interpretation.** 13/09/2026 (Pastor Hong, Luke 15:20, interpreted on stage) came out as 54 lines of "voiced voiced…" loops plus Hangul fragments; almost none of the interpreter's English survived. It was also a repeat of the 30/08 sermon already published as "Do Not Stop at Praying", so no post was made. For a first-time bilingual sermon, the subtitled upload (as on 30/08) is the only usable source.
+- **Local blog-post filenames can carry the date they were written, not the service date.** `2026-09-20-the-hill-decides-the-valley.*` is from the Melbourne video `mjHAolwGpoA` and was never pushed to Ghost. Check `youtube_url` in the meta, and check Ghost drafts, before assuming a local file means a Sunday is done.
 - **A dropped livestream leaves two videos with the SAME title on the same channel.** 23/08 had `pFOQ5H48e1k` (24 min) and `_UxOgJ8YxyY` (74 min). Neither title says part 1 or part 2. Order them by `release_timestamp`: the later one is the continuation, and `duration` of the earlier one roughly matches the gap between the two timestamps. The sermon is normally in the later, longer video (the earlier one is worship/announcements).
 - **Verify audio in a few places, not just one.** `ffmpeg -ss <t> -t 15 -i <f> -af volumedetect -f null -` at ~6 points across the file takes seconds and rules out the silent-stream failure mode before committing to a 5-minute transcription.
 - **`?start=<seconds>` alone is fine in the embed; the `si=` share token is not needed.** The error-153 fix was `referrerpolicy="strict-origin-when-cross-origin"` plus the `title` attribute, not `si=`. Do not fabricate an `si` value for a video you have not opened the Share dialog for.
@@ -611,3 +614,19 @@ records a failure and carries on, so pytest reports "17 passed" — one per func
 — while a check inside one of them is failing. The script reported 113 passed,
 1 failed on the same code. Then mutate the fix back out and confirm the new test
 fails: the join test caught `'onyour mark'`, the exact string seen in the wild.
+
+**rclone's built-in Google app has a shared per-minute request quota.** Uploading
+4.2 GB of course videos with the defaults (64M chunks, 4 transfers) hit
+`403 Quota exceeded ... Requests per minute` on rclone's project, and one 267 MB
+file failed all three attempts, re-sending ~15 GB and stretching a 6-minute ETA to
+2.5 hours. Rerunning with `--drive-chunk-size 256M --tpslimit 1 --retries 10
+--low-level-retries 30` uploaded it in 30 seconds. Use those flags for large
+uploads, and finish with `rclone check <src> <dst> --one-way --checksum`.
+
+## Delivering to the Sydney media team (2026-10-04)
+
+- **Deliver to HBC Media › Translated Sermons with rclone.** No Drive MCP and no Google Cloud tokens are needed; the steps are in `sermon-chinese-subtitles` step 9. List the folder first: the file was already there, uploaded by hand from the tailnet link, and `rclone check --checksum` proved it identical.
+- **Taildrop cannot send to `syd-media-mac-mini`.** It is owned by `media.sydney@`, and `tailscale file cp` fails with "peer is owned by a different user". The tailnet fallback is `tailscale serve --bg 8777` in front of `make_editor.py --serve`, then handing over `https://<this-host>.<tailnet>.ts.net/<file>`. The path ran over DERP(syd), not direct.
+- **They chose the full CRF master (579 MB) over the 377 MB re-encode.** Offer both sizes rather than assuming small. The source stream was only ~0.7 Mbps, so nothing bigger than the master adds quality.
+- **filter_song.py misfired on a slow-spoken story.** All 9 "song" lines were speech (a golf anecdote and the Greek exegesis). Read them before batching.
+- **Names stay in Latin script** (John Mark Comer, Moody Bible Commentary). The user asked for this explicitly after seeing 約翰·馬克·科默.
