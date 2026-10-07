@@ -6,6 +6,9 @@
 //   node render.mjs --sheet                 # contact sheets only (for visual review), no video
 //   node render.mjs --only mark-pulse --at 1.4   # one full-size still at t=1.4s
 //
+// An animation can limit its own aspects (countdowns are 16:9 only) unless --aspects is given.
+// Animations marked gif: true also get a small looping GIF from the 1:1 render, for web pages.
+//
 // Needs Google Chrome (or CHROME_PATH) and ffmpeg on PATH (shell.nix provides ffmpeg).
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -31,6 +34,7 @@ const ONLY = opt('only', '');
 const SHEET = flag('sheet');
 const AT = opt('at', null);
 const ALPHA = flag('alpha');
+const ASPECTS_GIVEN = args.includes('--aspects');
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -107,6 +111,13 @@ async function renderVideo(anim, aspect, theme) {
   const { writeFile } = await import('node:fs/promises');
   if (!alpha) await writeFile(join(OUT, 'posters', `${name}.png`), await shot(anim.duration - 1 / FPS, false));
   console.log(`✓ ${file.replace(HERE + '/', '')}  (${frames} frames, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+  if (anim.gif && aspect === '1x1' && !alpha) {
+    const gif = join(OUT, 'gif', `${name}.gif`);
+    await mkdir(dirname(gif), { recursive: true });
+    await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, '-vf',
+      'fps=25,scale=360:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=48[p];[b][p]paletteuse=dither=none', '-loop', '0', gif], s => s.end());
+    console.log(`✓ ${gif.replace(HERE + '/', '')}`);
+  }
 }
 
 // A contact sheet of N evenly spaced frames, for eyeballing motion without a video player.
@@ -129,7 +140,8 @@ async function renderSheet(anim, aspect, theme, n = 12) {
 await mkdir(OUT, { recursive: true });
 try {
   for (const anim of list) {
-    for (const aspect of ASPECTS) {
+    const aspects = ASPECTS_GIVEN || !anim.aspects ? ASPECTS : ASPECTS.filter(x => anim.aspects.includes(x));
+    for (const aspect of aspects) {
       for (const theme of THEMES) {
         if (AT !== null) {
           await load(anim, aspect, theme);

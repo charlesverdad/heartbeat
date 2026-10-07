@@ -626,3 +626,8 @@ fails: the join test caught `'onyour mark'`, the exact string seen in the wild.
 - Mesh triangles leave hairline seams on large solid fills; grow each triangle ~1.2px radially and draw the mesh twice.
 - NanoGPT images: call `POST /v1/images/generations` directly with `qwen-image` (subscription-covered). The NanoGPT MCP image tool refuses ("subscription-only billing").
 - agy headless needs `--sandbox --dangerously-skip-permissions` to save an image; run it in a scratch dir. Canva's generate-image via MCP returns only a 200px preview.
+
+### Countdown animations (brand/logo-motion/src/anims-v3.js)
+- Draw clock digits in fixed-width cells (one <text> per character), not one text run: no reliance on the font's tabular figures, and each digit can animate its own tick.
+- Count with n = ceil(COUNT - t) and phase = n - (COUNT - t); phase is the time since the display changed, which drives the tick animation and the once-a-second beat.
+- A 5-minute countdown is ~9,150 frames per variant (about 6 minutes to render), so countdowns set `aspects: ['16x9']` and render.mjs respects it unless --aspects is passed. Check them with `--at` stills at the start, the last ten seconds and the landing, not contact sheets.

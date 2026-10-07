@@ -1,0 +1,332 @@
+<meta charset="utf-8">
+<title>Heartbeat Motion Kit III</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700&display=swap">
+<style>
+/* Layout: a single left-aligned column. The animation wall is a responsive grid under a sticky control bar; the kit reads top to bottom. */
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+  --muted: #6f6c67;
+  --line: #dedad3;
+  --raised: #f4f2ee;
+  --chip: #000000;
+  --chip-fg: #ffffff;
+  --display: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+  --body: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --gut: clamp(16px, 4vw, 56px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #000000; --fg: #ffffff; --muted: #9c9891; --line: #2a2927; --raised: #121211; --chip: #ffffff; --chip-fg: #000000; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #000000; --fg: #ffffff; --muted: #9c9891; --line: #2a2927; --raised: #121211; --chip: #ffffff; --chip-fg: #000000; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-weight: 500; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: var(--gut); padding-block: 40px 96px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(44px, 7vw, 92px); letter-spacing: -0.04em; line-height: 0.95; }
+h2 { font-size: clamp(32px, 4.4vw, 54px); letter-spacing: -0.035em; line-height: 1; }
+h3 { font-size: 22px; letter-spacing: -0.02em; line-height: 1.15; }
+p { margin: 0; max-width: 65ch; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+a { color: inherit; text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+header.top { display: grid; gap: 28px; padding-bottom: 56px; border-bottom: 1px solid var(--line); }
+.brandline { display: flex; align-items: center; gap: 14px; }
+.brandline svg { height: 44px; width: auto; fill: var(--fg); }
+.intro { display: grid; gap: 14px; font-size: 19px; line-height: 1.45; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.facts div { display: grid; }
+.facts b { font-family: var(--display); font-size: 30px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+section { padding-top: 72px; display: grid; gap: 28px; }
+.sec-head { display: grid; gap: 12px; }
+
+/* Controls */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 12px; display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--fg); }
+.seg button { font: inherit; font-size: 14px; font-weight: 700; padding: 7px 14px; border: 0; background: transparent; color: var(--fg); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.ctl { display: flex; align-items: center; gap: 10px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 12px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; border-radius: 999px; }
+.filters button[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+
+/* Animation wall */
+.wall { display: grid; gap: 40px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--col, 360px)), 1fr)); }
+.wall[data-aspect="9x16"] { --col: 230px; }
+.wall[data-aspect="1x1"] { --col: 290px; }
+.card { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: var(--ar, 16 / 9); background: #000; cursor: pointer; overflow: hidden; border: 1px solid var(--line); }
+.stage svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage .scrub { position: absolute; left: 0; bottom: 0; height: 3px; background: currentColor; opacity: 0.55; width: 0; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.kind { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; background: var(--chip); color: var(--chip-fg); white-space: nowrap; }
+.kind.k-mark { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.blurb { font-size: 15px; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.meta .dl a { font-weight: 700; }
+.use { font-size: 13px; }
+
+/* Kit */
+.cols { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.cols > * { min-width: 0; }
+.swatches { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.sw { display: grid; gap: 6px; font-size: 13px; }
+.sw i { display: block; height: 76px; border: 1px solid var(--line); }
+.sw b { font-size: 15px; }
+.rules { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.rules li { padding-left: 18px; position: relative; max-width: 65ch; }
+.rules li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 2px; background: var(--fg); }
+.rules.dont li::before { height: 8px; width: 8px; top: 0.4em; background: none; box-shadow: inset 0 0 0 2px var(--fg); border-radius: 50%; }
+.typespec { display: grid; gap: 16px; }
+.typespec .t1 { font-family: var(--display); font-weight: 700; font-size: 56px; letter-spacing: -0.035em; line-height: 1; }
+.typespec .t2 { font-size: 20px; }
+.typespec .t3 { font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.logos { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.logos figure { margin: 0; display: grid; gap: 8px; }
+.logos .tile { aspect-ratio: 4 / 3; display: grid; place-items: center; border: 1px solid var(--line); }
+.logos .tile.ink { background: #000; } .logos .tile.paper { background: #fff; }
+.logos .tile img { max-height: 46%; max-width: 70%; }
+figcaption { font-size: 13px; color: var(--muted); }
+
+.channel { display: grid; gap: 24px; padding-top: 40px; border-top: 1px solid var(--line); }
+.channel-head { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.gallery { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); align-items: start; }
+.gallery.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+.gallery figure { margin: 0; display: grid; gap: 8px; }
+.gallery img { width: 100%; height: auto; display: block; border: 1px solid var(--line); }
+.specs { width: 100%; border-collapse: collapse; font-size: 14px; }
+.specs th, .specs td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.specs th { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.specs td:nth-child(2) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+footer { padding-top: 72px; font-size: 14px; color: var(--muted); display: grid; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+.jumps { display: flex; flex-wrap: wrap; gap: 6px; }
+.jumps button { font: inherit; font-size: 13px; font-weight: 700; padding: 4px 11px; border: 1px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer; }
+.jumps button:hover { background: var(--fg); color: var(--bg); }
+.howto { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.howto > div { display: grid; gap: 10px; align-content: start; min-width: 0; }
+</style>
+<style>
+/* v2 additions: grouped walls and the merch gallery. */
+.group { display: grid; gap: 20px; padding-top: 48px; }
+.group + .group { border-top: 1px solid var(--line); margin-top: 8px; }
+.group-head { display: grid; gap: 8px; }
+.feedback { font-size: 15px; border-left: 3px solid var(--fg); padding-left: 14px; max-width: 65ch; }
+.merch { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); align-items: start; }
+.merch figure { margin: 0; display: grid; gap: 8px; }
+.merch img { width: 100%; height: auto; display: block; aspect-ratio: 1 / 1; object-fit: cover; border: 1px solid var(--line); background: var(--raised); }
+.merch figcaption b { color: var(--fg); }
+.compare { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); align-items: start; }
+.compare figure { margin: 0; display: grid; gap: 8px; }
+.compare img { width: 100%; height: auto; display: block; border: 1px solid var(--line); image-rendering: auto; }
+.verdict { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.jumps { display: flex; flex-wrap: wrap; gap: 6px; }
+.jumps button { font: inherit; font-size: 13px; font-weight: 700; padding: 4px 11px; border: 1px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer; }
+.jumps button:hover, .jumps button:focus-visible { background: var(--fg); color: var(--bg); }
+.howto { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.howto > div { display: grid; gap: 10px; align-content: start; min-width: 0; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="brandline" aria-label="Heartbeat Church">
+      <svg viewBox="0 0 252.2 111.27" role="img" aria-label="Heartbeat Church logo" id="hdr-logo"></svg>
+    </div>
+    <h1>Waiting &amp; loading</h1>
+    <div class="intro">
+      <p>Animations for the in-between moments: loaders for when something is on its way, countdowns for the five minutes before the service, and holding screens for the livestream.</p>
+      <p class="muted">Click any animation to replay it. The countdowns are real five-minute timers; they open near the end so you can see how each one lands. Use the buttons under them to jump around.</p>
+    </div>
+    <div class="facts">
+      <div><b>6</b><span class="label">Loaders</span></div>
+      <div><b>4</b><span class="label">Countdowns</span></div>
+      <div><b>3</b><span class="label">Holding screens</span></div>
+    </div>
+  </header>
+
+  <section id="motion" aria-labelledby="motion-h">
+    <div class="bar" role="toolbar" aria-label="Preview options">
+      <div class="ctl"><span class="label">Aspect</span>
+        <div class="seg" id="seg-aspect">
+          <button type="button" data-v="16x9" aria-pressed="true">16:9</button>
+          <button type="button" data-v="1x1" aria-pressed="false">1:1</button>
+          <button type="button" data-v="9x16" aria-pressed="false">9:16</button>
+        </div>
+      </div>
+      <div class="ctl"><span class="label">Background</span>
+        <div class="seg" id="seg-theme">
+          <button type="button" data-v="dark" aria-pressed="true">Black</button>
+          <button type="button" data-v="light" aria-pressed="false">White</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="label">Part one</span><h2 id="motion-h">Countdowns</h2>
+        <p class="muted">Each one is 5:00 of video and then about five seconds that land on the logo, so start it exactly five minutes before the service and it hands over on time. Rendered at 16:9 for the screens and the stream. Every countdown beats once a second, the same rhythm as the heart in the name.</p></div>
+      <div class="wall" data-ids="countdown-pulse-5m,countdown-ring-5m,countdown-trace-5m,countdown-welcome-5m"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="label">Part two</span><h2>Loaders</h2>
+        <p class="muted">Short seamless loops for “something is on its way”: a slow stream, a video about to play, a page loading on the website. Five use only the mark; the last one uses the lockup. Each also comes as a small looping GIF for web pages.</p></div>
+      <div class="wall" data-ids="load-stack,load-hop,load-blink,load-fill,load-trace,load-bar"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="label">Part three</span><h2>Holding screens</h2>
+        <p class="muted">Seamless loops for the livestream and the room. The backdrop has no text, so it can sit behind ProPresenter’s own countdown timer or an announcement.</p></div>
+      <div class="wall" data-ids="stream-starting-soon,stream-be-right-back,hold-backdrop"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="use-h">
+    <div class="sec-head"><span class="label">Using them</span><h2 id="use-h">Where each one goes</h2></div>
+    <div class="howto">
+      <div><h3>ProPresenter</h3>
+        <ul class="rules">
+          <li>Countdown video: add it as a video cue set to play once and stop on the last frame. Trigger it at exactly five minutes to start; it ends on the logo.</li>
+          <li>Prefer a live timer? Put the holding backdrop on the background layer, set to loop, and run ProPresenter’s countdown timer as text over the clear side.</li>
+          <li>Loops (holding screens, loaders) are seamless: set the cue to loop.</li>
+        </ul></div>
+      <div><h3>Livestream</h3>
+        <ul class="rules">
+          <li>Before going live: Starting soon, then switch to a countdown for the last five minutes.</li>
+          <li>Technical problem or break: Be right back. If the encoder is up but the picture is not, a loader on its own works too.</li>
+        </ul></div>
+      <div><h3>Website and app</h3>
+        <ul class="rules">
+          <li>Loaders come as small looping GIFs, on black and on white, in <code>logo-motion/out/gif/</code>.</li>
+          <li>Need another length of countdown, such as 10:00? It is one line in <code>anims-v3.js</code>; see the comment at the top.</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="label">In the repo</span>
+    <p><code>brand/logo-motion/src/anims-v3.js</code> holds these animations. Render one with <code>npm run motion -- --only countdown-ring-5m</code>. Earlier rounds are unchanged in <code>report.html</code> and <code>report-v2.html</code>.</p>
+  </footer>
+</div>
+
+<script type="module">
+import { buildScene, LOGO } from './logo-motion/src/core.js';
+import { byId } from './logo-motion/src/catalogue.js';
+
+const GH = 'https://github.com/charlesverdad/heartbeat/raw/logo-motion/brand/logo-motion/out/';
+const KIND = { mark: 'Mark only', lockup: 'Lockup', vision: 'With vision', loader: 'Loader', countdown: 'Countdown', stream: 'Holding' };
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const AR = { '16x9': '16 / 9', '1x1': '1 / 1', '9x16': '9 / 16' };
+const BG = { dark: '#000000', light: '#ffffff' };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = { aspect: '16x9', theme: 'dark', filter: 'all' };
+
+// Header lockup drawn from the same geometry the animations use.
+const hdr = document.getElementById('hdr-logo');
+const ns = 'http://www.w3.org/2000/svg';
+for (const k of ['H', 'B', 'C']) {
+  const e = document.createElementNS(ns, LOGO[k].tag);
+  for (const [a, v] of Object.entries(LOGO[k].attrs)) e.setAttribute(a, v);
+  hdr.appendChild(e);
+}
+for (const d of [LOGO.heartbeat, LOGO.church]) { const p = document.createElementNS(ns, 'path'); p.setAttribute('d', d); hdr.appendChild(p); }
+
+
+await Promise.all([document.fonts.load('500 40px "Inter Tight"'), document.fonts.load('700 40px "Inter Tight"')]).catch(() => {});
+
+const cards = [...document.querySelectorAll('.wall')].flatMap(wall => wall.dataset.ids.split(',').map(id => {
+  const anim = byId(id);
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="stage" role="button" tabindex="0" aria-label="Replay ${anim.title}"><svg xmlns="${ns}"></svg><div class="scrub"></div></div>
+    <div class="card-head"><h3>${anim.title}</h3><span class="kind k-${anim.kind}">${KIND[anim.kind]}</span></div>
+    <p class="blurb">${anim.blurb}</p>
+    <div class="meta"><span class="muted mono">${anim.id}</span><span class="muted">${anim.count ? `${mmss(anim.count)} + ${anim.duration - anim.count}s landing` : `${anim.duration}s`}${anim.loop ? ' · seamless loop' : ''}</span><span class="dl"></span></div>
+    ${anim.count ? `<div class="jumps" role="group" aria-label="Jump to"><button type="button" data-t="0">From 5:00</button><button type="button" data-t="${anim.count - 75}">1:15 left</button><button type="button" data-t="${anim.count - 12}">Last 12 s</button></div>` : ''}`;
+  wall.appendChild(card);
+  const c = { anim, card, stage: card.querySelector('.stage'), svg: card.querySelector('svg'), scrub: card.querySelector('.scrub'), dl: card.querySelector('.dl'), t0: performance.now(), visible: true };
+  const replay = () => { c.t0 = performance.now(); c.playOnce = true; };
+  c.stage.addEventListener('click', replay);
+  card.querySelector('.jumps')?.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    c.t0 = performance.now() - Number(b.dataset.t) * 1000; c.playOnce = true;
+  });
+  c.stage.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replay(); } });
+  return c;
+}));
+
+function build(c) {
+  const { aspect, theme } = state;
+  c.stage.style.setProperty('--ar', AR[aspect]);
+  c.stage.style.background = BG[theme];
+  c.stage.style.color = theme === 'dark' ? '#fff' : '#000';
+  c.svg.replaceChildren();
+  c.svg.removeAttribute('width'); c.svg.removeAttribute('height');
+  c.scene = buildScene(c.svg, { aspect, theme });
+  c.svg.removeAttribute('width'); c.svg.removeAttribute('height');
+  c.st = c.anim.setup(c.scene) || {};
+  // Open on the finished logo (start of the hold), then loop into the animation.
+  const from = c.anim.previewFrom ?? c.anim.duration;
+  c.t0 = performance.now() - from * 1000;
+  c.anim.frame(c.scene, c.st, from);
+  const f = `${c.anim.id}_${aspect}_${theme}`;
+  const links = [];
+  if (!c.anim.aspects || c.anim.aspects.includes(aspect)) links.push(`<a href="${GH}${f}.mp4" target="_blank" rel="noopener">Download MP4</a>`);
+  else links.push(`<span class="muted">MP4 in ${c.anim.aspects.map(a => a.replace('x', ':')).join(', ')} only</span>`);
+  if (c.anim.gif && aspect === '1x1') links.push(`<a href="${GH}gif/${f}.gif" target="_blank" rel="noopener">GIF</a>`);
+  c.dl.innerHTML = links.join(' · ');
+}
+
+function rebuild() {
+  document.querySelectorAll('.wall').forEach(w => { w.dataset.aspect = state.aspect; });
+  cards.forEach(build);
+}
+
+const io = new IntersectionObserver(es => es.forEach(e => { const c = cards.find(x => x.stage === e.target); if (c) c.visible = e.isIntersecting; }));
+cards.forEach(c => io.observe(c.stage));
+
+const HOLD = 1.4; // seconds the finished logo stays up before the preview loops
+function tick(now) {
+  for (const c of cards) {
+    if (c.card.hidden || !c.visible || !c.scene) continue;
+    const dur = c.anim.duration;
+    let t = (now - c.t0) / 1000;
+    if (reduce && !c.playOnce) continue;
+    if (c.anim.loop) t = t % dur;
+    else if (reduce) { if (t > dur) { c.playOnce = false; t = dur; } }
+    else t = t % (dur + HOLD);
+    const tt = Math.min(t, dur);
+    c.anim.frame(c.scene, c.st, tt);
+    c.scrub.style.width = `${(tt / dur) * 100}%`;
+  }
+  requestAnimationFrame(tick);
+}
+
+function seg(id, key) {
+  const box = document.getElementById(id);
+  box.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = b.dataset.v;
+    box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    try { localStorage.setItem('hb-kit3-' + key, state[key]); } catch {}
+    rebuild();
+  });
+  try {
+    const saved = localStorage.getItem('hb-kit3-' + key);
+    const b = saved && box.querySelector(`button[data-v="${saved}"]`);
+    if (b) { state[key] = saved; box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }
+  } catch {}
+}
+seg('seg-aspect', 'aspect');
+seg('seg-theme', 'theme');
+rebuild();
+requestAnimationFrame(tick);
+</script>

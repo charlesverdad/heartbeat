@@ -2,7 +2,7 @@
 
 Logo files, logo animations, and a starter media kit for socials, slides and ProPresenter.
 
-Open `report.html` for the first round and `report-v2.html` for the second (new loops, kinetic vision variations, merch mockups): every animation plays live and links to its MP4. Serve the folder, because ES modules don't load over `file://`:
+Open `report.html` for the first round, `report-v2.html` for the second (new loops, kinetic vision variations, merch mockups) and `report-v3.html` for the third (loaders, pre-service countdowns, livestream holding screens): every animation plays live and links to its MP4. Serve the folder, because ES modules don't load over `file://`:
 
 ```sh
 cd brand && python3 -m http.server 8765   # then open http://localhost:8765/report.html
@@ -17,7 +17,8 @@ cd brand && python3 -m http.server 8765   # then open http://localhost:8765/repo
 | `logo-motion/out/` | Rendered MP4s (`<id>_<aspect>_<theme>.mp4`) and last-frame posters |
 | `media-kit/templates/` | HTML templates for the sample social posts, slides and ProPresenter overlays |
 | `media-kit/samples/` | Rendered PNGs. `pp-*.png` are transparent; `*_preview.png` show them over a stand-in stage |
-| `logo-motion/src/anims-v2.js` | Second-round animations; `catalogue.js` joins both lists for the renderer and reports |
+| `logo-motion/src/anims-v2.js`, `anims-v3.js` | Second and third rounds; `catalogue.js` joins every list for the renderer and reports |
+| `logo-motion/out/gif/` | Small looping GIFs of the loaders, for web pages |
 | `mockups/` | Merch mockups: AI-generated blanks in `raw/`, logo placements in `mockups.json`, results in `out/` |
 | `report.html`, `report-v2.html` | Galleries for each round |
 
@@ -45,4 +46,5 @@ Each animation is a pure function of time (`frame(scene, state, t)`), so the bro
 
 - Vision line: "Living Out The Gospel Together Wholeheartedly".
 - Type is Inter Tight (SIL Open Font License, `logo-motion/src/fonts/OFL.txt`), the closest free match to the wordmark.
+- Countdowns are real timers: `countdown-*-5m` is 5:00 of video plus a 5-second landing on the logo, rendered at 16:9 only. Add another length with one line in `anims-v3.js`.
 - MP4s are H.264, yuv420p, 30 fps, CRF 18. Most editors and ProPresenter play them directly.
