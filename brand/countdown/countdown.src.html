@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heartbeat Countdown</title>
+<!-- Built by build.mjs from countdown.src.html: edit the source, then run `node countdown/build.mjs`. -->
+<style>
+/*@FONTS*/
+/* One look per theme; the toggle sets data-look on <body> so a host page's own theme can't reach it. */
+:root { --bg: #000; --fg: #fff; --muted: rgba(255,255,255,.55); --track: rgba(255,255,255,.18); --panel: rgba(28,28,28,.92); --line: rgba(255,255,255,.16); color-scheme: dark; }
+body[data-look="light"] { --bg: #fff; --fg: #000; --muted: rgba(0,0,0,.55); --track: rgba(0,0,0,.16); --panel: rgba(244,244,244,.94); --line: rgba(0,0,0,.14); color-scheme: light; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); overflow: hidden; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+body.idle-ui { cursor: none; }
+
+/* The stage fills the screen; everything inside is sized off it (cqw/cqh), so any window or projector works. */
+.stage { position: fixed; inset: 0; container-type: size; overflow: hidden; background: var(--bg); }
+
+/* Positions as a share of screen height: the logo and timer run along the top, the line under them,
+   and the messages fill the space below. */
+.stage { --row-y: 11%; --rule-y: 19.5%; --msg-y: 57%; --mx: 7cqw; }
+.msg { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; font-size: min(10cqh, 6.6cqw); opacity: 0; will-change: transform, opacity; }
+.msg span { display: inline-block; white-space: nowrap; }
+.big { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-size: min(42cqh, 34cqw); font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(-50%); }
+
+.rule { position: absolute; left: var(--mx); right: var(--mx); top: var(--rule-y); height: max(2px, .3cqh); background: var(--track); }
+.rule i { position: absolute; inset: 0; background: var(--fg); transform-origin: left center; transform: scaleX(0); }
+
+.row { position: absolute; left: var(--mx); right: var(--mx); top: var(--row-y); transform: translateY(-50%); display: flex; align-items: center; justify-content: space-between; gap: 4cqw; }
+.slot { height: 6.5cqh; aspect-ratio: 252.2 / 111.27; flex: none; }
+.time { display: flex; align-items: baseline; gap: .4em; font-size: 6.5cqh; }
+.label { font-size: .34em; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.clock { display: flex; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock span { display: inline-block; }
+/* Bar on top (wide screens): the label hangs from the top of the digits instead of sitting on their baseline.
+   With line-height 1, Inter Tight's digits start 0.137em below the box top and capitals 0.128em, so at
+   0.34 of the size the label drops 0.277 of its own em to line up. */
+.stage:not(.bar-bottom):not(.portrait) .time { align-items: flex-start; }
+.stage:not(.bar-bottom):not(.portrait) .label { line-height: 1; margin-top: .277em; }
+
+/* "Bar: bottom" in the settings puts the logo and timer along the bottom instead, line above them. */
+.stage.bar-bottom { --row-y: 89%; --rule-y: 80.5%; --msg-y: 43%; }
+
+/* Portrait: same top row, with the label stacked over the timer; long lines may wrap. */
+.stage.portrait { --row-y: 8%; --rule-y: 14%; --msg-y: 52%; --mx: 8cqw; }
+.stage.portrait.bar-bottom { --row-y: 92%; --rule-y: 85.5%; --msg-y: 46%; }
+.portrait .msg { font-size: min(11cqw, 6.5cqh); }
+.portrait .msg span { white-space: normal; text-wrap: balance; max-width: 84cqw; }
+.portrait .big { font-size: min(50cqw, 30cqh); }
+.portrait .time { flex-direction: column; align-items: flex-end; gap: 1.5cqw; font-size: 9cqw; }
+.portrait .label { font-size: .3em; }
+.portrait .slot { height: 8cqw; }
+
+/* The real logo is positioned over its slot by script, so it can travel to the centre at zero. */
+.logo { position: absolute; left: 0; top: 0; color: var(--fg); transform-origin: 0 0; will-change: transform; }
+.logo svg { display: block; width: 100%; height: 100%; fill: currentColor; overflow: visible; }
+
+/* Settings panel: open on load, minimised with its button (or H / Esc), reopened by a click anywhere. */
+.controls { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); max-height: calc(100% - 32px); overflow: auto; box-sizing: border-box; display: grid; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); color: var(--fg); font-size: 14px; transition: opacity .2s, transform .2s; z-index: 5; backdrop-filter: blur(10px); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.controls.hide { opacity: 0; pointer-events: none; transform: translate(-50%, 8px); }
+/* The panel sits on the side away from the bar, so it never covers the timer. */
+.stage.bar-bottom ~ .controls { bottom: auto; top: max(16px, env(safe-area-inset-top)); }
+.stage.bar-bottom ~ .controls.hide { transform: translate(-50%, -8px); }
+.controls .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.controls .head strong { font-size: 15px; }
+.controls .rows { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 10px 16px; }
+.controls .k { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.controls .v { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.controls .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.controls .grow { flex: 1; }
+.controls .pair { display: flex; gap: 8px; margin-left: auto; }
+.controls label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.controls label.check { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--fg); cursor: pointer; }
+.controls input { font: inherit; font-variant-numeric: tabular-nums; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.controls input[type=number] { width: 4.5em; }
+.controls input[type=checkbox] { width: 16px; height: 16px; margin: 0; accent-color: var(--fg); }
+.controls button { font: inherit; font-weight: 700; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.controls button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); min-width: 6.5em; }
+.controls button:disabled { opacity: .4; cursor: default; }
+.controls button:focus-visible, .controls input:focus-visible, .controls textarea:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.controls .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.controls .seg button { border: 0; border-radius: 0; padding: 6px 12px; }
+.controls .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.controls .field { display: flex; align-items: center; gap: 6px; }
+.controls .unit { color: var(--muted); }
+.controls .keys { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.controls kbd { font: inherit; font-weight: 700; color: var(--fg); }
+.editor { display: grid; gap: 8px; }
+.editor textarea { font: inherit; font-size: 15px; line-height: 1.4; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 10em; max-height: 40vh; resize: vertical; box-sizing: border-box; width: 100%; }
+.editor input[readonly] { width: 100%; box-sizing: border-box; font-size: 13px; }
+.editor p { margin: 0; color: var(--muted); font-size: 12px; }
+.editor .row-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); font-size: 16px; line-height: 1.4; text-align: center; z-index: 6; pointer-events: none; }
+@media (max-width: 480px) { .controls .keys { display: none; } }
+</style>
+</head>
+<body>
+<main class="stage" id="stage" aria-live="off">
+  <div class="msgs" id="msgs"></div>
+  <div class="big" id="big" aria-hidden="true">10</div>
+  <div class="rule" id="rule"><i id="fill"></i></div>
+  <div class="row" id="row">
+    <div class="slot" id="slot"></div>
+    <div class="time"><span class="label">Service begins in</span><span class="clock" id="clock" role="timer"></span></div>
+  </div>
+  <div class="logo" id="logo" aria-label="Heartbeat Church"><!--@LOGO--></div>
+</main>
+
+<div class="controls" id="controls" role="dialog" aria-label="Countdown settings">
+  <div class="head">
+    <strong>Countdown settings</strong>
+    <button id="hide" title="Hide settings (H). Click anywhere to bring them back.">Minimise</button>
+  </div>
+  <div class="rows">
+    <span class="k">Count</span>
+    <div class="v">
+      <div class="seg" role="group" aria-label="Count down">
+        <button data-mode="minutes" aria-pressed="true">Timer</button><button data-mode="until" aria-pressed="false">Until</button>
+      </div>
+      <span class="field" id="f-min"><input id="mins" type="number" min="1" max="180" step="1" value="5" aria-label="Minutes"><span class="unit">min</span></span>
+      <span class="field" id="f-at" hidden><input id="at" type="time" value="11:00" aria-label="Service start time"></span>
+    </div>
+    <span class="k">Bar</span>
+    <div class="v">
+      <div class="seg" role="group" aria-label="Logo and timer position">
+        <button data-bar="top" aria-pressed="true">Top</button><button data-bar="bottom" aria-pressed="false">Bottom</button>
+      </div>
+    </div>
+    <span class="k">Theme</span>
+    <div class="v">
+      <div class="seg" role="group" aria-label="Theme">
+        <button data-look="dark" aria-pressed="true">Dark</button><button data-look="light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+    <span class="k">Last 10 s</span>
+    <div class="v"><label class="check"><input type="checkbox" id="bigten" checked> Count down in big numbers</label></div>
+    <span class="k">Messages</span>
+    <div class="v"><button id="edit" aria-expanded="false">Edit messages</button></div>
+  </div>
+  <div class="editor" id="editor" hidden>
+    <label for="msgtext">Messages</label>
+    <textarea id="msgtext" spellcheck="true"></textarea>
+    <p>Leave a blank line between messages. Each line break inside a message is kept on wide screens; tall screens may wrap long lines.</p>
+    <div class="row-end"><button id="msgdefault">Use defaults</button><button class="primary" id="msgsave">Save</button></div>
+  </div>
+  <div class="editor" id="sharebox" hidden>
+    <label for="sharelink">Link with these settings</label>
+    <input id="sharelink" readonly>
+    <p>Opening this link applies these settings. Bookmark it, or point ProPresenter's web view at it.</p>
+    <div class="row-end"><label class="check"><input type="checkbox" id="shareauto" checked> Start on open</label><button class="primary" id="sharecopy">Copy</button></div>
+  </div>
+  <div class="foot">
+    <button id="fs">Full screen</button>
+    <button id="share" aria-expanded="false">Copy link</button>
+    <span class="grow"></span>
+    <span class="pair"><button id="reset">Reset</button><button class="primary" id="go">Start</button></span>
+  </div>
+  <div class="keys"><kbd>Space</kbd> start / pause · <kbd>R</kbd> reset · <kbd>F</kbd> full screen · <kbd>H</kbd> hide / show settings</div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+// Messages take turns in the middle every 12 seconds. Each is a list of lines; long lines shrink to fit.
+// These are the defaults: the Messages button edits them, and edits are remembered in this browser.
+const DEFAULT_MESSAGES = [
+  ['Welcome to', 'Heartbeat Church'],
+  ['Living Out The Gospel', 'Together Wholeheartedly'],
+  ['Grab a coffee', 'and find a seat'],
+  ['We’re glad', 'you’re here'],
+];
+const STORE = 'heartbeat-countdown-messages';
+const SLOT = 12;   // seconds per message
+const FINALE = 10; // the last seconds count down big
+const LOGO_AR = 252.2 / 111.27;
+
+// ---------- timing maths (same as the rendered video) ----------
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = {
+  outCubic: k => 1 - Math.pow(1 - k, 3),
+  inCubic: k => k * k * k,
+  inOutCubic: k => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2),
+};
+const ep = (t, start, dur, fn = ease.outCubic) => fn(clamp((t - start) / dur));
+function tick(t, COUNT) {
+  const R = COUNT - t;
+  if (R <= 0) return { n: 0, phase: -R, done: true };
+  const n = Math.ceil(R - 1e-6);
+  return { n, phase: n - R, done: false };
+}
+// M:SS, or H:MM:SS when counting to a time more than an hour away.
+const pad = v => String(v).padStart(2, '0');
+const fmt = n => (n >= 3600 ? `${Math.floor(n / 3600)}:${pad(Math.floor(n / 60) % 60)}:${pad(n % 60)}` : `${Math.floor(n / 60)}:${pad(n % 60)}`);
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const stage = $('stage'), clockEl = $('clock'), big = $('big'), fill = $('fill'), rule = $('rule'), row = $('row');
+const slotEl = $('slot'), logo = $('logo');
+let msgEls = [];
+function setMessages(list) {
+  $('msgs').innerHTML = '';
+  msgEls = list.map(lines => {
+    const d = document.createElement('div');
+    d.className = 'msg';
+    lines.forEach(l => {
+      const row = d.appendChild(document.createElement('div'));
+      row.appendChild(document.createElement('span')).textContent = l;
+    });
+    return $('msgs').appendChild(d);
+  });
+  if (geo) fitMessages();
+}
+// Text box format: messages separated by blank lines, one line per line.
+const toText = list => list.map(m => m.join('\n')).join('\n\n');
+const fromText = txt => txt.split(/\n\s*\n/).map(b => b.split('\n').map(l => l.trim()).filter(Boolean)).filter(m => m.length);
+function loadMessages() {
+  try { const v = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(v) && v.length) return v; } catch {}
+  return DEFAULT_MESSAGES;
+}
+function saveMessages(list) {
+  try { if (list === DEFAULT_MESSAGES) localStorage.removeItem(STORE); else localStorage.setItem(STORE, JSON.stringify(list)); } catch {}
+  setMessages(list);
+}
+// Shrink any message that is too wide or too tall for its space.
+function fitMessages() {
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const maxW = W * (stage.classList.contains('portrait') ? 0.84 : 0.86);
+  const maxH = H * 0.62;
+  msgEls.forEach(m => {
+    m.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(m).fontSize);
+    let k = 1;
+    m.querySelectorAll('span').forEach(sp => { k = Math.min(k, maxW / Math.max(sp.scrollWidth, sp.offsetWidth)); });
+    k = Math.min(k, maxH / m.offsetHeight);
+    if (k < 1) m.style.fontSize = `${base * k * 0.98}px`;
+  });
+}
+
+let cells = [];
+function setClock(n, phase) {
+  const str = fmt(n), prev = fmt(n + 1);
+  if (cells.length !== str.length) {
+    clockEl.innerHTML = '';
+    cells = [...str].map(() => clockEl.appendChild(document.createElement('span')));
+  }
+  const k = ease.outCubic(clamp(phase / 0.3));
+  cells.forEach((c, i) => {
+    c.textContent = str[i];
+    const rolling = phase < 0.3 && prev.length === str.length && str[i] !== prev[i];
+    c.style.transform = rolling ? `translateY(${(k - 1) * 0.1}em)` : '';
+    c.style.opacity = rolling ? 0.15 + 0.85 * k : 1;
+  });
+  clockEl.setAttribute('aria-label', `${Math.floor(n / 60)} minutes ${n % 60} seconds`);
+}
+
+// Where the logo sits in the footer and where it lands at zero, in px. Measured on resize.
+let geo = null;
+function measure() {
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const portrait = H > W;
+  stage.classList.toggle('portrait', portrait);
+  const r = slotEl.getBoundingClientRect();
+  const h1 = Math.min(portrait ? (W * 0.3) : H * 0.26, (W * 0.72) / LOGO_AR);
+  geo = {
+    w: r.width, h: r.height,
+    from: { cx: r.left + r.width / 2, cy: r.top + r.height / 2 },
+    to: { cx: W / 2, cy: H / 2 },
+    k1: h1 / r.height,
+    H,
+  };
+  logo.style.width = `${r.width}px`;
+  logo.style.height = `${r.height}px`;
+  fitMessages();
+}
+
+// Draw the screen for t seconds into a COUNT-second countdown.
+function render(t, COUNT, idle) {
+  const { n, phase, done } = idle ? { n: COUNT, phase: 1, done: false } : tick(t, COUNT);
+  setClock(n, phase);
+  // With the big final count off, messages run right up to zero.
+  const finale = SET.big ? COUNT - FINALE : COUNT;
+  const H = geo.H;
+
+  // Messages: each slot fades and rises in, then fades out before the next. None in the final count,
+  // and a slot that would only get a moment before them is skipped.
+  const slot = Math.floor(t / SLOT);
+  msgEls.forEach((m, i) => {
+    let o = 0, dy = 0;
+    if (idle) o = i === 0 ? 1 : 0;
+    else {
+      const t0 = slot * SLOT;
+      const on = slot % msgEls.length === i && t < finale && t0 + 4 <= finale;
+      const kin = on ? ep(t, t0, 0.7) : 0;
+      const kout = on ? ep(t, Math.min(t0 + SLOT, finale) - 0.5, 0.5, ease.inCubic) : 0;
+      o = kin * (1 - kout);
+      dy = (1 - kin) * H * 0.02 - kout * H * 0.01;
+    }
+    m.style.opacity = o;
+    m.style.transform = `translateY(calc(-50% + ${dy}px))`;
+  });
+
+  // The last ten seconds count down big, each number popping in on the tick.
+  const showBig = SET.big && !idle && !done && n <= FINALE && t >= finale;
+  big.textContent = String(n);
+  const kp = ease.outCubic(clamp(phase / 0.35));
+  big.style.opacity = showBig ? 0.25 + 0.75 * kp : 0;
+  big.style.transform = `translateY(-50%) scale(${showBig ? 1.12 - 0.12 * kp : 1})`;
+
+  // At zero the line and timer fade, and the logo travels to the centre and stays.
+  const out = idle ? 0 : ep(t, COUNT, 0.5, ease.inCubic);
+  fill.style.transform = `scaleX(${idle ? 0 : clamp(t / COUNT)})`;
+  rule.style.opacity = 1 - out;
+  row.style.opacity = 1 - out;
+  const km = idle ? 0 : ep(t, COUNT + 0.3, 1.2, ease.inOutCubic);
+  const k = lerp(1, geo.k1, km);
+  const cx = lerp(geo.from.cx, geo.to.cx, km), cy = lerp(geo.from.cy, geo.to.cy, km);
+  logo.style.transform = `translate(${cx - (geo.w * k) / 2}px, ${cy - (geo.h * k) / 2}px) scale(${k})`;
+}
+
+// ---------- state ----------
+// S.mode 'idle': waiting to start. 'run': a minutes timer (pausable). 'until': counting to a time of day.
+const S = { mode: 'idle', COUNT: 300, start: 0, pausedAt: 0, paused: 0 };
+const now = () => Date.now() / 1000;
+const elapsed = () => ((S.pausedAt || now()) - S.start - S.paused);
+// Settings chosen in the panel: kind 'minutes' or 'until', where the bar sits, and whether the last ten seconds count big.
+const SET = { kind: 'minutes', bar: 'top', big: true };
+const SETTINGS = 'heartbeat-countdown-settings';
+function remember() {
+  try { localStorage.setItem(SETTINGS, JSON.stringify({ ...SET, look: document.body.dataset.look, mins: $('mins').value, at: $('at').value })); } catch {}
+}
+
+function setMinutes(m) {
+  m = clamp(Math.round(Number(m) || 5), 1, 180);
+  $('mins').value = m;
+  if (S.mode === 'idle' && SET.kind === 'minutes') S.COUNT = m * 60;
+}
+// Seconds from now until a time of day like 11:00. A time already gone today means tomorrow.
+function secondsUntil(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
+  if (!m) return null;
+  const d = new Date();
+  d.setHours(+m[1], +m[2], 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d.getTime() / 1000 - now();
+}
+function start() {
+  if (S.mode === 'idle') {
+    if (SET.kind === 'until') {
+      const left = secondsUntil($('at').value);
+      if (left == null) { $('at').focus(); return; }
+      Object.assign(S, { mode: 'until', start: now(), COUNT: left, pausedAt: 0, paused: 0 });
+    } else {
+      setMinutes($('mins').value);
+      Object.assign(S, { mode: 'run', start: now(), pausedAt: 0, paused: 0 });
+    }
+    keepAwake();
+  } else if (S.mode === 'run' && elapsed() < S.COUNT) {
+    if (S.pausedAt) { S.paused += now() - S.pausedAt; S.pausedAt = 0; } else S.pausedAt = now();
+  }
+  syncButtons();
+}
+function reset() {
+  Object.assign(S, { mode: 'idle', pausedAt: 0, paused: 0 });
+  setMinutes($('mins').value);
+  syncButtons();
+}
+function setKind(kind) {
+  SET.kind = kind === 'until' ? 'until' : 'minutes';
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === SET.kind));
+  $('f-min').hidden = SET.kind !== 'minutes';
+  $('f-at').hidden = SET.kind !== 'until';
+  reset();
+  remember();
+}
+function setBar(bar) {
+  SET.bar = bar === 'bottom' ? 'bottom' : 'top';
+  document.querySelectorAll('[data-bar]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bar === SET.bar));
+  stage.classList.toggle('bar-bottom', SET.bar === 'bottom');
+  measure();
+  remember();
+}
+function setBig(on) {
+  SET.big = on !== false;
+  $('bigten').checked = SET.big;
+  remember();
+}
+function syncButtons() {
+  const go = $('go');
+  go.textContent = S.mode === 'idle' ? 'Start' : S.mode === 'until' ? 'Running' : S.pausedAt ? 'Resume' : 'Pause';
+  go.disabled = S.mode === 'until';
+}
+
+let wake = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.mode !== 'idle') keepAwake(); });
+
+// Full screen takes the whole display, hiding Chrome's tabs and toolbar. Browsers can refuse
+// (an embedding frame without permission, a window without focus); then say how to do it by hand.
+const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const FS_KEYS = MAC ? 'fn F (or ⌃⌘F)' : 'F11';
+function toggleFullscreen() {
+  const d = document;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    const e = d.documentElement;
+    const req = e.requestFullscreen || e.webkitRequestFullscreen;
+    if (!req || d.fullscreenEnabled === false) return fsRefused();
+    const p = req.call(e, { navigationUI: 'hide' });
+    p?.catch?.(fsRefused);
+  } catch { fsRefused(); }
+}
+function fsRefused() { toast(`Chrome didn’t allow full screen here. Press ${FS_KEYS} to make the window full screen.`); }
+let toastTimer;
+function toast(msg, ms = 6000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+}
+document.addEventListener('fullscreenchange', () => {
+  $('fs').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+});
+function setLook(look) {
+  document.body.dataset.look = look === 'light' ? 'light' : 'dark';
+  document.querySelectorAll('[data-look]').forEach(b => b.setAttribute('aria-pressed', b.dataset.look === document.body.dataset.look));
+}
+
+// ---------- controls ----------
+$('go').onclick = start;
+$('reset').onclick = reset;
+document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setKind(b.dataset.mode); });
+document.querySelectorAll('[data-bar]').forEach(b => { b.onclick = () => setBar(b.dataset.bar); });
+$('mins').addEventListener('input', e => { setMinutes(e.target.value); remember(); });
+$('mins').addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+$('at').addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+// Changing the time while counting to it re-aims the countdown.
+$('at').addEventListener('change', () => { remember(); if (S.mode === 'until') { S.mode = 'idle'; start(); } });
+document.querySelectorAll('[data-look]').forEach(b => { b.onclick = () => { setLook(b.dataset.look); remember(); }; });
+$('bigten').onchange = e => setBig(e.target.checked);
+$('fs').onclick = toggleFullscreen;
+
+// ---------- export settings as a link ----------
+const currentMessages = () => msgEls.map(m => [...m.querySelectorAll('span')].map(s => s.textContent));
+function shareLink() {
+  const p = new URLSearchParams();
+  if (SET.kind === 'until') p.set('at', $('at').value); else p.set('min', $('mins').value);
+  p.set('bar', SET.bar);
+  p.set('theme', document.body.dataset.look);
+  if (!SET.big) p.set('big', '0');
+  const msgs = currentMessages();
+  if (JSON.stringify(msgs) !== JSON.stringify(DEFAULT_MESSAGES)) msgs.forEach(m => p.append('m', m.join('|')));
+  if ($('shareauto').checked) p.set('autostart', '');
+  return `${location.href.split(/[?#]/)[0]}?${p.toString().replace(/autostart=(&|$)/, 'autostart$1')}`;
+}
+function openShare(open) {
+  $('sharebox').hidden = !open;
+  $('share').setAttribute('aria-expanded', open);
+  if (open) { openEditor(false); $('sharelink').value = shareLink(); }
+}
+$('share').onclick = () => openShare($('sharebox').hidden);
+$('shareauto').onchange = () => { $('sharelink').value = shareLink(); };
+$('sharecopy').onclick = () => {
+  const link = $('sharelink').value = shareLink();
+  const done = ok => { $('sharecopy').textContent = ok ? 'Copied' : 'Select and copy'; setTimeout(() => { $('sharecopy').textContent = 'Copy'; }, 1800); };
+  try { navigator.clipboard.writeText(link).then(() => done(true), () => { $('sharelink').select(); done(false); }); }
+  catch { $('sharelink').select(); done(false); }
+};
+function openEditor(open) {
+  $('editor').hidden = !open;
+  $('edit').setAttribute('aria-expanded', open);
+  if (open) { $('sharebox').hidden = true; $('share').setAttribute('aria-expanded', false); $('msgtext').value = toText(msgEls.map(m => [...m.querySelectorAll('span')].map(s => s.textContent))); $('msgtext').focus(); }
+}
+$('edit').onclick = () => openEditor($('editor').hidden);
+$('msgsave').onclick = () => { const list = fromText($('msgtext').value); saveMessages(list.length ? list : DEFAULT_MESSAGES); openEditor(false); };
+$('msgdefault').onclick = () => { $('msgtext').value = toText(DEFAULT_MESSAGES); };
+// A click on the screen brings the settings back; a double-click is full screen, so wait to tell them apart.
+let clickTimer;
+stage.addEventListener('click', () => { clearTimeout(clickTimer); clickTimer = setTimeout(() => showPanel(true), 260); });
+stage.addEventListener('dblclick', () => { clearTimeout(clickTimer); toggleFullscreen(); });
+$('hide').onclick = () => showPanel(false);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.key !== 'Escape')) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ') { e.preventDefault(); start(); }
+  else if (k === 'r') reset();
+  else if (k === 'f') toggleFullscreen();
+  else if (k === 'l') { setLook(document.body.dataset.look === 'light' ? 'dark' : 'light'); remember(); }
+  else if (k === 'h') showPanel($('controls').classList.contains('hide'));
+  else if (e.key === 'Escape') showPanel(false);
+  else if (e.key === 'ArrowUp' && S.mode === 'idle' && SET.kind === 'minutes') { setMinutes(+$('mins').value + 1); remember(); }
+  else if (e.key === 'ArrowDown' && S.mode === 'idle' && SET.kind === 'minutes') { setMinutes(+$('mins').value - 1); remember(); }
+});
+
+function showPanel(open) {
+  const c = $('controls');
+  if (open === !c.classList.contains('hide')) return;
+  c.classList.toggle('hide', !open);
+  if (!open) {
+    if (c.contains(document.activeElement)) document.activeElement.blur();
+    toast('Settings hidden. Click anywhere (or press H) to bring them back.', 2200);
+  }
+}
+// The cursor hides after a few still seconds while the settings are minimised.
+let cursorTimer;
+document.addEventListener('mousemove', () => {
+  document.body.classList.remove('idle-ui');
+  clearTimeout(cursorTimer);
+  cursorTimer = setTimeout(() => { if ($('controls').classList.contains('hide')) document.body.classList.add('idle-ui'); }, 2500);
+}, { passive: true });
+
+// ---------- start-up: remembered settings, then link options ----------
+// Link options win over remembered ones: ?min=10 or ?at=11:00, &bar=bottom, &theme=light, &big=0, &autostart,
+// and one &m=Line one|Line two per message. "Copy link" in the panel writes these for the current settings.
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(SETTINGS)) || {}; } catch {}
+const q = new URLSearchParams(location.search);
+setLook((q.get('theme') || saved.look) === 'light' ? 'light' : 'dark');
+if (q.get('min') || saved.mins) $('mins').value = q.get('min') || saved.mins;
+if (q.get('at') || saved.at) $('at').value = q.get('at') || saved.at;
+setKind(q.get('at') ? 'until' : q.get('min') ? 'minutes' : saved.kind);
+setBar(q.get('bar') || saved.bar);
+setBig(q.has('big') ? q.get('big') !== '0' : saved.big);
+// A link that starts itself opens with the settings already minimised, ready for the screen.
+if (q.has('autostart')) { start(); $('controls').classList.add('hide'); }
+
+// Messages from a link are used for this visit only; they don't replace the ones saved in this browser.
+const linkMsgs = q.getAll('m').map(v => v.split('|').map(l => l.trim()).filter(Boolean)).filter(m => m.length);
+setMessages(linkMsgs.length ? linkMsgs : loadMessages());
+new ResizeObserver(measure).observe(stage);
+document.fonts.ready.then(measure);
+measure();
+(function loop() {
+  // Waiting in "until" mode, the clock already shows the time left to the chosen start.
+  if (S.mode === 'idle' && SET.kind === 'until') S.COUNT = Math.max(1, Math.ceil(secondsUntil($('at').value) ?? 0));
+  if (S.mode === 'idle') render(0, S.COUNT, true);
+  else render(elapsed(), S.COUNT, false);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

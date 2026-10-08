@@ -21,6 +21,7 @@ cd brand && python3 -m http.server 8765   # then open http://localhost:8765/repo
 | `logo-motion/out/gif/` | Small looping GIFs of the loaders, for web pages |
 | `mockups/` | Merch mockups: AI-generated blanks in `raw/`, logo placements in `mockups.json`, results in `out/` |
 | `report.html`, `report-v2.html` | Galleries for each round |
+| `countdown/heartbeat-countdown.html` | Live welcome countdown as one self-contained page (built from `countdown.src.html`) |
 
 ## Rendering
 
@@ -41,6 +42,19 @@ python3 mockups/draw.py --id mug-green --prompt "..."   # new blank via NanoGPT 
 Mockups: the blank product photo comes from an image model, but the logo is never drawn by AI. `compose.mjs` warps the real SVG onto the photo (a perspective quad for flat items, a cylinder for mugs and bottles) and shades it with the photo's own light. To place a logo on a new blank, read pixel coordinates off the photo and add an entry to `mockups.json`.
 
 Each animation is a pure function of time (`frame(scene, state, t)`), so the browser preview and the rendered video match frame for frame. To add one, append an entry to `ANIMS_V2` in `logo-motion/src/anims-v2.js`; the renderer and the report pick it up.
+
+## Live countdown page
+
+`countdown/heartbeat-countdown.html` is the welcome countdown as a page that runs anywhere, offline included. Double-click it, then press F (or double-click the screen) for full screen. It follows any screen shape (wide, square or portrait) and keeps time from the system clock. The settings panel opens with the page; **Minimise** (or H) hides it, and a click anywhere brings it back. Moving the mouse doesn't.
+
+- **Timer** counts a number of minutes. **Until** counts to a time of day, such as 11:00 (a time already gone means tomorrow). Times over an hour away show as H:MM:SS.
+- **Bar** puts the logo and timer along the top (default) or the bottom.
+- **Last 10 s** turns the big final count on or off. With it off, the messages run until zero.
+- At zero the logo moves to the centre and stays.
+- **Messages** edits the lines that take turns. Leave a blank line between messages. Edits are remembered in that browser, as are the other settings.
+- **Copy link** gives a link carrying the current settings: `?min=5` or `?at=11:00`, `&bar=bottom`, `&theme=light`, `&big=0`, `&autostart`, and one `&m=Line one|Line two` per message (`|` breaks the line). Opening the link applies them. Messages from a link last for that visit only.
+- Keys: Space start/pause, R reset, ↑/↓ minutes, F full screen, L light/dark, H hide/show settings. A link with `autostart` opens with the settings hidden.
+- To change the default messages, edit `DEFAULT_MESSAGES` in `countdown.src.html`, then run `node countdown/build.mjs` to inline the logo and fonts.
 
 ## Notes
 

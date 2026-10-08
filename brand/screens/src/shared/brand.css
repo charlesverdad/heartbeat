@@ -1,0 +1,53 @@
+/* Brand tokens, page reset, stage base, settings panel and toast. Shared by every screen. */
+@font-face { font-family: 'Inter Tight'; font-weight: 500; font-display: block; src: url(fonts/InterTight-500.woff2) format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 700; font-display: block; src: url(fonts/InterTight-700.woff2) format('woff2'); }
+
+/* One look per theme; the panel sets data-look on <body> so a host page's own theme can't reach it. */
+:root { --bg: #000; --fg: #fff; --muted: rgba(255,255,255,.55); --track: rgba(255,255,255,.18); --panel: rgba(28,28,28,.92); --line: rgba(255,255,255,.16); color-scheme: dark; }
+body[data-look="light"] { --bg: #fff; --fg: #000; --muted: rgba(0,0,0,.55); --track: rgba(0,0,0,.16); --panel: rgba(244,244,244,.94); --line: rgba(0,0,0,.14); color-scheme: light; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); overflow: hidden; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+body.idle-ui { cursor: none; }
+
+/* The stage fills the screen; everything inside is sized off it (cqw/cqh), so any window or projector works. */
+.stage { position: fixed; inset: 0; container-type: size; overflow: hidden; background: var(--bg); }
+
+/* Settings panel: open on load, minimised with its button (or H / Esc), reopened by a click anywhere. */
+.controls { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); max-height: calc(100% - 32px); overflow: auto; box-sizing: border-box; display: grid; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); color: var(--fg); font-size: 14px; transition: opacity .2s, transform .2s; z-index: 5; backdrop-filter: blur(10px); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.controls.hide { opacity: 0; pointer-events: none; transform: translate(-50%, 8px); }
+/* A screen whose content hugs the bottom sets .bar-bottom on its stage; the panel then moves to the top. */
+.stage.bar-bottom ~ .controls { bottom: auto; top: max(16px, env(safe-area-inset-top)); }
+.stage.bar-bottom ~ .controls.hide { transform: translate(-50%, -8px); }
+.controls .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.controls .head strong { font-size: 15px; }
+.controls .rows { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 10px 16px; }
+.controls .k { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.controls .v { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.controls .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.controls .grow { flex: 1; }
+.controls .pair { display: flex; gap: 8px; margin-left: auto; }
+.controls label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.controls label.check { display: flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--fg); cursor: pointer; }
+.controls input { font: inherit; font-variant-numeric: tabular-nums; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.controls input[type=number] { width: 4.5em; }
+.controls input[type=text] { width: 100%; box-sizing: border-box; }
+.controls input[type=checkbox] { width: 16px; height: 16px; margin: 0; accent-color: var(--fg); }
+.controls button { font: inherit; font-weight: 700; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.controls button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); min-width: 6.5em; }
+.controls button:disabled { opacity: .4; cursor: default; }
+.controls button:focus-visible, .controls input:focus-visible, .controls textarea:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.controls .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.controls .seg button { border: 0; border-radius: 0; padding: 6px 12px; }
+.controls .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.controls .field { display: flex; align-items: center; gap: 6px; }
+.controls .unit { color: var(--muted); }
+.controls .keys { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.controls kbd { font: inherit; font-weight: 700; color: var(--fg); }
+.editor { display: grid; gap: 8px; }
+.editor textarea { font: inherit; font-size: 15px; line-height: 1.4; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 10em; max-height: 40vh; resize: vertical; box-sizing: border-box; width: 100%; }
+.editor input[readonly] { width: 100%; box-sizing: border-box; font-size: 13px; }
+.editor p { margin: 0; color: var(--muted); font-size: 12px; }
+.editor .row-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.toast { position: fixed; left: 50%; top: max(24px, env(safe-area-inset-top)); transform: translateX(-50%); max-width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); font-size: 16px; line-height: 1.4; text-align: center; z-index: 6; pointer-events: none; }
+@media (max-width: 480px) { .controls .keys { display: none; } }

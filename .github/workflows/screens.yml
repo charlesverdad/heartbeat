@@ -1,0 +1,49 @@
+# Heartbeat Screens: test, build and deploy brand/screens to Cloudflare Pages.
+# Pushes to main deploy to production; pull requests get a preview URL.
+# The Pages project itself (and its domain) is created by terraform/screens.
+name: screens
+
+on:
+  push:
+    branches: [main]
+    paths: [brand/screens/**, .github/workflows/screens.yml]
+  pull_request:
+    paths: [brand/screens/**, .github/workflows/screens.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: screens-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: brand/screens
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # The build and tests use only Node built-ins, so no npm install
+      # (puppeteer-core is for the local screenshot check only).
+      - run: npm test
+      - run: npm run build
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        # Forked PRs get no secrets, so they build and test but skip the deploy.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: brand/screens
+          command: pages deploy dist --project-name=screens --branch=${{ github.head_ref || github.ref_name }}
+      - name: Summary
+        if: steps.deploy.outcome == 'success'
+        run: echo "Deployed ${{ steps.deploy.outputs.deployment-url }}" >> "$GITHUB_STEP_SUMMARY"
