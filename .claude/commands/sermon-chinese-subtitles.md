@@ -5,8 +5,10 @@ subtitled video**. Everything runs on this machine and in this session: Whisper
 locally, the translation done by you or subagents you spawn, ffmpeg for the
 burn-in. No external translation service is used at any point.
 
-Unless the user says they only want the SRT, run all the way through step 8c and
-hand back the burned video -- that is usually what they actually need.
+Unless the user says they only want the SRT, run all the way through step 9 and
+deliver the burned video to the HBC Media drive -- that is usually what they
+actually need. **Burn only the sermon**: the scripture reading plus the preaching,
+with no worship, announcements or closing song.
 
 Target: subtitles ready **2-3 hours after the service is published**. The compute
 is about 10 minutes; the rest is translation and your review.
@@ -20,6 +22,13 @@ The user provides:
 If they give only a URL, find the sermon start yourself: transcribe nothing yet,
 just check the stream for where the worship set ends and the preaching begins, or
 ask. **Do not guess.** A wrong offset shifts every subtitle in the file.
+
+A post-live stream often has no YouTube auto-captions. In that case, cut from 0
+and run a throwaway `asr.py --model mlx-community/whisper-base-mlx` over the
+whole service: about 40 s for 90 min. Then print one segment per ~45 s to find
+the reading and the sermon. Move that `asr_en.json` aside before the real run.
+Start the cut at the **scripture reading** when it is the sermon text (it gets
+CUV wording), and end it at the call to respond.
 
 ### Important: nix-shell requirement
 
@@ -104,7 +113,9 @@ on silence (identical short text in adjacent sentences).
 
 **Check its output before continuing.** Read the reported song and hallucination
 spans and confirm they are really worship and silence. A spoken line swept into
-the song block gets no subtitle at all.
+the song block gets no subtitle at all. On 2026-10-04 all 9 "song" lines were
+speech: a slow golf story, and the conformed/transformed exegesis. Flip them back to
+`speech` before `make_batches.py`.
 
 ### 4. Make the translation batches
 
@@ -146,6 +157,10 @@ Rules that matter most:
 - The ASR contains errors. Translate the intended meaning; never invent.
 - Ask the subagent to add `"flag": "<why>"` to any line it is unsure of. Those
   surface first in the review page.
+
+**Keep people's names, authors and book titles in Latin script** (John Mark
+Comer, Moody Bible Commentary, `Practicing the Way`), never transliterated; the
+user asked for this explicitly. Bible names still follow CUV.
 
 **Confirm proper nouns with the user** before shipping names -- past mistakes
 include Wonki (not Wongi) and Jason (not John). In practice the review in step 7
@@ -353,6 +368,48 @@ ffmpeg -i sermon.zh-subbed.mp4 -vf scale=1280:-2 -c:v libx264 -preset veryfast \
 
 Target the bitrate rather than the quality whenever a size has been quoted to
 somebody -- `-b:v 700k` landed 428 MB against a 420 MB estimate.
+
+**Ask before assuming they want the small one.** The media team chose the full
+CRF master (579 MB for 57.5 min on 2026-10-04) over the 377 MB re-encode. Do not
+promise a size from the 1.04 GB figure above either; a service stream is often
+only ~0.7 Mbps at source, so the master is the ceiling and nothing bigger adds
+quality.
+
+### 9. Deliver to the HBC Media shared drive
+
+Drop-off point: **HBC Media › Translated Sermons**. Upload with rclone (remote
+`gdrive:`, already authorised, no Google Cloud project or tokens). Run it from the
+repo root through `direnv exec .`, which loads rclone and the keychain-backed
+config password:
+
+```bash
+ID=$(direnv exec . rclone backend drives gdrive: | python3 -c \
+  "import json,sys;print([d['id'] for d in json.load(sys.stdin) if d['name']=='HBC Media'][0])")
+direnv exec . rclone ls "gdrive,team_drive=$ID:Translated Sermons"      # look first
+direnv exec . rclone copy youtube/work/<VIDEO_ID>/<FILE>.mp4 \
+  "gdrive,team_drive=$ID:Translated Sermons/" \
+  --drive-chunk-size 256M --tpslimit 1 --retries 10 --low-level-retries 30 -P
+direnv exec . rclone check youtube/work/<VIDEO_ID>/<FILE>.mp4 \
+  "gdrive,team_drive=$ID:Translated Sermons/" --one-way --checksum
+```
+
+- **List the folder before uploading.** On 2026-10-04 someone had already put the
+  file there by hand from the tailnet link; `rclone check` confirmed it was
+  identical, so there was nothing to upload.
+- Keep the shared-drive ID out of committed files. The repo is public.
+- Name it after the date and the series title, which you can find in the drive's
+  `PJ Sermon PPT <year>` folder, e.g. `20261004 Practicing the way 1 romans 12`.
+- The claude.ai Google Drive connector is no use here, because it moves file bytes
+  through context. Do not suggest a Drive MCP or gcloud setup.
+
+**Fallback: the tailnet.** `tailscale file cp` (Taildrop) **cannot** send to
+`syd-media-mac-mini`. It is owned by `media.sydney@`, and Taildrop only sends
+between one user's own devices ("peer is owned by a different user"). Serve the
+work dir instead: `make_editor.py --serve` serves it on 8777, then run
+`tailscale serve --bg 8777` and hand over
+`https://<this-host>.<tailnet>.ts.net/<file>`. The path was relayed through
+DERP(syd), not direct, so a big file is slow. This Mac must stay awake until
+they have downloaded it.
 
 ## Deliverables
 
