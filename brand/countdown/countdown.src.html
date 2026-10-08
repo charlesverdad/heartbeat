@@ -372,7 +372,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // Full screen takes the whole display, hiding Chrome's tabs and toolbar. Browsers can refuse
 // (an embedding frame without permission, a window without focus); then say how to do it by hand.
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-const FS_KEYS = MAC ? '⌃⌘F' : 'F11';
+const FS_KEYS = MAC ? 'fn F (or ⌃⌘F)' : 'F11';
 function toggleFullscreen() {
   const d = document;
   try {
