@@ -101,6 +101,14 @@ in node tests). Page script order: core, logo, settings, stage, panel, (timer), 
         HB.watchStage(stage, ({ W, H, portrait }) => { /* measure */ });
         HB.loop(t => draw(t, panel.values));
 
+   A screen that counts down (Timer or Until, Start/Reset, Space/R/arrows, autostart and the homepage
+   demo loop) uses `HB.countdownScreen` instead, giving only its own rows and drawing:
+
+        HB.countdownScreen({ id: 'ring', title: 'Ring countdown settings',
+          schema: [...HB.timerSchema, HB.THEME, /* own rows */],
+          onChange(key, values) { /* own rows changed */ }, ready(values) { /* first set-up */ },
+          render(frame, values) { /* frame = { idle, t, COUNT, n, phase, done } */ } });
+
 3. Add a card to `src/index.html` (copy one: thumbnail iframe, name, kind chip, blurb, Open / Download), a row in the README tables, and `check` picks the page up automatically.
 4. Run `npm run build && npm run check`, then open the PNGs in `out/`.
 

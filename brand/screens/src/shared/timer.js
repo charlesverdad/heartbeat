@@ -54,6 +54,7 @@
     }
     function reset() {
       Object.assign(S, { mode: 'idle', pausedAt: 0, paused: 0 });
+      opts.letSleep?.();
       refresh();
       changed();
     }
@@ -74,9 +75,64 @@
     return { S, start, reset, retarget, button, frame, refresh, get mode() { return S.mode; } };
   };
 
+  // Everything a countdown screen shares: the timer, its panel rows wired to it, Start/Reset, keys,
+  // autostart and the homepage demo loop. The screen supplies its own rows (`schema`, after the timer
+  // rows), what to do when they change (`onChange`), and `render(frame, values)`.
+  //   HB.countdownScreen({ id, title, schema, linkKeys, skipSave, onChange, render })
+  HB.countdownScreen = function (o) {
+    let panel;
+    const timer = HB.createTimer({
+      values: () => panel.values,
+      onChange: () => panel.setAction('go', timer.button()),
+      keepAwake: () => panel.keepAwake(),
+      letSleep: () => panel.letSleep(),
+      badTime: () => document.querySelector('.controls input[type=time]')?.focus(),
+    });
+    const step = d => { if (timer.mode === 'idle' && panel.values.kind === 'minutes') panel.set('mins', clamp(panel.values.mins + d, 1, 180)); };
+    panel = HB.panel({
+      id: o.id,
+      title: o.title,
+      schema: o.schema,
+      legacy: HB.timerLegacy,
+      linkKeys: v => [...HB.timerLinkKeys(v), ...(o.linkKeys || [])],
+      skipSave: o.skipSave,
+      startable: true,
+      actions: [
+        { id: 'reset', label: 'Reset', onclick: () => timer.reset() },
+        { id: 'go', label: 'Start', primary: true, onclick: () => timer.start() },
+      ],
+      keyHelp: [['Space', 'start / pause'], ['R', 'reset']],
+      keys: { ' ': () => timer.start(), r: () => timer.reset(), arrowup: () => step(1), arrowdown: () => step(-1) },
+      enter: () => timer.start(),
+      onChange(key, v) {
+        if (key === 'kind') timer.reset();
+        else if (key === 'mins') timer.refresh();
+        else if (key === 'at') timer.retarget();
+        else o.onChange?.(key, v);
+      },
+    });
+    // Let the screen set itself up from the settings before the first frame.
+    o.ready?.(panel.values);
+    timer.reset();
+    if (panel.autostart) timer.start();
+
+    if (panel.demo) {
+      // Homepage preview: a 32 s loop that starts 22 s from zero, so it shows the last stretch, the final
+      // count and the landing. ?t=N skips ahead N seconds (scripts/check.mjs uses it for the late moments).
+      const COUNT = 22, LOOP = 32, SKIP = Number(new URLSearchParams(location.search).get('t')) || 0;
+      HB.loop(s => {
+        const t = (s + SKIP) % LOOP;
+        o.render({ idle: false, t, COUNT, ...HB.tick(t, COUNT) }, panel.values);
+      });
+    } else {
+      HB.loop(() => o.render(timer.frame(), panel.values));
+    }
+    return { panel, timer };
+  };
+
   // The clock: one span per character so digits that change can roll in (rise 0.1em and fade up over 0.3 s).
   HB.rollClock = function (el) {
-    let cells = [];
+    let cells = [], shown = null;
     return function set(n, phase) {
       const str = fmt(n), prev = fmt(n + 1);
       if (cells.length !== str.length) {
@@ -85,12 +141,14 @@
       }
       const k = ease.outCubic(clamp(phase / 0.3));
       cells.forEach((c, i) => {
-        c.textContent = str[i];
+        // Only touch the DOM when something changed, so a settled clock costs no layout.
+        if (c.textContent !== str[i]) c.textContent = str[i];
         const rolling = phase < 0.3 && prev.length === str.length && str[i] !== prev[i];
-        c.style.transform = rolling ? `translateY(${(k - 1) * 0.1}em)` : '';
-        c.style.opacity = rolling ? 0.15 + 0.85 * k : 1;
+        const tf = rolling ? `translateY(${(k - 1) * 0.1}em)` : '', op = rolling ? String(0.15 + 0.85 * k) : '1';
+        if (c.style.transform !== tf) c.style.transform = tf;
+        if (c.style.opacity !== op) c.style.opacity = op;
       });
-      el.setAttribute('aria-label', `${Math.floor(n / 60)} minutes ${n % 60} seconds`);
+      if (n !== shown) { shown = n; el.setAttribute('aria-label', `${Math.floor(n / 60)} minutes ${n % 60} seconds`); }
     };
   };
 })();

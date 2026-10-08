@@ -95,7 +95,7 @@
 
     // The last ten seconds count down big, each number popping in on the tick.
     const showBig = SET.big && !idle && !done && n <= FINALE && t >= finale;
-    big.textContent = String(n);
+    if (big.textContent !== String(n)) big.textContent = String(n);
     const kp = ease.outCubic(clamp(phase / 0.35));
     big.style.opacity = showBig ? 0.25 + 0.75 * kp : 0;
     big.style.transform = `translateY(-50%) scale(${showBig ? 1.12 - 0.12 * kp : 1})`;
@@ -112,54 +112,22 @@
   }
 
   // ---------- wiring ----------
-  let panel;
-  const timer = HB.createTimer({
-    values: () => panel.values,
-    onChange: () => panel.setAction('go', timer.button()),
-    keepAwake: () => panel.keepAwake(),
-    badTime: () => document.querySelector('.controls input[type=time]')?.focus(),
-  });
-  const step = d => { if (timer.mode === 'idle' && panel.values.kind === 'minutes') panel.set('mins', clamp(panel.values.mins + d, 1, 180)); };
-
-  panel = HB.panel({
+  let measureNow;
+  HB.countdownScreen({
     id: 'countdown',
     title: 'Countdown settings',
     schema,
-    legacy: HB.timerLegacy,
-    linkKeys: v => [...HB.timerLinkKeys(v), 'bar'],
+    linkKeys: ['bar'],
     skipSave: ['messages'],
-    startable: true,
-    actions: [
-      { id: 'reset', label: 'Reset', onclick: () => timer.reset() },
-      { id: 'go', label: 'Start', primary: true, onclick: () => timer.start() },
-    ],
-    keyHelp: [['Space', 'start / pause'], ['R', 'reset']],
-    keys: { ' ': () => timer.start(), r: () => timer.reset(), arrowup: () => step(1), arrowdown: () => step(-1) },
-    enter: () => timer.start(),
     onChange(key, v) {
-      if (key === 'kind') timer.reset();
-      else if (key === 'mins') timer.refresh();
-      else if (key === 'at') timer.retarget();
-      else if (key === 'bar') { stage.classList.toggle('bar-bottom', v.bar === 'bottom'); measureNow(); }
+      if (key === 'bar') { stage.classList.toggle('bar-bottom', v.bar === 'bottom'); measureNow(); }
       else if (key === 'messages') setMessages(v.messages);
     },
+    ready(v) {
+      stage.classList.toggle('bar-bottom', v.bar === 'bottom');
+      setMessages(v.messages);
+      measureNow = HB.watchStage(stage, measure);
+    },
+    render,
   });
-
-  stage.classList.toggle('bar-bottom', panel.values.bar === 'bottom');
-  setMessages(panel.values.messages);
-  const measureNow = HB.watchStage(stage, measure);
-  timer.reset();
-  if (panel.autostart) timer.start();
-
-  if (panel.demo) {
-    // Homepage preview: a 22 s run that shows a message, the big final count and the logo landing, then loops.
-    // ?t=N skips ahead N seconds (used by scripts/check.mjs to capture the final count and the landed logo).
-    const DEMO = { COUNT: 22, LOOP: 32, SKIP: Number(new URLSearchParams(location.search).get('t')) || 0 };
-    HB.loop(s => {
-      const t = (s + DEMO.SKIP) % DEMO.LOOP;
-      render({ idle: false, t, COUNT: DEMO.COUNT, ...HB.tick(t, DEMO.COUNT) }, panel.values);
-    });
-  } else {
-    HB.loop(() => render(timer.frame(), panel.values));
-  }
 })();

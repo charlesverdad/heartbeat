@@ -49,5 +49,5 @@ body.idle-ui { cursor: none; }
 .editor input[readonly] { width: 100%; box-sizing: border-box; font-size: 13px; }
 .editor p { margin: 0; color: var(--muted); font-size: 12px; }
 .editor .row-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-.toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); font-size: 16px; line-height: 1.4; text-align: center; z-index: 6; pointer-events: none; }
+.toast { position: fixed; left: 50%; top: max(24px, env(safe-area-inset-top)); transform: translateX(-50%); max-width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); font-size: 16px; line-height: 1.4; text-align: center; z-index: 6; pointer-events: none; }
 @media (max-width: 480px) { .controls .keys { display: none; } }

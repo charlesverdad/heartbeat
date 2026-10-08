@@ -34,6 +34,7 @@
     values: () => ({ kind: 'minutes', mins: panel.values.mins }),
     onChange: refreshButtons,
     keepAwake: () => panel.keepAwake(),
+    letSleep: () => panel.letSleep(),
   });
   function refreshButtons() {
     const on = panel.values.timer;

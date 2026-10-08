@@ -60,7 +60,7 @@
 
     setLook(values.theme);
     if (demo) {
-      Object.assign(api, { set(k, v) { values[k] = v; if (k === 'theme') setLook(v); o.onChange?.(k, values); }, setAction() {}, toast() {}, show() {}, keepAwake() {} });
+      Object.assign(api, { set(k, v) { values[k] = v; if (k === 'theme') setLook(v); o.onChange?.(k, values); }, setAction() {}, toast() {}, show() {}, keepAwake() {}, letSleep() {} });
       return api;
     }
 
@@ -254,6 +254,8 @@
       wanted = true;
       try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; }
     };
+    // Back to idle: the display may sleep again.
+    api.letSleep = function () { wanted = false; wake?.release().catch(() => {}); wake = null; };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && wanted) api.keepAwake(); });
 
     return api;

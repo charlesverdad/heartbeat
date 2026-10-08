@@ -10,6 +10,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, 'src');
 const DIST = join(HERE, 'dist');
 
+// The tab icon: the white mark on a black rounded square, as an SVG data URI.
+await import('./src/shared/logo.js');
+const { LOGO } = globalThis.HB;
+const FAVICON = 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-28 -20 150 150"><rect x="-28" y="-20" width="150" height="150" rx="30"/><g fill="#fff">${LOGO.mark}</g></svg>`);
+
 const fail = msg => { throw new Error(`build: ${msg}`); };
 const read = async (base, rel, from) => {
   try { return await readFile(join(base, rel)); } catch { return fail(`${from} references missing file ${rel}`); }
@@ -46,6 +52,8 @@ async function buildPage(name) {
     return `<script>\n${js.replaceAll('</script', '<\\/script')}\n</script>`;
   });
   for (const [from, to] of await Promise.all(jobs)) html = html.replace(from, () => to);
+  // Every page gets the mark as its tab icon, unless it brings its own.
+  if (!/rel=["']icon["']/.test(html)) html = html.replace('</head>', () => `<link rel="icon" href="${FAVICON}">\n</head>`);
   if (/@[A-Z]{3,}\b/.test(html.replace(/@(media|font-face|import|keyframes|supports|container)/g, ''))) fail(`${name}: placeholder left unreplaced`);
   await writeFile(join(DIST, name), html);
   return html.length;

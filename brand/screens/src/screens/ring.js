@@ -87,51 +87,15 @@
   }
 
   // ---------- wiring ----------
-  let panel;
-  const timer = HB.createTimer({
-    values: () => panel.values,
-    onChange: () => panel.setAction('go', timer.button()),
-    keepAwake: () => panel.keepAwake(),
-    badTime: () => document.querySelector('.controls input[type=time]')?.focus(),
-  });
-  const step = d => { if (timer.mode === 'idle' && panel.values.kind === 'minutes') panel.set('mins', clamp(panel.values.mins + d, 1, 180)); };
-
-  panel = HB.panel({
+  HB.countdownScreen({
     id: 'ring',
     title: 'Ring countdown settings',
     schema,
-    legacy: HB.timerLegacy,
-    linkKeys: v => HB.timerLinkKeys(v),
-    startable: true,
-    actions: [
-      { id: 'reset', label: 'Reset', onclick: () => timer.reset() },
-      { id: 'go', label: 'Start', primary: true, onclick: () => timer.start() },
-    ],
-    keyHelp: [['Space', 'start / pause'], ['R', 'reset']],
-    keys: { ' ': () => timer.start(), r: () => timer.reset(), arrowup: () => step(1), arrowdown: () => step(-1) },
-    enter: () => timer.start(),
-    onChange(key, v) {
-      if (key === 'kind') timer.reset();
-      else if (key === 'mins') timer.refresh();
-      else if (key === 'at') timer.retarget();
-      else if (key === 'label') label.textContent = v.label;
+    onChange(key, v) { if (key === 'label') label.textContent = v.label; },
+    ready(v) {
+      label.textContent = v.label;
+      HB.watchStage(stage, measure);
     },
+    render: f => render(f),
   });
-
-  label.textContent = panel.values.label;
-  HB.watchStage(stage, measure);
-  timer.reset();
-  if (panel.autostart) timer.start();
-
-  if (panel.demo) {
-    // Homepage preview: a 32 s loop that starts 22 s from zero, so it shows the drain, the refill and the landing.
-    // ?t=N skips ahead N seconds (used to capture the landed ring).
-    const DEMO = { COUNT: 22, LOOP: 32, SKIP: Number(new URLSearchParams(location.search).get('t')) || 0 };
-    HB.loop(s => {
-      const t = (s + DEMO.SKIP) % DEMO.LOOP;
-      render({ idle: false, t, COUNT: DEMO.COUNT, ...HB.tick(t, DEMO.COUNT) });
-    });
-  } else {
-    HB.loop(() => render(timer.frame()));
-  }
 })();
