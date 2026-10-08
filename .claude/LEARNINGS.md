@@ -630,3 +630,23 @@ uploads, and finish with `rclone check <src> <dst> --one-way --checksum`.
 - **They chose the full CRF master (579 MB) over the 377 MB re-encode.** Offer both sizes rather than assuming small. The source stream was only ~0.7 Mbps, so nothing bigger than the master adds quality.
 - **filter_song.py misfired on a slow-spoken story.** All 9 "song" lines were speech (a golf anecdote and the Greek exegesis). Read them before batching.
 - **Names stay in Latin script** (John Mark Comer, Moody Bible Commentary). The user asked for this explicitly after seeing 約翰·馬克·科默.
+
+## Logo motion + media kit (2026-10-04)
+
+- **Render motion graphics as a pure function of time.** `brand/logo-motion` drives SVG via `frame(scene, state, t)` and captures each frame with puppeteer-core (system Chrome) piped to ffmpeg. The same code plays live in `brand/report.html`, so preview and MP4 never drift. 96 MP4s (16 anims × 3 aspects × 2 backgrounds) render in ~8 min and weigh ~100 KB each.
+- **Review motion with contact sheets, not videos.** `npm run motion -- --sheet` tiles 12 frames per animation into one PNG; `--at <t>` gives one full-size still. This caught a clip that moved with its content, a 0.5-unit sliver leaking from a mask, and a zoom that sat on a white frame too long.
+- **SVG ids are document-global.** Several live stages on one page all resolved `url(#clip)` to the first stage's clip. Prefix ids per scene (`scene.uid()`).
+- **Clip in the parent's space when the content moves.** A `clip-path` on a transformed group moves with the group, so put the clip on a wrapper.
+- **Hand-copying SVG path data corrupts it** (stray zeros got inserted: `13.630-14.2`). Generate constants from the source file with a script.
+
+### Merch mockups (brand/mockups)
+- Don't ask an image model to draw the logo: Gemini (agy) and Canva both redraw the letters. Generate blank products with AI, then warp the real SVG on with a canvas triangle mesh (homography quad or cylinder) and shade it by the photo's luminance.
+- White ink on dark fabric: use only ~18% of the photo's luminance variation, or the weave turns the print speckled. Dark ink on light surfaces can take the full variation.
+- Mesh triangles leave hairline seams on large solid fills; grow each triangle ~1.2px radially and draw the mesh twice.
+- NanoGPT images: call `POST /v1/images/generations` directly with `qwen-image` (subscription-covered). The NanoGPT MCP image tool refuses ("subscription-only billing").
+- agy headless needs `--sandbox --dangerously-skip-permissions` to save an image; run it in a scratch dir. Canva's generate-image via MCP returns only a 200px preview.
+
+### Countdown animations (brand/logo-motion/src/anims-v3.js)
+- Draw clock digits in fixed-width cells (one <text> per character), not one text run: no reliance on the font's tabular figures, and each digit can animate its own tick.
+- Count with n = ceil(COUNT - t) and phase = n - (COUNT - t); phase is the time since the display changed, which drives the tick animation and the once-a-second beat.
+- A 5-minute countdown is ~9,150 frames per variant (about 6 minutes to render), so countdowns set `aspects: ['16x9']` and render.mjs respects it unless --aspects is passed. Check them with `--at` stills at the start, the last ten seconds and the landing, not contact sheets.

@@ -1,0 +1,33 @@
+/* Heartbeat media kit: shared tokens for every sample template. */
+@font-face { font-family: 'Inter Tight'; font-weight: 500; font-display: block; src: url(../../logo-motion/src/fonts/InterTight-500.woff2) format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-weight: 700; font-display: block; src: url(../../logo-motion/src/fonts/InterTight-700.woff2) format('woff2'); }
+
+:root {
+  --ink: #000000;      /* logo black */
+  --paper: #ffffff;    /* logo white */
+  --bone: #f2efea;     /* warm off-white for large light surfaces */
+  --graphite: #1c1c1c; /* raised surfaces on black */
+  --stone: #8a8782;    /* secondary text, rules */
+  --u: 8px;            /* spacing unit */
+  font-family: 'Inter Tight', system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow: hidden; }
+body { position: relative; }
+.dark { background: var(--ink); color: var(--paper); }
+.light { background: var(--paper); color: var(--ink); }
+.bone { background: var(--bone); color: var(--ink); }
+.clear { background: transparent; color: var(--paper); }
+
+.display { font-weight: 700; letter-spacing: -0.035em; line-height: 0.95; }
+.head { font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
+.body { font-weight: 500; letter-spacing: -0.005em; line-height: 1.3; }
+.label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
+.muted { color: var(--stone); }
+.abs { position: absolute; }
+img.logo { display: block; }
+
+/* The echo: outlined copies of the mark, the static form of the Pulse animation. */
+.echo { position: absolute; pointer-events: none; }

@@ -1,0 +1,15 @@
+[
+  { "id": "tee-black", "base": "raw/tee-black.jpg", "logo": "lockup", "ink": "white", "quad": [[372, 300], [652, 300], [652, 423], [372, 423]] },
+  { "id": "tee-white-worn", "base": "raw/tee-white-worn.jpg", "logo": "lockup", "ink": "black", "quad": [[410, 552], [670, 552], [668, 666], [412, 666]], "crop": [180, 330, 694, 694] },
+  { "id": "hoodie-black", "base": "raw/hoodie-black.jpg", "logo": "lockup", "ink": "white", "quad": [[397, 512], [627, 512], [627, 613], [397, 613]] },
+  { "id": "mug-white", "base": "raw/mug-white.jpg", "logo": "mark", "ink": "black", "cylinder": { "cx": 518, "r": 162, "top": 470, "bottom": 680, "arc": 1.16, "sag": -18 } },
+  { "id": "mug-black", "base": "raw/mug-black.jpg", "logo": "mark", "ink": "white", "cylinder": { "cx": 478, "r": 210, "top": 400, "bottom": 640, "arc": 1.0, "sag": -25 } },
+  { "id": "cup-takeaway", "base": "raw/cup-takeaway.jpg", "logo": "mark", "ink": "black", "cylinder": { "cx": 507, "r": 138, "r2": 120, "top": 470, "bottom": 640, "arc": 1.1, "sag": -10 } },
+  { "id": "notebook-black", "base": "raw/notebook-black.jpg", "logo": "mark", "ink": "white", "opacity": 0.82, "quad": [[461, 357], [577, 393], [501, 515], [385, 479]] },
+  { "id": "tote-natural", "base": "raw/tote-natural.jpg", "logo": "lockup", "ink": "black", "quad": [[370, 600], [670, 600], [670, 732], [370, 732]] },
+  { "id": "tote-black", "base": "raw/tote-black.jpg", "logo": "lockup", "ink": "white", "quad": [[358, 560], [678, 560], [678, 701], [358, 701]] },
+  { "id": "cap-black", "base": "raw/cap-black.jpg", "logo": "mark", "ink": "white", "opacity": 0.9, "quad": [[418, 420], [494, 417], [494, 508], [420, 512]] },
+  { "id": "bottle-white", "base": "raw/bottle-white.jpg", "logo": "mark", "ink": "black", "cylinder": { "cx": 497, "r": 112, "top": 470, "bottom": 620, "arc": 1.2, "sag": -8 } },
+  { "id": "badge-lanyard", "base": "raw/badge-lanyard.jpg", "logo": "lockup", "ink": "black", "quad": [[366, 515], [621, 621], [549, 719], [294, 613]] },
+  { "id": "banner-foyer", "base": "raw/banner-foyer.jpg", "art": "media-kit/samples/banner-art.png", "ink": "white", "quad": [[356, 196], [652, 196], [652, 886], [356, 886]] }
+]
