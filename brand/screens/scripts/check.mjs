@@ -15,6 +15,8 @@ const SIZES = [[1920, 1080], [1024, 768], [390, 844], [844, 390], [1080, 1920]];
 const THEMES = ['dark', 'light'];
 // Extra demo moments for the countdown: the big final count and the logo landed.
 const DEMO_TIMES = { countdown: [0, 15, 26], ring: [0, 21.5, 24, 28] };
+// Every loader style gets a demo screenshot too.
+const DEMO_QUERY = { loading: ['style=hop', 'style=fill', 'style=bar'] };
 
 const only = process.argv.slice(2);
 const pages = (await readdir(DIST)).filter(f => f.endsWith('.html')).map(f => f.replace(/\.html$/, '')).filter(p => !only.length || only.includes(p));
@@ -48,7 +50,8 @@ async function visit(name, [w, h], theme, state) {
   page.on('console', m => { if (m.type() === 'error') problems.push(`${label}: console ${m.text()}`); });
   await page.setViewport({ width: w, height: h });
   const q = new URLSearchParams({ theme });
-  if (state.startsWith('demo')) { q.set('demo', ''); const t = state.split('-')[1]; if (t) q.set('t', t); }
+  if (state.startsWith('demoq-')) { q.set('demo', ''); for (const [k, v] of new URLSearchParams(state.slice(6))) q.set(k, v); }
+  else if (state.startsWith('demo')) { q.set('demo', ''); const t = state.split('-')[1]; if (t) q.set('t', t); }
   await page.goto(`${pathToFileURL(join(DIST, name + '.html'))}?${q}`);
   await page.evaluate(() => document.fonts.ready);
   await new Promise(r => setTimeout(r, 900));
@@ -68,6 +71,7 @@ async function visit(name, [w, h], theme, state) {
 
 for (const name of pages) {
   const times = (DEMO_TIMES[name] || [0]).map(t => (t ? `demo-${t}` : 'demo'));
+  times.push(...(DEMO_QUERY[name] || []).map(qs => `demoq-${qs}`));
   for (const size of SIZES) for (const theme of THEMES) for (const state of ['open', 'min', ...times]) await visit(name, size, theme, state);
 }
 await browser.close();

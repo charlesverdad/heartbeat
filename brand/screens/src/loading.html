@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heartbeat Loading</title>
+<link rel="stylesheet" href="shared/brand.css">
+<style>
+/* The stage centres one thing: the mark in a chosen motion, with a caption below. */
+.stage { display: flex; align-items: center; justify-content: center; }
+.center { display: flex; flex-direction: column; align-items: center; gap: 5cqh; }
+.logo { display: flex; flex-direction: column; align-items: center; }
+
+/* Mark-only styles (blink, hop, fill): the mark alone, centred, no wordmark. The class sits on the svg. */
+.mark-only { display: block; height: min(22cqh, 30cqw); width: auto; overflow: visible; color: var(--fg); }
+
+/* Fill: outline copy faint and static, solid copy clipped by script and overlaid. */
+.mark-outline { color: var(--fg); }
+.mark-outline .mark path, .mark-outline .mark polygon { stroke: currentColor; stroke-width: 1.1; fill: none; stroke-opacity: .4; }
+.mark-fill { position: absolute; top: 0; left: 0; height: min(22cqh, 30cqw); }
+.mark-fill .mark path, .mark-fill .mark polygon { fill: var(--fg); }
+
+/* Bar style: the full lockup with a thin track line under it and a sweeping segment. */
+.bar-wrap { display: flex; flex-direction: column; align-items: stretch; width: fit-content; }
+.bar-wrap svg { display: block; height: min(16cqh, 24cqw); width: auto; overflow: visible; color: var(--fg); }
+.track { position: relative; width: 100%; height: max(2px, .3cqh); background: var(--track); margin-top: 1.4cqh; overflow: hidden; }
+.track .seg { position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background: var(--fg); }
+
+
+/* Caption: uppercase, tracked, muted, with three dots that light in turn. */
+.caption { display: flex; align-items: baseline; gap: .35em; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; color: var(--muted); font-size: min(2.6cqh, 4cqw); }
+.caption .dots { display: inline-flex; gap: .15em; }
+.caption .dots i { display: inline-block; width: .16em; height: .16em; border-radius: 50%; background: currentColor; will-change: opacity; }
+</style>
+</head>
+<body>
+<main class="stage" id="stage" aria-live="off">
+  <div class="center">
+    <div class="logo" id="logo"></div>
+    <div class="caption" id="caption"><span id="capText"></span><span class="dots" id="dots"><i></i><i></i><i></i></span></div>
+  </div>
+</main>
+<script src="shared/core.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/settings.js"></script>
+<script src="shared/stage.js"></script>
+<script src="shared/panel.js"></script>
+<script src="screens/loading.js"></script>
+</body>
+</html>
