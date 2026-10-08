@@ -43,7 +43,7 @@ saved in the browser < link params.
 | Ring | `kind`, `min`, `at` (as the countdown), `label` (default "Service begins in") |
 | Starting soon | `h` (heading), `show` (show start time), `at` (HH:MM), `m` (message lines) |
 | Be right back | `h` (heading), `timer` (show back-in clock), `min` (minutes) |
-| Loading | TODO: params for `loading.html` (not documented yet; read `src/screens/loading.js`) |
+| Loading | `style` (`blink`, `hop`, `fill`, `bar`), `caption` (default "Loading"), `cap` (`0` hides the caption) |
 
 ## Deploy (Cloudflare Pages)
 
