@@ -69,6 +69,7 @@ body.idle-ui { cursor: none; }
 .controls .keys { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 .controls kbd { font: inherit; font-weight: 700; color: var(--fg); }
 .controls .push { margin-left: auto; }
+.toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(520px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); font-size: 16px; line-height: 1.4; text-align: center; z-index: 6; }
 .controls .field { display: flex; align-items: center; gap: 6px; }
 .controls .unit { color: var(--muted); }
 .controls .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -130,6 +131,8 @@ body.idle-ui { cursor: none; }
   </div>
   <div class="keys"><kbd>Space</kbd> start / pause · <kbd>R</kbd> reset · <kbd>↑</kbd><kbd>↓</kbd> minutes · <kbd>F</kbd> full screen · <kbd>L</kbd> light / dark</div>
 </div>
+
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 // Messages take turns in the middle every 12 seconds. Each is a list of lines; long lines shrink to fit.
@@ -366,13 +369,33 @@ async function keepAwake() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.mode !== 'idle') keepAwake(); });
 
+// Full screen takes the whole display, hiding Chrome's tabs and toolbar. Browsers can refuse
+// (an embedding frame without permission, a window without focus); then say how to do it by hand.
+const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const FS_KEYS = MAC ? '⌃⌘F' : 'F11';
 function toggleFullscreen() {
   const d = document;
   try {
-    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
-    else { const e = d.documentElement; const p = (e.requestFullscreen || e.webkitRequestFullscreen)?.call(e); p?.catch?.(() => {}); }
-  } catch {}
+    if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    const e = d.documentElement;
+    const req = e.requestFullscreen || e.webkitRequestFullscreen;
+    if (!req || d.fullscreenEnabled === false) return fsRefused();
+    const p = req.call(e, { navigationUI: 'hide' });
+    p?.catch?.(fsRefused);
+  } catch { fsRefused(); }
 }
+function fsRefused() { toast(`Chrome didn’t allow full screen here. Press ${FS_KEYS} to make the window full screen.`); }
+let toastTimer;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
+}
+document.addEventListener('fullscreenchange', () => {
+  $('fs').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+});
 function setLook(look) {
   document.body.dataset.look = look;
   $('look').textContent = look === 'light' ? 'Dark' : 'Light';
