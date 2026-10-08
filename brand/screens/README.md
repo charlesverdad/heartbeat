@@ -47,10 +47,11 @@ saved in the browser < link params.
 
 ## Deploy (Cloudflare Pages)
 
-Root directory `brand/screens`, build command `npm run build`, output directory `dist`. The build needs only
-Node 18 or newer (it uses `node:fs/promises`, no packages), so no install step is required; set the
-`NODE_VERSION` environment variable to `20` if Pages picks an old default. `dist/_headers` sets the security
-and cache headers.
+Live at https://screens.heartbeatchurch.com.au. The hosting (Pages project `screens`, custom domain,
+DNS) is Terraform in `terraform/screens` (see its README). Deploys are GitHub Actions
+(`.github/workflows/screens.yml`): every push to `main` that touches `brand/screens/` runs `npm test`
+and `npm run build`, then uploads `dist/` with `wrangler pages deploy`; pull requests get a preview URL.
+The build needs only Node 18+ and no `npm install`. `dist/_headers` sets the security and cache headers.
 
 ## Commands
 
@@ -62,9 +63,6 @@ and cache headers.
 
 `check` fails on any page/console error or sideways overflow, and expects Chrome at
 `/Applications/Google Chrome.app` (or `CHROME=...`). Look at `out/*.png` yourself too.
-
-Cloudflare Pages: build command `npm run build`, output directory `dist`, root `brand/screens`.
-`dist/_headers` sets the security and cache headers.
 
 ## Layout
 
