@@ -18,7 +18,8 @@ const DEMO_TIMES = { countdown: [0, 15, 26] };
 
 const only = process.argv.slice(2);
 const pages = (await readdir(DIST)).filter(f => f.endsWith('.html')).map(f => f.replace(/\.html$/, '')).filter(p => !only.length || only.includes(p));
-await rm(OUT, { recursive: true, force: true });
+// A full run starts from a clean out/; a run for named pages leaves other pages' screenshots alone.
+if (!only.length) await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
 const browser = await puppeteer.launch({ executablePath: CHROME, args: ['--no-sandbox'] });
