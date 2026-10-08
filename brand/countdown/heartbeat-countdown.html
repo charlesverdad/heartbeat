@@ -35,6 +35,11 @@ body.idle-ui { cursor: none; }
 .label { font-size: .34em; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .clock { display: flex; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .clock span { display: inline-block; }
+/* Bar on top (wide screens): the label hangs from the top of the digits instead of sitting on their baseline.
+   With line-height 1, Inter Tight's digits start 0.137em below the box top and capitals 0.128em, so at
+   0.34 of the size the label drops 0.277 of its own em to line up. */
+.stage:not(.bar-bottom):not(.portrait) .time { align-items: flex-start; }
+.stage:not(.bar-bottom):not(.portrait) .label { line-height: 1; margin-top: .277em; }
 
 /* "Bar: bottom" in the settings puts the logo and timer along the bottom instead, line above them. */
 .stage.bar-bottom { --row-y: 89%; --rule-y: 80.5%; --msg-y: 43%; }
