@@ -1,14 +1,56 @@
 # Heartbeat Screens
 
 Full-screen screens for the projector and the livestream, as a static site (Cloudflare Pages). Each page
-is one self-contained file once built: it works offline from a USB stick. No frameworks.
+is one self-contained file once built, so it works offline from a USB stick. No frameworks.
 
-Open a screen, set it up in the panel, press F for full screen. H (or Minimise) hides the panel; click
-anywhere to bring it back. Copy link saves your setup as a URL (add `?autostart` to start on open and
-open minimised). `?demo` runs a self-looping preview with no panel (used for homepage thumbnails).
+## The screens
 
-Currently: `countdown` (welcome countdown, Timer or Until a time). Links from the old single-file
-countdown (`?min`, `?at`, `?bar`, `?theme`, `?big=0`, `?m=A|B`, `?autostart`) keep working.
+| Page | Screen | For | What it does |
+|---|---|---|---|
+| `countdown.html` | Welcome countdown (the hero) | Projector | Messages take turns, the timer counts down, the logo lands at zero. Count minutes or to a start time. |
+| `ring.html` | Ring countdown | Projector | A quieter countdown: the mark inside a ring that empties as time runs out. |
+| `starting-soon.html` | Starting soon | Livestream | Before going live when there is no exact time; can show "We go live at 11:00". |
+| `be-right-back.html` | Be right back | Livestream | A break or technical hold, with an optional back-in timer. |
+| `loading.html` | Loading | Any | While a feed, slide or stream comes up; four loader styles. |
+
+`index.html` is the homepage: live thumbnails (`<page>.html?demo` in an iframe), how to use, keyboard.
+
+## How to use
+
+1. Open a screen and set it up in the panel. Press Start if it counts down.
+2. Press F for full screen (F11 on Windows).
+3. Minimise (H) hides the panel; click anywhere to bring it back.
+4. Copy link saves your setup as a URL: bookmark it, or use it as a ProPresenter web view or OBS browser source.
+   Add `?autostart` to start on open with the panel hidden.
+5. "Download for offline" on the homepage (or save the page) gives a single file that needs no internet.
+
+`?demo` runs a self-looping preview with no panel, storage or keys (used for homepage thumbnails).
+
+## Keyboard
+
+Space start / pause (timer screens) - R reset - F full screen (or double-click) - H hide / show panel -
+Esc hide panel - L light / dark - Up / Down add or take off a minute (welcome countdown).
+
+## Links and parameters
+
+Only values that differ from the defaults appear in a copied link. Booleans are `1` / `0`. Every screen
+takes `theme` (`dark` | `light`), `demo`, and `autostart` where it has Start. Merge order: defaults <
+saved in the browser < link params.
+
+| Screen | Params |
+|---|---|
+| Countdown | `kind` (`minutes` / `until`), `min`, `at` (HH:MM), `bar` (`top` / `bottom`), `big` (last 10 s), `m` (messages: lines joined by `|`, one `m=` per message). Old links `?min`, `?at`, `?bar`, `?theme`, `?big=0`, `?m=A|B`, `?autostart` still work. |
+| Ring | `kind`, `min`, `at` (as the countdown), `label` (default "Service begins in") |
+| Starting soon | `h` (heading), `show` (show start time), `at` (HH:MM), `m` (message lines) |
+| Be right back | `h` (heading), `timer` (show back-in clock), `min` (minutes) |
+| Loading | TODO: params for `loading.html` (not documented yet; read `src/screens/loading.js`) |
+
+## Deploy (Cloudflare Pages)
+
+Root directory `brand/screens`, build command `npm run build`, output directory `dist`. The build needs only
+Node 18 or newer (it uses `node:fs/promises`, no packages), so no install step is required; set the
+`NODE_VERSION` environment variable to `20` if Pages picks an old default. `dist/_headers` sets the security
+and cache headers.
 
 ## Commands
 
@@ -32,6 +74,12 @@ Cloudflare Pages: build command `npm run build`, output directory `dist`, root `
     scripts/gen-logo.mjs     regenerates logo.js from brand/assets/heartbeat-lockup-white.svg
     build.mjs                inlines local <link rel=stylesheet href> and <script src>, fonts as data URIs
 
+## Architecture
+
+No framework and no bundler. `build.mjs` inlines each page's stylesheet, scripts and fonts so a page is one
+file. Pages share `src/shared/` (tokens, panel, timer, logo) and put only screen behaviour in `src/screens/`.
+`index.html` is the exception: it has its own look (the motion kit report's) and loads only `shared/fonts.css`.
+
 Shared scripts are classic scripts that attach to `globalThis.HB` (so they inline into a page and load
 in node tests). Page script order: core, logo, settings, stage, panel, (timer), then the screen.
 
@@ -53,7 +101,7 @@ in node tests). Page script order: core, logo, settings, stage, panel, (timer), 
         HB.watchStage(stage, ({ W, H, portrait }) => { /* measure */ });
         HB.loop(t => draw(t, panel.values));
 
-3. Add the link to `src/index.html` (the homepage), and `check` picks the page up automatically.
+3. Add a card to `src/index.html` (copy one: thumbnail iframe, name, kind chip, blurb, Open / Download), a row in the README tables, and `check` picks the page up automatically.
 4. Run `npm run build && npm run check`, then open the PNGs in `out/`.
 
 ### Schema fields
