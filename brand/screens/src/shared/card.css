@@ -1,0 +1,18 @@
+/* The "card" layout for the livestream holding screens: lockup, heading with three dots, small lines. */
+.card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 7cqw; box-sizing: border-box; }
+.card-logo { color: var(--fg); width: min(22cqw, 36cqh * 2.267); aspect-ratio: 252.2 / 111.27; margin-bottom: 7cqh; flex: none; }
+.card-logo svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.card-h { margin: 0; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; font-size: min(9cqh, 6cqw); text-wrap: balance; max-width: 88cqw; }
+/* Last word and dots never separate, so the dots can't wrap onto a line of their own. */
+.card-h .tail { white-space: nowrap; }
+.dots { display: inline-block; white-space: nowrap; margin-left: .13em; }
+.dots i { display: inline-block; width: .14em; height: .14em; border-radius: 50%; background: currentColor; opacity: .2; margin: 0 .065em; }
+.card-sub { margin-top: 3.4cqh; font-weight: 500; font-size: max(2.4cqh, 14px); line-height: 1.3; color: var(--muted); letter-spacing: 0; }
+.card-sub + .card-sub { margin-top: 1.6cqh; }
+/* Rotating messages share one grid cell, so the group never jumps when they swap. */
+.card-msgs { display: grid; }
+.card-msgs > div { grid-area: 1 / 1; opacity: 0; }
+.card-msgs span { display: block; }
+.stage.portrait .card-logo { width: 46cqw; margin-bottom: 6cqh; }
+.stage.portrait .card-h { font-size: min(11cqw, 6.5cqh); max-width: 86cqw; }
+.stage.portrait .card-sub { font-size: max(2cqh, 3.6cqw); }
