@@ -33,7 +33,8 @@
       else if (k.startsWith('on')) e[k] = v;
       else e.setAttribute(k, v === true ? '' : v);
     }
-    kids.flat().forEach(c => e.append(c));
+    // Skip empty children so `cond && h(...)` can be passed straight in.
+    kids.flat().forEach(c => { if (c != null && c !== false && c !== '') e.append(c); });
     return e;
   };
   const toText = list => list.map(m => m.join('\n')).join('\n\n');

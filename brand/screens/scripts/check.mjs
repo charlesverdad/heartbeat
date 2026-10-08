@@ -14,7 +14,7 @@ const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/M
 const SIZES = [[1920, 1080], [1024, 768], [390, 844], [844, 390], [1080, 1920]];
 const THEMES = ['dark', 'light'];
 // Extra demo moments for the countdown: the big final count and the logo landed.
-const DEMO_TIMES = { countdown: [0, 15, 26] };
+const DEMO_TIMES = { countdown: [0, 15, 26], ring: [0, 21.5, 24, 28] };
 
 const only = process.argv.slice(2);
 const pages = (await readdir(DIST)).filter(f => f.endsWith('.html')).map(f => f.replace(/\.html$/, '')).filter(p => !only.length || only.includes(p));

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heartbeat Ring Countdown</title>
+<link rel="stylesheet" href="shared/brand.css">
+<style>
+/* The ring and mark are one SVG drawn in stage pixels (script sizes it on resize); label and clock are
+   plain text hung under the ring. --ring-r and --ring-cy are set by script. */
+.art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; color: var(--fg); }
+.under { position: absolute; left: 0; right: 0; top: calc(var(--ring-cy, 42cqh) + var(--ring-r, 22cqh) + var(--ls, 2.6cqh) * 1.8); display: flex; flex-direction: column; align-items: center; gap: calc(var(--ls, 2.6cqh) * .7); text-align: center; }
+.label { font-size: var(--ls, 2.6cqh); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: .14em; }
+.clock { display: flex; font-size: var(--cs, 10cqh); font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.clock span { display: inline-block; }
+</style>
+</head>
+<body>
+<main class="stage" id="stage" aria-live="off">
+  <svg class="art" id="art" role="img" aria-label="Heartbeat Church"></svg>
+  <div class="under" id="under">
+    <span class="label" id="label">Service begins in</span>
+    <span class="clock" id="clock" role="timer"></span>
+  </div>
+</main>
+<script src="shared/core.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/settings.js"></script>
+<script src="shared/stage.js"></script>
+<script src="shared/panel.js"></script>
+<script src="shared/timer.js"></script>
+<script src="screens/ring.js"></script>
+</body>
+</html>
