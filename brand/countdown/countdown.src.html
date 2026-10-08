@@ -10,6 +10,7 @@
 /* One look per theme; the toggle sets data-look on <body> so a host page's own theme can't reach it. */
 :root { --bg: #000; --fg: #fff; --muted: rgba(255,255,255,.55); --track: rgba(255,255,255,.18); --panel: rgba(28,28,28,.92); --line: rgba(255,255,255,.16); color-scheme: dark; }
 body[data-look="light"] { --bg: #fff; --fg: #000; --muted: rgba(0,0,0,.55); --track: rgba(0,0,0,.16); --panel: rgba(244,244,244,.94); --line: rgba(0,0,0,.14); color-scheme: light; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--fg); overflow: hidden; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 body.idle-ui { cursor: none; }
@@ -17,11 +18,11 @@ body.idle-ui { cursor: none; }
 /* The stage fills the screen; everything inside is sized off it (cqw/cqh), so any window or projector works. */
 .stage { position: fixed; inset: 0; container-type: size; overflow: hidden; background: var(--bg); }
 
-/* Landscape positions, as a share of screen height. The footer row (logo + timer) sits well clear of the bottom edge. */
-.stage { --msg-y: 38%; --rule-y: 68%; --row-y: 77%; --mx: 7cqw; }
+/* Positions as a share of screen height: the logo and timer run along the top, the line under them,
+   and the messages fill the space below. */
+.stage { --row-y: 11%; --rule-y: 19.5%; --msg-y: 57%; --mx: 7cqw; }
 .msg { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; font-size: min(10cqh, 6.6cqw); opacity: 0; will-change: transform, opacity; }
-.msg div { white-space: nowrap; }
-.msg .port { display: none; }
+.msg span { display: inline-block; white-space: nowrap; }
 .big { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-size: min(42cqh, 34cqw); font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(-50%); }
 
 .rule { position: absolute; left: var(--mx); right: var(--mx); top: var(--rule-y); height: max(2px, .3cqh); background: var(--track); }
@@ -34,25 +35,30 @@ body.idle-ui { cursor: none; }
 .clock { display: flex; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .clock span { display: inline-block; }
 
-/* Portrait: stack the label, timer and logo under the line. */
-.stage.portrait { --msg-y: 34%; --rule-y: 62%; --mx: 10cqw; }
+/* "Bar: bottom" in the settings puts the logo and timer along the bottom instead, line above them. */
+.stage.bar-bottom { --row-y: 89%; --rule-y: 80.5%; --msg-y: 43%; }
+
+/* Portrait: same top row, with the label stacked over the timer; long lines may wrap. */
+.stage.portrait { --row-y: 8%; --rule-y: 14%; --msg-y: 52%; --mx: 8cqw; }
+.stage.portrait.bar-bottom { --row-y: 92%; --rule-y: 85.5%; --msg-y: 46%; }
 .portrait .msg { font-size: min(11cqw, 6.5cqh); }
-.portrait .msg .land { display: none; }
-.portrait .msg .port { display: block; }
+.portrait .msg span { white-space: normal; text-wrap: balance; max-width: 84cqw; }
 .portrait .big { font-size: min(50cqw, 30cqh); }
-.portrait .row { top: calc(var(--rule-y) + 5cqw); transform: none; flex-direction: column; justify-content: flex-start; gap: 5cqw; }
-.portrait .time { flex-direction: column; align-items: center; gap: 2.5cqw; font-size: 11cqw; }
+.portrait .time { flex-direction: column; align-items: flex-end; gap: 1.5cqw; font-size: 9cqw; }
 .portrait .label { font-size: .3em; }
-.portrait .slot { height: 9cqw; }
+.portrait .slot { height: 8cqw; }
 
 /* The real logo is positioned over its slot by script, so it can travel to the centre at zero. */
 .logo { position: absolute; left: 0; top: 0; color: var(--fg); transform-origin: 0 0; will-change: transform; }
 .logo svg { display: block; width: 100%; height: 100%; fill: currentColor; overflow: visible; }
 
 /* Operator controls: show on mouse movement or tap, hide after a few seconds. */
-.controls { position: fixed; left: 50%; top: max(16px, env(safe-area-inset-top)); transform: translateX(-50%); width: min(760px, calc(100vw - 32px)); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg); font-size: 14px; transition: opacity .35s, transform .35s; z-index: 5; backdrop-filter: blur(8px); }
-.controls.hide { opacity: 0; pointer-events: none; transform: translate(-50%, -8px); }
-.controls .group { display: flex; align-items: center; gap: 8px; }
+.controls { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg); font-size: 14px; transition: opacity .35s, transform .35s; z-index: 5; backdrop-filter: blur(8px); }
+.controls.hide { opacity: 0; pointer-events: none; transform: translate(-50%, 8px); }
+.controls .group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* The panel sits on the side away from the bar, so it never covers the timer. */
+.stage.bar-bottom ~ .controls { bottom: auto; top: max(16px, env(safe-area-inset-top)); }
+.stage.bar-bottom ~ .controls.hide { transform: translate(-50%, -8px); }
 .controls .sep { width: 1px; align-self: stretch; background: var(--line); }
 .controls label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .controls input { font: inherit; font-variant-numeric: tabular-nums; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
@@ -63,6 +69,18 @@ body.idle-ui { cursor: none; }
 .controls .keys { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 .controls kbd { font: inherit; font-weight: 700; color: var(--fg); }
 .controls .push { margin-left: auto; }
+.controls .field { display: flex; align-items: center; gap: 6px; }
+.controls .unit { color: var(--muted); }
+.controls .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.controls .seg button { border: 0; border-radius: 0; padding: 6px 12px; }
+.controls .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.controls button:disabled { opacity: .4; cursor: default; }
+.editor { flex-basis: 100%; display: grid; gap: 8px; }
+.editor textarea { font: inherit; font-size: 15px; line-height: 1.4; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 12em; max-height: 45vh; resize: vertical; box-sizing: border-box; width: 100%; }
+.editor input[readonly] { width: 100%; box-sizing: border-box; font-size: 13px; }
+.controls label.check { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--fg); }
+.editor p { margin: 0; color: var(--muted); font-size: 12px; }
+.editor .group { justify-content: flex-end; }
 @media (max-width: 560px) { .controls .sep { display: none; } .controls .push { margin-left: 0; } .controls .keys { display: none; } }
 </style>
 </head>
@@ -80,33 +98,49 @@ body.idle-ui { cursor: none; }
 
 <div class="controls" id="controls">
   <div class="group">
-    <label for="mins">Minutes</label>
-    <input id="mins" type="number" min="1" max="180" step="1" value="5">
+    <div class="seg" role="group" aria-label="Count down">
+      <button data-mode="minutes" aria-pressed="true">Timer</button><button data-mode="until" aria-pressed="false">Until</button>
+    </div>
+    <span class="field" id="f-min"><input id="mins" type="number" min="1" max="180" step="1" value="5" aria-label="Minutes"><span class="unit">min</span></span>
+    <span class="field" id="f-at" hidden><input id="at" type="time" value="11:00" aria-label="Service start time"></span>
     <button class="primary" id="go">Start</button>
     <button id="reset">Reset</button>
   </div>
-  <span class="sep"></span>
-  <div class="group">
-    <label for="at">Or until</label>
-    <input id="at" type="time">
-    <button id="atgo">Set</button>
-  </div>
   <div class="group push">
+    <label>Bar</label>
+    <div class="seg" role="group" aria-label="Logo and timer position">
+      <button data-bar="top" aria-pressed="true">Top</button><button data-bar="bottom" aria-pressed="false">Bottom</button>
+    </div>
+    <button id="edit" aria-expanded="false">Messages</button>
     <button id="look">Light</button>
     <button id="fs">Full screen</button>
+    <button id="share" aria-expanded="false">Copy link</button>
+  </div>
+  <div class="editor" id="sharebox" hidden>
+    <label for="sharelink">Link with these settings</label>
+    <input id="sharelink" readonly>
+    <p>Opening this link sets the timer, bar, theme and messages. Bookmark it, or point ProPresenter's web view at it.</p>
+    <div class="group"><label class="check"><input type="checkbox" id="shareauto" checked> Start on open</label><button class="primary" id="sharecopy">Copy</button></div>
+  </div>
+  <div class="editor" id="editor" hidden>
+    <label for="msgtext">Messages</label>
+    <textarea id="msgtext" spellcheck="true"></textarea>
+    <p>Leave a blank line between messages. Each line break inside a message is kept on wide screens; tall screens may wrap long lines.</p>
+    <div class="group"><button id="msgdefault">Use defaults</button><button class="primary" id="msgsave">Save</button></div>
   </div>
   <div class="keys"><kbd>Space</kbd> start / pause · <kbd>R</kbd> reset · <kbd>↑</kbd><kbd>↓</kbd> minutes · <kbd>F</kbd> full screen · <kbd>L</kbd> light / dark</div>
 </div>
 
 <script>
-// Messages take turns in the middle every 12 seconds. `land` is the line breaks on a wide screen,
-// `port` on a tall one. Keep "Living Out The Gospel" on one line where it fits.
-const MESSAGES = [
-  { land: ['Welcome to', 'Heartbeat Church'], port: ['Welcome to', 'Heartbeat', 'Church'] },
-  { land: ['Living Out The Gospel', 'Together Wholeheartedly'], port: ['Living Out', 'The Gospel', 'Together', 'Wholeheartedly'] },
-  { land: ['Grab a coffee', 'and find a seat'], port: ['Grab a coffee', 'and find', 'a seat'] },
-  { land: ['We’re glad', 'you’re here'], port: ['We’re glad', 'you’re here'] },
+// Messages take turns in the middle every 12 seconds. Each is a list of lines; long lines shrink to fit.
+// These are the defaults: the Messages button edits them, and edits are remembered in this browser.
+const DEFAULT_MESSAGES = [
+  ['Welcome to', 'Heartbeat Church'],
+  ['Living Out The Gospel', 'Together Wholeheartedly'],
+  ['Grab a coffee', 'and find a seat'],
+  ['We’re glad', 'you’re here'],
 ];
+const STORE = 'heartbeat-countdown-messages';
 const SLOT = 12;   // seconds per message
 const FINALE = 10; // the last seconds count down big
 const LOGO_AR = 252.2 / 111.27;
@@ -128,20 +162,53 @@ function tick(t, COUNT) {
   const n = Math.ceil(R - 1e-6);
   return { n, phase: n - R, done: false };
 }
-const fmt = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+// M:SS, or H:MM:SS when counting to a time more than an hour away.
+const pad = v => String(v).padStart(2, '0');
+const fmt = n => (n >= 3600 ? `${Math.floor(n / 3600)}:${pad(Math.floor(n / 60) % 60)}:${pad(n % 60)}` : `${Math.floor(n / 60)}:${pad(n % 60)}`);
 
 // ---------- DOM ----------
 const $ = id => document.getElementById(id);
 const stage = $('stage'), clockEl = $('clock'), big = $('big'), fill = $('fill'), rule = $('rule'), row = $('row');
 const slotEl = $('slot'), logo = $('logo'), mark = logo.querySelector('.mark');
-const msgEls = MESSAGES.map(m => {
-  const d = document.createElement('div');
-  d.className = 'msg';
-  const lines = (arr, cls) => arr.map(l => `<div class="${cls}">${l}</div>`).join('');
-  d.innerHTML = lines(m.land, 'land') + lines(m.port, 'port');
-  $('msgs').appendChild(d);
-  return d;
-});
+let msgEls = [];
+function setMessages(list) {
+  $('msgs').innerHTML = '';
+  msgEls = list.map(lines => {
+    const d = document.createElement('div');
+    d.className = 'msg';
+    lines.forEach(l => {
+      const row = d.appendChild(document.createElement('div'));
+      row.appendChild(document.createElement('span')).textContent = l;
+    });
+    return $('msgs').appendChild(d);
+  });
+  if (geo) fitMessages();
+}
+// Text box format: messages separated by blank lines, one line per line.
+const toText = list => list.map(m => m.join('\n')).join('\n\n');
+const fromText = txt => txt.split(/\n\s*\n/).map(b => b.split('\n').map(l => l.trim()).filter(Boolean)).filter(m => m.length);
+function loadMessages() {
+  try { const v = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(v) && v.length) return v; } catch {}
+  return DEFAULT_MESSAGES;
+}
+function saveMessages(list) {
+  try { if (list === DEFAULT_MESSAGES) localStorage.removeItem(STORE); else localStorage.setItem(STORE, JSON.stringify(list)); } catch {}
+  setMessages(list);
+}
+// Shrink any message that is too wide or too tall for its space.
+function fitMessages() {
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const maxW = W * (stage.classList.contains('portrait') ? 0.84 : 0.86);
+  const maxH = H * 0.62;
+  msgEls.forEach(m => {
+    m.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(m).fontSize);
+    let k = 1;
+    m.querySelectorAll('span').forEach(sp => { k = Math.min(k, maxW / Math.max(sp.scrollWidth, sp.offsetWidth)); });
+    k = Math.min(k, maxH / m.offsetHeight);
+    if (k < 1) m.style.fontSize = `${base * k * 0.98}px`;
+  });
+}
 
 let cells = [];
 function setClock(n, phase) {
@@ -177,6 +244,7 @@ function measure() {
   };
   logo.style.width = `${r.width}px`;
   logo.style.height = `${r.height}px`;
+  fitMessages();
 }
 
 // Draw the screen for t seconds into a COUNT-second countdown.
@@ -225,20 +293,41 @@ function render(t, COUNT, idle) {
 }
 
 // ---------- state ----------
-// mode 'idle': waiting to start. 'run': counting (minutes, pausable). 'until': counting to a wall-clock time.
+// S.mode 'idle': waiting to start. 'run': a minutes timer (pausable). 'until': counting to a time of day.
 const S = { mode: 'idle', COUNT: 300, start: 0, pausedAt: 0, paused: 0 };
 const now = () => Date.now() / 1000;
 const elapsed = () => ((S.pausedAt || now()) - S.start - S.paused);
+// Settings chosen in the panel: kind 'minutes' or 'until', and where the bar sits.
+const SET = { kind: 'minutes', bar: 'top' };
+const SETTINGS = 'heartbeat-countdown-settings';
+function remember() {
+  try { localStorage.setItem(SETTINGS, JSON.stringify({ ...SET, look: document.body.dataset.look, mins: $('mins').value, at: $('at').value })); } catch {}
+}
 
 function setMinutes(m) {
   m = clamp(Math.round(Number(m) || 5), 1, 180);
   $('mins').value = m;
-  if (S.mode === 'idle') S.COUNT = m * 60;
+  if (S.mode === 'idle' && SET.kind === 'minutes') S.COUNT = m * 60;
+}
+// Seconds from now until a time of day like 11:00. A time already gone today means tomorrow.
+function secondsUntil(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
+  if (!m) return null;
+  const d = new Date();
+  d.setHours(+m[1], +m[2], 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d.getTime() / 1000 - now();
 }
 function start() {
   if (S.mode === 'idle') {
-    setMinutes($('mins').value);
-    Object.assign(S, { mode: 'run', start: now(), pausedAt: 0, paused: 0 });
+    if (SET.kind === 'until') {
+      const left = secondsUntil($('at').value);
+      if (left == null) { $('at').focus(); return; }
+      Object.assign(S, { mode: 'until', start: now(), COUNT: left, pausedAt: 0, paused: 0 });
+    } else {
+      setMinutes($('mins').value);
+      Object.assign(S, { mode: 'run', start: now(), pausedAt: 0, paused: 0 });
+    }
     keepAwake();
   } else if (S.mode === 'run' && elapsed() < S.COUNT) {
     if (S.pausedAt) { S.paused += now() - S.pausedAt; S.pausedAt = 0; } else S.pausedAt = now();
@@ -250,21 +339,24 @@ function reset() {
   setMinutes($('mins').value);
   syncButtons();
 }
-// Count down to a time of day (e.g. 10:50). A time already gone today means tomorrow.
-function until(hhmm) {
-  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
-  if (!m) return;
-  const d = new Date();
-  d.setHours(+m[1], +m[2], 0, 0);
-  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-  const t0 = now();
-  Object.assign(S, { mode: 'until', start: t0, COUNT: d.getTime() / 1000 - t0, pausedAt: 0, paused: 0 });
-  keepAwake();
-  syncButtons();
+function setKind(kind) {
+  SET.kind = kind === 'until' ? 'until' : 'minutes';
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === SET.kind));
+  $('f-min').hidden = SET.kind !== 'minutes';
+  $('f-at').hidden = SET.kind !== 'until';
+  reset();
+  remember();
+}
+function setBar(bar) {
+  SET.bar = bar === 'bottom' ? 'bottom' : 'top';
+  document.querySelectorAll('[data-bar]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bar === SET.bar));
+  stage.classList.toggle('bar-bottom', SET.bar === 'bottom');
+  measure();
+  remember();
 }
 function syncButtons() {
   const go = $('go');
-  go.textContent = S.mode === 'idle' ? 'Start' : S.pausedAt ? 'Resume' : 'Pause';
+  go.textContent = S.mode === 'idle' ? 'Start' : S.mode === 'until' ? 'Running' : S.pausedAt ? 'Resume' : 'Pause';
   go.disabled = S.mode === 'until';
 }
 
@@ -289,21 +381,61 @@ function setLook(look) {
 // ---------- controls ----------
 $('go').onclick = start;
 $('reset').onclick = reset;
-$('atgo').onclick = () => until($('at').value);
-$('at').addEventListener('keydown', e => { if (e.key === 'Enter') until($('at').value); });
-$('mins').addEventListener('input', e => setMinutes(e.target.value));
-$('look').onclick = () => setLook(document.body.dataset.look === 'light' ? 'dark' : 'light');
+document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => setKind(b.dataset.mode); });
+document.querySelectorAll('[data-bar]').forEach(b => { b.onclick = () => setBar(b.dataset.bar); });
+$('mins').addEventListener('input', e => { setMinutes(e.target.value); remember(); });
+$('mins').addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+$('at').addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+// Changing the time while counting to it re-aims the countdown.
+$('at').addEventListener('change', () => { remember(); if (S.mode === 'until') { S.mode = 'idle'; start(); } });
+$('look').onclick = () => { setLook(document.body.dataset.look === 'light' ? 'dark' : 'light'); remember(); };
 $('fs').onclick = toggleFullscreen;
+
+// ---------- export settings as a link ----------
+const currentMessages = () => msgEls.map(m => [...m.querySelectorAll('span')].map(s => s.textContent));
+function shareLink() {
+  const p = new URLSearchParams();
+  if (SET.kind === 'until') p.set('at', $('at').value); else p.set('min', $('mins').value);
+  p.set('bar', SET.bar);
+  p.set('theme', document.body.dataset.look);
+  const msgs = currentMessages();
+  if (JSON.stringify(msgs) !== JSON.stringify(DEFAULT_MESSAGES)) msgs.forEach(m => p.append('m', m.join('|')));
+  if ($('shareauto').checked) p.set('autostart', '');
+  return `${location.href.split(/[?#]/)[0]}?${p.toString().replace(/autostart=(&|$)/, 'autostart$1')}`;
+}
+function openShare(open) {
+  $('sharebox').hidden = !open;
+  $('share').setAttribute('aria-expanded', open);
+  if (open) { openEditor(false); $('sharelink').value = shareLink(); }
+  poke();
+}
+$('share').onclick = () => openShare($('sharebox').hidden);
+$('shareauto').onchange = () => { $('sharelink').value = shareLink(); };
+$('sharecopy').onclick = () => {
+  const link = $('sharelink').value = shareLink();
+  const done = ok => { $('sharecopy').textContent = ok ? 'Copied' : 'Select and copy'; setTimeout(() => { $('sharecopy').textContent = 'Copy'; }, 1800); };
+  try { navigator.clipboard.writeText(link).then(() => done(true), () => { $('sharelink').select(); done(false); }); }
+  catch { $('sharelink').select(); done(false); }
+};
+function openEditor(open) {
+  $('editor').hidden = !open;
+  $('edit').setAttribute('aria-expanded', open);
+  if (open) { $('sharebox').hidden = true; $('share').setAttribute('aria-expanded', false); $('msgtext').value = toText(msgEls.map(m => [...m.querySelectorAll('span')].map(s => s.textContent))); $('msgtext').focus(); }
+  poke();
+}
+$('edit').onclick = () => openEditor($('editor').hidden);
+$('msgsave').onclick = () => { const list = fromText($('msgtext').value); saveMessages(list.length ? list : DEFAULT_MESSAGES); openEditor(false); };
+$('msgdefault').onclick = () => { $('msgtext').value = toText(DEFAULT_MESSAGES); };
 stage.addEventListener('dblclick', toggleFullscreen);
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
+  if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.key !== 'Escape')) return;
   const k = e.key.toLowerCase();
   if (k === ' ') { e.preventDefault(); start(); }
   else if (k === 'r') reset();
   else if (k === 'f') toggleFullscreen();
   else if (k === 'l') $('look').click();
-  else if (e.key === 'ArrowUp' && S.mode === 'idle') setMinutes(+$('mins').value + 1);
-  else if (e.key === 'ArrowDown' && S.mode === 'idle') setMinutes(+$('mins').value - 1);
+  else if (e.key === 'ArrowUp' && S.mode === 'idle' && SET.kind === 'minutes') { setMinutes(+$('mins').value + 1); remember(); }
+  else if (e.key === 'ArrowDown' && S.mode === 'idle' && SET.kind === 'minutes') { setMinutes(+$('mins').value - 1); remember(); }
   else return;
   poke();
 });
@@ -315,25 +447,36 @@ function poke() {
   document.body.classList.remove('idle-ui');
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
-    if ($('controls').contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
+    if (!$('editor').hidden || !$('sharebox').hidden || ($('controls').contains(document.activeElement) && document.activeElement.tagName === 'INPUT')) return;
     $('controls').classList.add('hide');
     document.body.classList.add('idle-ui');
   }, 3000);
 }
 ['mousemove', 'pointerdown'].forEach(ev => document.addEventListener(ev, poke, { passive: true }));
 
-// ---------- start-up options: ?min=10, ?at=10:50, ?theme=light, ?autostart ----------
+// ---------- start-up: remembered settings, then link options ----------
+// Link options win over remembered ones: ?min=10 or ?at=11:00, &bar=bottom, &theme=light, &autostart,
+// and one &m=Line one|Line two per message. "Copy link" in the panel writes these for the current settings.
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(SETTINGS)) || {}; } catch {}
 const q = new URLSearchParams(location.search);
-setLook(q.get('theme') === 'light' ? 'light' : 'dark');
-if (q.get('min')) setMinutes(q.get('min'));
-if (q.get('at')) { $('at').value = q.get('at'); until(q.get('at')); }
-else if (q.has('autostart')) start();
+setLook((q.get('theme') || saved.look) === 'light' ? 'light' : 'dark');
+if (q.get('min') || saved.mins) $('mins').value = q.get('min') || saved.mins;
+if (q.get('at') || saved.at) $('at').value = q.get('at') || saved.at;
+setKind(q.get('at') ? 'until' : q.get('min') ? 'minutes' : saved.kind);
+setBar(q.get('bar') || saved.bar);
+if (q.has('autostart')) start();
 
+// Messages from a link are used for this visit only; they don't replace the ones saved in this browser.
+const linkMsgs = q.getAll('m').map(v => v.split('|').map(l => l.trim()).filter(Boolean)).filter(m => m.length);
+setMessages(linkMsgs.length ? linkMsgs : loadMessages());
 new ResizeObserver(measure).observe(stage);
 document.fonts.ready.then(measure);
 measure();
 poke();
 (function loop() {
+  // Waiting in "until" mode, the clock already shows the time left to the chosen start.
+  if (S.mode === 'idle' && SET.kind === 'until') S.COUNT = Math.max(1, Math.ceil(secondsUntil($('at').value) ?? 0));
   if (S.mode === 'idle') render(0, S.COUNT, true);
   else render(elapsed(), S.COUNT, false);
   requestAnimationFrame(loop);

@@ -45,12 +45,14 @@ Each animation is a pure function of time (`frame(scene, state, t)`), so the bro
 
 ## Live countdown page
 
-`countdown/heartbeat-countdown.html` is the welcome countdown as a page that runs anywhere, offline included: double-click it, set the minutes, press Start, then F for full screen. It follows any screen shape (wide, square, portrait) and keeps time from the system clock.
+`countdown/heartbeat-countdown.html` is the welcome countdown as a page that runs anywhere, offline included. Double-click it, then press F for full screen. It follows any screen shape (wide, square or portrait) and keeps time from the system clock. Move the mouse to show the panel; it hides again after three still seconds.
 
-- Keys: Space start/pause, R reset, ↑/↓ minutes, F full screen, L light/dark. The panel and cursor hide after three still seconds.
-- Count to a time of day with "Or until" (e.g. 10:50); a time already gone means tomorrow.
-- Links can preset it: `?min=10`, `?at=10:50`, `?theme=light`, `?autostart`.
-- Change the messages in the `MESSAGES` list in `countdown.src.html`, then `node countdown/build.mjs` to inline the logo and fonts.
+- **Timer** counts a number of minutes. **Until** counts to a time of day, such as 11:00 (a time already gone means tomorrow). Times over an hour away show as H:MM:SS.
+- **Bar** puts the logo and timer along the top (default) or the bottom.
+- **Messages** edits the lines that take turns. Leave a blank line between messages. Edits are remembered in that browser, as are the other settings.
+- **Copy link** gives a link carrying the current settings: `?min=5` or `?at=11:00`, `&bar=bottom`, `&theme=light`, `&autostart`, and one `&m=Line one|Line two` per message (`|` breaks the line). Opening the link applies them. Messages from a link last for that visit only.
+- Keys: Space start/pause, R reset, ↑/↓ minutes, F full screen, L light/dark.
+- To change the default messages, edit `DEFAULT_MESSAGES` in `countdown.src.html`, then run `node countdown/build.mjs` to inline the logo and fonts.
 
 ## Notes
 
