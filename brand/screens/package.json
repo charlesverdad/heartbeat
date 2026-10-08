@@ -1,0 +1,14 @@
+{
+  "name": "heartbeat-screens",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "check": "node build.mjs && node scripts/check.mjs",
+    "dev": "node serve.mjs src"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.12.0"
+  }
+}
