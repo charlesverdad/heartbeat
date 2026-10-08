@@ -51,7 +51,8 @@ async function buildPage(name) {
     const js = (await read(SRC, m[1], name)).toString('utf8');
     return `<script>\n${js.replaceAll('</script', '<\\/script')}\n</script>`;
   });
-  for (const [from, to] of await Promise.all(jobs)) html = html.replace(from, () => to);
+  // replaceAll, so a tag included twice can't leave a second, external copy behind.
+  for (const [from, to] of await Promise.all(jobs)) html = html.replaceAll(from, () => to);
   // Every page gets the mark as its tab icon, unless it brings its own.
   if (!/rel=["']icon["']/.test(html)) html = html.replace('</head>', () => `<link rel="icon" href="${FAVICON}">\n</head>`);
   if (/@[A-Z]{3,}\b/.test(html.replace(/@(media|font-face|import|keyframes|supports|container)/g, ''))) fail(`${name}: placeholder left unreplaced`);
@@ -59,7 +60,15 @@ async function buildPage(name) {
   return html.length;
 }
 
+// Pages are single files: all script and style is inline and fonts/icons are data URIs, so the policy
+// allows inline code and nothing from anywhere else. Only this site may frame the pages (the homepage
+// thumbnails); OBS and ProPresenter open them as top-level pages, which framing rules don't affect.
+const CSP = [
+  "default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'", 'img-src data:',
+  'font-src data:', "frame-src 'self'", "frame-ancestors 'self'", "base-uri 'none'", "form-action 'none'",
+].join('; ');
 const HEADERS = `/*
+  Content-Security-Policy: ${CSP}
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()

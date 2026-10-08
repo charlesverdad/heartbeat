@@ -252,7 +252,7 @@
     let wake = null, wanted = false;
     api.keepAwake = async function () {
       wanted = true;
-      try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; }
+      try { if ('wakeLock' in navigator && !wake) { const lock = (wake = await navigator.wakeLock.request('screen')); lock.addEventListener('release', () => { if (wake === lock) wake = null; }); } } catch { wake = null; }
     };
     // Back to idle: the display may sleep again.
     api.letSleep = function () { wanted = false; wake?.release().catch(() => {}); wake = null; };
