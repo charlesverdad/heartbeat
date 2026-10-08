@@ -21,6 +21,7 @@ cd brand && python3 -m http.server 8765   # then open http://localhost:8765/repo
 | `logo-motion/out/gif/` | Small looping GIFs of the loaders, for web pages |
 | `mockups/` | Merch mockups: AI-generated blanks in `raw/`, logo placements in `mockups.json`, results in `out/` |
 | `report.html`, `report-v2.html` | Galleries for each round |
+| `countdown/heartbeat-countdown.html` | Live welcome countdown as one self-contained page (built from `countdown.src.html`) |
 
 ## Rendering
 
@@ -41,6 +42,15 @@ python3 mockups/draw.py --id mug-green --prompt "..."   # new blank via NanoGPT 
 Mockups: the blank product photo comes from an image model, but the logo is never drawn by AI. `compose.mjs` warps the real SVG onto the photo (a perspective quad for flat items, a cylinder for mugs and bottles) and shades it with the photo's own light. To place a logo on a new blank, read pixel coordinates off the photo and add an entry to `mockups.json`.
 
 Each animation is a pure function of time (`frame(scene, state, t)`), so the browser preview and the rendered video match frame for frame. To add one, append an entry to `ANIMS_V2` in `logo-motion/src/anims-v2.js`; the renderer and the report pick it up.
+
+## Live countdown page
+
+`countdown/heartbeat-countdown.html` is the welcome countdown as a page that runs anywhere, offline included: double-click it, set the minutes, press Start, then F for full screen. It follows any screen shape (wide, square, portrait) and keeps time from the system clock.
+
+- Keys: Space start/pause, R reset, ↑/↓ minutes, F full screen, L light/dark. The panel and cursor hide after three still seconds.
+- Count to a time of day with "Or until" (e.g. 10:50); a time already gone means tomorrow.
+- Links can preset it: `?min=10`, `?at=10:50`, `?theme=light`, `?autostart`.
+- Change the messages in the `MESSAGES` list in `countdown.src.html`, then `node countdown/build.mjs` to inline the logo and fonts.
 
 ## Notes
 

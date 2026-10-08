@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heartbeat Countdown</title>
+<!-- Built by build.mjs from countdown.src.html: edit the source, then run `node countdown/build.mjs`. -->
+<style>
+/*@FONTS*/
+/* One look per theme; the toggle sets data-look on <body> so a host page's own theme can't reach it. */
+:root { --bg: #000; --fg: #fff; --muted: rgba(255,255,255,.55); --track: rgba(255,255,255,.18); --panel: rgba(28,28,28,.92); --line: rgba(255,255,255,.16); color-scheme: dark; }
+body[data-look="light"] { --bg: #fff; --fg: #000; --muted: rgba(0,0,0,.55); --track: rgba(0,0,0,.16); --panel: rgba(244,244,244,.94); --line: rgba(0,0,0,.14); color-scheme: light; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); overflow: hidden; font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+body.idle-ui { cursor: none; }
+
+/* The stage fills the screen; everything inside is sized off it (cqw/cqh), so any window or projector works. */
+.stage { position: fixed; inset: 0; container-type: size; overflow: hidden; background: var(--bg); }
+
+/* Landscape positions, as a share of screen height. The footer row (logo + timer) sits well clear of the bottom edge. */
+.stage { --msg-y: 38%; --rule-y: 68%; --row-y: 77%; --mx: 7cqw; }
+.msg { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; font-size: min(10cqh, 6.6cqw); opacity: 0; will-change: transform, opacity; }
+.msg div { white-space: nowrap; }
+.msg .port { display: none; }
+.big { position: absolute; left: 0; right: 0; top: var(--msg-y); text-align: center; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-size: min(42cqh, 34cqw); font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(-50%); }
+
+.rule { position: absolute; left: var(--mx); right: var(--mx); top: var(--rule-y); height: max(2px, .3cqh); background: var(--track); }
+.rule i { position: absolute; inset: 0; background: var(--fg); transform-origin: left center; transform: scaleX(0); }
+
+.row { position: absolute; left: var(--mx); right: var(--mx); top: var(--row-y); transform: translateY(-50%); display: flex; align-items: center; justify-content: space-between; gap: 4cqw; }
+.slot { height: 6.5cqh; aspect-ratio: 252.2 / 111.27; flex: none; }
+.time { display: flex; align-items: baseline; gap: .4em; font-size: 6.5cqh; }
+.label { font-size: .34em; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.clock { display: flex; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock span { display: inline-block; }
+
+/* Portrait: stack the label, timer and logo under the line. */
+.stage.portrait { --msg-y: 34%; --rule-y: 62%; --mx: 10cqw; }
+.portrait .msg { font-size: min(11cqw, 6.5cqh); }
+.portrait .msg .land { display: none; }
+.portrait .msg .port { display: block; }
+.portrait .big { font-size: min(50cqw, 30cqh); }
+.portrait .row { top: calc(var(--rule-y) + 5cqw); transform: none; flex-direction: column; justify-content: flex-start; gap: 5cqw; }
+.portrait .time { flex-direction: column; align-items: center; gap: 2.5cqw; font-size: 11cqw; }
+.portrait .label { font-size: .3em; }
+.portrait .slot { height: 9cqw; }
+
+/* The real logo is positioned over its slot by script, so it can travel to the centre at zero. */
+.logo { position: absolute; left: 0; top: 0; color: var(--fg); transform-origin: 0 0; will-change: transform; }
+.logo svg { display: block; width: 100%; height: 100%; fill: currentColor; overflow: visible; }
+
+/* Operator controls: show on mouse movement or tap, hide after a few seconds. */
+.controls { position: fixed; left: 50%; top: max(16px, env(safe-area-inset-top)); transform: translateX(-50%); width: min(760px, calc(100vw - 32px)); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg); font-size: 14px; transition: opacity .35s, transform .35s; z-index: 5; backdrop-filter: blur(8px); }
+.controls.hide { opacity: 0; pointer-events: none; transform: translate(-50%, -8px); }
+.controls .group { display: flex; align-items: center; gap: 8px; }
+.controls .sep { width: 1px; align-self: stretch; background: var(--line); }
+.controls label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.controls input { font: inherit; font-variant-numeric: tabular-nums; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.controls input[type=number] { width: 4.5em; }
+.controls button { font: inherit; font-weight: 700; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.controls button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.controls button:focus-visible, .controls input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.controls .keys { flex-basis: 100%; color: var(--muted); font-size: 12px; }
+.controls kbd { font: inherit; font-weight: 700; color: var(--fg); }
+.controls .push { margin-left: auto; }
+@media (max-width: 560px) { .controls .sep { display: none; } .controls .push { margin-left: 0; } .controls .keys { display: none; } }
+</style>
+</head>
+<body>
+<main class="stage" id="stage" aria-live="off">
+  <div class="msgs" id="msgs"></div>
+  <div class="big" id="big" aria-hidden="true">10</div>
+  <div class="rule" id="rule"><i id="fill"></i></div>
+  <div class="row" id="row">
+    <div class="slot" id="slot"></div>
+    <div class="time"><span class="label">Service begins in</span><span class="clock" id="clock" role="timer"></span></div>
+  </div>
+  <div class="logo" id="logo" aria-label="Heartbeat Church"><!--@LOGO--></div>
+</main>
+
+<div class="controls" id="controls">
+  <div class="group">
+    <label for="mins">Minutes</label>
+    <input id="mins" type="number" min="1" max="180" step="1" value="5">
+    <button class="primary" id="go">Start</button>
+    <button id="reset">Reset</button>
+  </div>
+  <span class="sep"></span>
+  <div class="group">
+    <label for="at">Or until</label>
+    <input id="at" type="time">
+    <button id="atgo">Set</button>
+  </div>
+  <div class="group push">
+    <button id="look">Light</button>
+    <button id="fs">Full screen</button>
+  </div>
+  <div class="keys"><kbd>Space</kbd> start / pause · <kbd>R</kbd> reset · <kbd>↑</kbd><kbd>↓</kbd> minutes · <kbd>F</kbd> full screen · <kbd>L</kbd> light / dark</div>
+</div>
+
+<script>
+// Messages take turns in the middle every 12 seconds. `land` is the line breaks on a wide screen,
+// `port` on a tall one. Keep "Living Out The Gospel" on one line where it fits.
+const MESSAGES = [
+  { land: ['Welcome to', 'Heartbeat Church'], port: ['Welcome to', 'Heartbeat', 'Church'] },
+  { land: ['Living Out The Gospel', 'Together Wholeheartedly'], port: ['Living Out', 'The Gospel', 'Together', 'Wholeheartedly'] },
+  { land: ['Grab a coffee', 'and find a seat'], port: ['Grab a coffee', 'and find', 'a seat'] },
+  { land: ['We’re glad', 'you’re here'], port: ['We’re glad', 'you’re here'] },
+];
+const SLOT = 12;   // seconds per message
+const FINALE = 10; // the last seconds count down big
+const LOGO_AR = 252.2 / 111.27;
+const MARK_C = [93.43 / 2, 111.27 / 2];
+
+// ---------- timing maths (same as the rendered video) ----------
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = {
+  outCubic: k => 1 - Math.pow(1 - k, 3),
+  inCubic: k => k * k * k,
+  inOutCubic: k => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2),
+};
+const ep = (t, start, dur, fn = ease.outCubic) => fn(clamp((t - start) / dur));
+const beat = (t, b) => { const bump = c => Math.exp(-(((t - c) / 0.07) ** 2)); return bump(b) + 0.55 * bump(b + 0.22); };
+function tick(t, COUNT) {
+  const R = COUNT - t;
+  if (R <= 0) return { n: 0, phase: -R, done: true };
+  const n = Math.ceil(R - 1e-6);
+  return { n, phase: n - R, done: false };
+}
+const fmt = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const stage = $('stage'), clockEl = $('clock'), big = $('big'), fill = $('fill'), rule = $('rule'), row = $('row');
+const slotEl = $('slot'), logo = $('logo'), mark = logo.querySelector('.mark');
+const msgEls = MESSAGES.map(m => {
+  const d = document.createElement('div');
+  d.className = 'msg';
+  const lines = (arr, cls) => arr.map(l => `<div class="${cls}">${l}</div>`).join('');
+  d.innerHTML = lines(m.land, 'land') + lines(m.port, 'port');
+  $('msgs').appendChild(d);
+  return d;
+});
+
+let cells = [];
+function setClock(n, phase) {
+  const str = fmt(n), prev = fmt(n + 1);
+  if (cells.length !== str.length) {
+    clockEl.innerHTML = '';
+    cells = [...str].map(() => clockEl.appendChild(document.createElement('span')));
+  }
+  const k = ease.outCubic(clamp(phase / 0.3));
+  cells.forEach((c, i) => {
+    c.textContent = str[i];
+    const rolling = phase < 0.3 && prev.length === str.length && str[i] !== prev[i];
+    c.style.transform = rolling ? `translateY(${(k - 1) * 0.1}em)` : '';
+    c.style.opacity = rolling ? 0.15 + 0.85 * k : 1;
+  });
+  clockEl.setAttribute('aria-label', `${Math.floor(n / 60)} minutes ${n % 60} seconds`);
+}
+
+// Where the logo sits in the footer and where it lands at zero, in px. Measured on resize.
+let geo = null;
+function measure() {
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const portrait = H > W;
+  stage.classList.toggle('portrait', portrait);
+  const r = slotEl.getBoundingClientRect();
+  const h1 = Math.min(portrait ? (W * 0.3) : H * 0.26, (W * 0.72) / LOGO_AR);
+  geo = {
+    w: r.width, h: r.height,
+    from: { cx: r.left + r.width / 2, cy: r.top + r.height / 2 },
+    to: { cx: W / 2, cy: H / 2 },
+    k1: h1 / r.height,
+    H,
+  };
+  logo.style.width = `${r.width}px`;
+  logo.style.height = `${r.height}px`;
+}
+
+// Draw the screen for t seconds into a COUNT-second countdown.
+function render(t, COUNT, idle) {
+  const { n, phase, done } = idle ? { n: COUNT, phase: 1, done: false } : tick(t, COUNT);
+  setClock(n, phase);
+  const finale = COUNT - FINALE;
+  const H = geo.H;
+
+  // Messages: each slot fades and rises in, then fades out before the next. None in the last ten seconds,
+  // and a slot that would only get a moment before them is skipped.
+  const slot = Math.floor(t / SLOT);
+  msgEls.forEach((m, i) => {
+    let o = 0, dy = 0;
+    if (idle) o = i === 0 ? 1 : 0;
+    else {
+      const t0 = slot * SLOT;
+      const on = slot % msgEls.length === i && t < finale && t0 + 4 <= finale;
+      const kin = on ? ep(t, t0, 0.7) : 0;
+      const kout = on ? ep(t, Math.min(t0 + SLOT, finale) - 0.5, 0.5, ease.inCubic) : 0;
+      o = kin * (1 - kout);
+      dy = (1 - kin) * H * 0.02 - kout * H * 0.01;
+    }
+    m.style.opacity = o;
+    m.style.transform = `translateY(calc(-50% + ${dy}px))`;
+  });
+
+  // The last ten seconds count down big, each number popping in on the tick.
+  const showBig = !idle && !done && n <= FINALE && t >= finale;
+  big.textContent = String(n);
+  const kp = ease.outCubic(clamp(phase / 0.35));
+  big.style.opacity = showBig ? 0.25 + 0.75 * kp : 0;
+  big.style.transform = `translateY(-50%) scale(${showBig ? 1.12 - 0.12 * kp : 1})`;
+
+  // At zero the line and timer fade, and the logo travels to the centre and beats once.
+  const out = idle ? 0 : ep(t, COUNT, 0.5, ease.inCubic);
+  fill.style.transform = `scaleX(${idle ? 0 : clamp(t / COUNT)})`;
+  rule.style.opacity = 1 - out;
+  row.style.opacity = 1 - out;
+  const km = idle ? 0 : ep(t, COUNT + 0.3, 1.2, ease.inOutCubic);
+  const k = lerp(1, geo.k1, km);
+  const cx = lerp(geo.from.cx, geo.to.cx, km), cy = lerp(geo.from.cy, geo.to.cy, km);
+  logo.style.transform = `translate(${cx - (geo.w * k) / 2}px, ${cy - (geo.h * k) / 2}px) scale(${k})`;
+  const b = idle ? 1 : 1 + 0.08 * beat(t, COUNT + 1.8);
+  mark.setAttribute('transform', `translate(${MARK_C[0]} ${MARK_C[1]}) scale(${b}) translate(${-MARK_C[0]} ${-MARK_C[1]})`);
+}
+
+// ---------- state ----------
+// mode 'idle': waiting to start. 'run': counting (minutes, pausable). 'until': counting to a wall-clock time.
+const S = { mode: 'idle', COUNT: 300, start: 0, pausedAt: 0, paused: 0 };
+const now = () => Date.now() / 1000;
+const elapsed = () => ((S.pausedAt || now()) - S.start - S.paused);
+
+function setMinutes(m) {
+  m = clamp(Math.round(Number(m) || 5), 1, 180);
+  $('mins').value = m;
+  if (S.mode === 'idle') S.COUNT = m * 60;
+}
+function start() {
+  if (S.mode === 'idle') {
+    setMinutes($('mins').value);
+    Object.assign(S, { mode: 'run', start: now(), pausedAt: 0, paused: 0 });
+    keepAwake();
+  } else if (S.mode === 'run' && elapsed() < S.COUNT) {
+    if (S.pausedAt) { S.paused += now() - S.pausedAt; S.pausedAt = 0; } else S.pausedAt = now();
+  }
+  syncButtons();
+}
+function reset() {
+  Object.assign(S, { mode: 'idle', pausedAt: 0, paused: 0 });
+  setMinutes($('mins').value);
+  syncButtons();
+}
+// Count down to a time of day (e.g. 10:50). A time already gone today means tomorrow.
+function until(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
+  if (!m) return;
+  const d = new Date();
+  d.setHours(+m[1], +m[2], 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  const t0 = now();
+  Object.assign(S, { mode: 'until', start: t0, COUNT: d.getTime() / 1000 - t0, pausedAt: 0, paused: 0 });
+  keepAwake();
+  syncButtons();
+}
+function syncButtons() {
+  const go = $('go');
+  go.textContent = S.mode === 'idle' ? 'Start' : S.pausedAt ? 'Resume' : 'Pause';
+  go.disabled = S.mode === 'until';
+}
+
+let wake = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch { wake = null; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.mode !== 'idle') keepAwake(); });
+
+function toggleFullscreen() {
+  const d = document;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const e = d.documentElement; const p = (e.requestFullscreen || e.webkitRequestFullscreen)?.call(e); p?.catch?.(() => {}); }
+  } catch {}
+}
+function setLook(look) {
+  document.body.dataset.look = look;
+  $('look').textContent = look === 'light' ? 'Dark' : 'Light';
+}
+
+// ---------- controls ----------
+$('go').onclick = start;
+$('reset').onclick = reset;
+$('atgo').onclick = () => until($('at').value);
+$('at').addEventListener('keydown', e => { if (e.key === 'Enter') until($('at').value); });
+$('mins').addEventListener('input', e => setMinutes(e.target.value));
+$('look').onclick = () => setLook(document.body.dataset.look === 'light' ? 'dark' : 'light');
+$('fs').onclick = toggleFullscreen;
+stage.addEventListener('dblclick', toggleFullscreen);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
+  const k = e.key.toLowerCase();
+  if (k === ' ') { e.preventDefault(); start(); }
+  else if (k === 'r') reset();
+  else if (k === 'f') toggleFullscreen();
+  else if (k === 'l') $('look').click();
+  else if (e.key === 'ArrowUp' && S.mode === 'idle') setMinutes(+$('mins').value + 1);
+  else if (e.key === 'ArrowDown' && S.mode === 'idle') setMinutes(+$('mins').value - 1);
+  else return;
+  poke();
+});
+
+// Hide the panel and cursor after a few still seconds.
+let hideTimer;
+function poke() {
+  $('controls').classList.remove('hide');
+  document.body.classList.remove('idle-ui');
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    if ($('controls').contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
+    $('controls').classList.add('hide');
+    document.body.classList.add('idle-ui');
+  }, 3000);
+}
+['mousemove', 'pointerdown'].forEach(ev => document.addEventListener(ev, poke, { passive: true }));
+
+// ---------- start-up options: ?min=10, ?at=10:50, ?theme=light, ?autostart ----------
+const q = new URLSearchParams(location.search);
+setLook(q.get('theme') === 'light' ? 'light' : 'dark');
+if (q.get('min')) setMinutes(q.get('min'));
+if (q.get('at')) { $('at').value = q.get('at'); until(q.get('at')); }
+else if (q.has('autostart')) start();
+
+new ResizeObserver(measure).observe(stage);
+document.fonts.ready.then(measure);
+measure();
+poke();
+(function loop() {
+  if (S.mode === 'idle') render(0, S.COUNT, true);
+  else render(elapsed(), S.COUNT, false);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
