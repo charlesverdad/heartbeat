@@ -660,3 +660,28 @@ uploads, and finish with `rclone check <src> <dst> --one-way --checksum`.
 - **Parallel agents in one worktree:** give each its own files, forbid shared edits and commits, make check scripts page-filterable without deleting others' output, and have the orchestrator commit.
 - **Cloudflare deploys:** Terraform runs through `bin/tf` (OpenTofu), which reads `CLOUDFLARE_API_TOKEN` from Key Vault `kv-terraform-terraform`/`tf-cloudflare-api-token`. Charles has two Cloudflare logins, and only the token under charles@heartbeatchurch.com.au sees the Heartbeat Church account (`d26a8771…`). "Authentication error [10000]" on a Pages call means the wrong login or a missing *Account › Cloudflare Pages › Edit*, not a bad ID.
 - **Pages from GitHub Actions needs a stored token.** Cloudflare has no GitHub OIDC federation, so the workflow uses a Pages-only `CLOUDFLARE_PAGES_TOKEN` secret. A direct-upload Pages project can't be switched to Git integration later; that would mean replacing the project.
+
+## Translating a designed PDF (PTW course guide → zh-TW, 2026-10-10)
+
+The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local and not committed because it holds the course text, (`tools/` plus `BRIEF.md`, the translations and the patches). It uses PyMuPDF.
+
+- **How it works:**
+  1. Segment the spans into paragraph units.
+  2. Redact only the English text: images and drawings are set to NONE, text to REMOVE.
+  3. Set the Chinese with `insert_htmlbox`.
+  4. Measure each unit on a scratch page first. Widen it if it collides; shrink the font to no less than 0.85 as a last resort.
+- **Fonts:** Noto CJK OTF (CFF) breaks `subset_fonts()`: you get an 838 MB file and "Reserved charstring" errors. Subset with fontTools and convert to TTF first; the result is about 18 MB.
+- **Link underlines** are separate vector lines. Remove them in their own redaction pass with `LINE_ART_REMOVE_IF_TOUCHED`.
+- **Rotated tabs:** shrink the redaction rect horizontally, not vertically, or letters survive.
+- **Soft wraps:** a line that ends in a space, starts lowercase, or holds a link continues the paragraph. Require the same font family to merge lines, or a verse gets merged with its reference.
+- **Terms come from the official TW edition** 《天國好習慣》 (校園書房, 2026). It differs from our subtitle glossary: 生活守則 vs 生活準則, and 靈命塑造 vs 屬靈塑造.
+- **BibleProject's official zh-Hant name is 聖經工程**, not 聖經計畫.
+- **Book titles in lists:** use the Chinese title only, 《中文》，Author 著. Adding the English title too makes lines wrap into the next bullet.
+- **CUV text** comes from the FHL `qb.php` API (version=unv). It returns 403 without a User-Agent header.
+
+## Sermon subtitles, 2026-10-11 delivery
+
+- **`rclone link` on a Drive file turns on "anyone with the link can view".** It is a sharing change, not a lookup. To hand over a link without changing sharing, take the file ID from `rclone lsjson` and write `https://drive.google.com/open?id=<ID>`.
+- **`apply_edits.py` rewrites `overrides_zh.json`** and rebuilds the English from `sentences_marked.json`. Any manual overrides made before it runs are lost, so re-apply them afterwards.
+- **The cut runs to the end of Josh's closing prayer**, which often plays over the last song. Check that `filter_song.py` didn't tag the prayer as music.
+- **When `make_editor.py --fetch` gets 403s**, build the review copy from the local `audio.m4a` with ffmpeg (32k mono, `+faststart`) instead of fetching it again.
