@@ -7,8 +7,9 @@ burn-in. No external translation service is used at any point.
 
 Unless the user says they only want the SRT, run all the way through step 9 and
 deliver the burned video to the HBC Media drive -- that is usually what they
-actually need. **Burn only the sermon**: the scripture reading plus the preaching,
-with no worship, announcements or closing song.
+actually need. **Burn only the sermon**: from when Pastor Josh takes the stage
+after the Bible reading, through the preaching **and his closing prayer** until
+he says amen. No worship, announcements or closing song.
 
 Target: subtitles ready **2-3 hours after the service is published**. The compute
 is about 10 minutes; the rest is translation and your review.
@@ -27,8 +28,12 @@ A post-live stream often has no YouTube auto-captions. In that case, cut from 0
 and run a throwaway `asr.py --model mlx-community/whisper-base-mlx` over the
 whole service: about 40 s for 90 min. Then print one segment per ~45 s to find
 the reading and the sermon. Move that `asr_en.json` aside before the real run.
-Start the cut at the **scripture reading** when it is the sermon text (it gets
-CUV wording), and end it at the call to respond.
+Better still, ask the user for the times. Start the cut when Pastor Josh takes
+the stage after the reading, and end it when he **finishes the closing prayer**,
+not at "Let's pray". He often prays while the band starts the last song, so
+`filter_song.py` may mark the prayer as song or Whisper may drop it under the
+music. Check that the prayer lines survived, flip them back to `speech`, and if
+the music swamps the words, ask the reviewer to fill them in through the editor.
 
 ### Important: nix-shell requirement
 
