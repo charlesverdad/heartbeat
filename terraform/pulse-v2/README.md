@@ -13,7 +13,9 @@ Run everything from the repo root in the nix shell. `bin/tf` loads the Cloudflar
 - The Terraform Cloudflare token (`tf-cloudflare-api-token` in `kv-terraform-terraform`) needs these permissions on
   the Heartbeat account: **D1 Edit**, **Workers R2 Storage Edit**, **Queues Edit** and **Workers Scripts Edit**.
   On the zone it needs **DNS Edit** and **Workers Routes Edit**. If it was made for tunnels and DNS only, add these in
-  the Cloudflare dashboard (My Profile > API Tokens).
+  the Cloudflare dashboard. It is a *user* token (id `a98f9cc48382cd62c78a8e217777b05f`), so it sits under
+  My Profile > API Tokens of the login that created it, not under the account's API Tokens page. Editing a token
+  shows its id in the URL.
 - `npx wrangler@4.149.0 login` (the version the bundle's `DEPLOY.md` names). It deploys the Worker as you.
 - Google sign-in needs nothing new: v2 reuses v1's OAuth client, and `https://pulse.heartbeatchurch.com.au/auth/callback`
   (the same path v1 uses) is already an authorized redirect URI.
