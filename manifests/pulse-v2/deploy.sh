@@ -3,7 +3,7 @@
 # deploy.sh - Deploy Pulse v2 to Cloudflare from a prebuilt bundle
 # (pulse-v2 docs/deploy.md section 10: an infra repo keeps its own wrangler.jsonc).
 #
-# Usage (from the heartbeat repo root, in its nix shell, after `wrangler login`):
+# Usage (from the heartbeat repo root, with direnv loaded: .envrc supplies the Cloudflare account and token):
 #   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>] [--secrets] [--rotate-hmac]
 #
 #   --release   download that GitHub release's bundle (charlesverdad/pulse-v2)

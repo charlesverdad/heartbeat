@@ -6,7 +6,7 @@ resources. The Worker code and its secrets go up with wrangler: `manifests/pulse
 bundle and fills in our `wrangler.jsonc` (the D1 id from this stack's outputs, `PUBLIC_ORIGIN` from `hostname` in
 `prod.tfvars`). It then applies D1 migrations and deploys.
 
-Run everything from the repo root in the nix shell. `bin/tf` loads the Cloudflare token from Key Vault.
+Run everything from the repo root, in the nix shell with direnv loaded. `bin/tf` loads the Cloudflare token from Key Vault.
 
 ## Before the first apply
 
@@ -16,7 +16,10 @@ Run everything from the repo root in the nix shell. `bin/tf` loads the Cloudflar
   the Cloudflare dashboard. It is a *user* token (id `a98f9cc48382cd62c78a8e217777b05f`), so it sits under
   My Profile > API Tokens of the login that created it, not under the account's API Tokens page. Editing a token
   shows its id in the URL.
-- `npx wrangler@4.149.0 login` (the version the bundle's `DEPLOY.md` names). It deploys the Worker as you.
+- No `wrangler login`: the repo's `.envrc` pins `CLOUDFLARE_ACCOUNT_ID` and exports the same token from the keychain
+  (`heartbeat-cloudflare-api-token`). Copy it there once (then `direnv allow`):
+  `security add-generic-password -U -a "$USER" -s heartbeat-cloudflare-api-token -w "$(az keyvault secret show --vault-name kv-terraform-terraform --name tf-cloudflare-api-token --query value -o tsv)"`.
+  Wrangler also needs **Account Settings Read** on the token.
 - Google sign-in needs nothing new: v2 reuses v1's OAuth client, and `https://pulse.heartbeatchurch.com.au/auth/callback`
   (the same path v1 uses) is already an authorized redirect URI.
 
