@@ -15,10 +15,8 @@ Run everything from the repo root in the nix shell. `bin/tf` loads the Cloudflar
   On the zone it needs **DNS Edit** and **Workers Routes Edit**. If it was made for tunnels and DNS only, add these in
   the Cloudflare dashboard (My Profile > API Tokens).
 - `npx wrangler@4.149.0 login` (the version the bundle's `DEPLOY.md` names). It deploys the Worker as you.
-- Google OAuth client (the one v1 uses; the Google Cloud console only): APIs & Services > Credentials > the Pulse web
-  client > Authorized redirect URIs, add `https://pulse.heartbeatchurch.com.au/auth/callback`. If the consent screen is
-  *Internal*, only `@heartbeatchurch.com.au` accounts can sign in. v2 expects it published *External* so gmail
-  partners can sign in.
+- Google sign-in needs nothing new: v2 reuses v1's OAuth client, and `https://pulse.heartbeatchurch.com.au/auth/callback`
+  (the same path v1 uses) is already an authorized redirect URI.
 
 ## First deploy
 
