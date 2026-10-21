@@ -13,7 +13,8 @@
 set -euo pipefail
 
 HOST="${HOST:-vm1.heartbeatchurch.com.au}"
-SSH_OPTS=(${SSH_KEY:+-i "$SSH_KEY"})
+SSH_OPTS=()
+[[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=(-i "$SSH_KEY")
 ssh() { command ssh ${SSH_OPTS[@]+"${SSH_OPTS[@]}"} "$@"; }
 OUT="${1:-backups/pulse-v1/vm-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUT"

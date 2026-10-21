@@ -36,7 +36,8 @@ async function get(path, { raw = false } = {}) {
 		await sleep(GAP_MS);
 		const res = await fetch(BASE + path, { headers: { Authorization: `Bearer ${key}` } });
 		if (res.status === 429) {
-			const wait = Number(res.headers.get('retry-after') || 60) * 1000;
+			const ra = Number(res.headers.get('retry-after'));
+			const wait = (ra > 0 ? ra : 60) * 1000;
 			console.warn(`rate limited, waiting ${wait / 1000}s`);
 			await sleep(wait);
 			continue;
