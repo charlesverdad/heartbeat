@@ -5,7 +5,7 @@
 //
 // * __D1_DATABASE_ID__ and __PUBLIC_ORIGIN__ are filled in by deploy.sh from terraform/pulse-v2 outputs.
 // * Custom domains are attached by terraform/pulse-v2, not here, so there are no routes.
-// * Secrets are never in this file: deploy.sh --secrets streams them from Azure Key Vault (secrets.sh).
+// * Secrets are never in this file. They live only in the Worker (terraform/pulse-v2/README.md, Secrets).
 //   ADMIN_EMAILS is one of them, so it is deliberately not a var here (keep_vars would not protect it).
 {
 	"name": "pulse",

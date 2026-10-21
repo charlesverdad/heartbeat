@@ -18,3 +18,8 @@ variable "hostname" {
   description = "Custom domain served by the Worker; also its PUBLIC_ORIGIN (sign-in redirects, email links)"
   type        = string
 }
+
+variable "google_project_id" {
+  description = "Google Cloud project that owns the Drive service account (GDRIVE_SA_* secrets)"
+  type        = string
+}

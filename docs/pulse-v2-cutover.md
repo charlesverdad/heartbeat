@@ -29,7 +29,13 @@ It contains 4 spaces, 12 collections, 42 documents, 261 revisions, 20 users and 
    - Re-author by hand. Fine if there are only a few dozen docs.
    - Script it: v1 HTML → TipTap JSON (`@tiptap/html` `generateJSON` with v2's extension set), then v2 `POST /api/v1/pages` + `POST /pages/{id}/publish` using a `write:docs` key. Spaces and collections are made in the UI first, because the API only creates pages. Images have to be uploaded again by hand, since v2's API has no attachment upload.
 5. **Rebuild access.** v2 permissions *add* (decision 014), while v1's narrowed. Re-check anything that was restricted in v1, such as Digital Platform Team › Internal. Re-invite people. v1 accounts and sessions don't carry over.
-6. **Decommission v1** (follow-up PR, after a quiet week or two): remove the `vm-hb-pulse` stack and the hb-pulse containers on vm1. Keep `/data/hb-pulse` and the backups until v2 has run for a while.
+6. **Decommission v1** (this teardown PR; after v2 has been live and quiet for a week or two). Run these from `main` before merging, because the PR deletes `terraform/vm-hb-pulse`:
+   1. Take a last backup: `HOST=vmadmin@20.58.140.44 SSH_KEY=~/.ssh/heartbeat_vm_access_key manifests/hb-pulse/backup-vm.sh`.
+   2. Stop v1 on vm1: `ssh -i ~/.ssh/heartbeat_vm_access_key vmadmin@20.58.140.44 'cd ~/heartbeat/manifests/hb-pulse && docker compose down'`. Leave `/data/hb-pulse` until the backups have been checked.
+   3. Keep the Drive service account, which v2 uses: `cd terraform/vm-hb-pulse && bin/tf -f prod init`, then `tofu state rm google_project_service.drive google_service_account.pulse_drive google_service_account_key.pulse_drive`.
+   4. `bin/tf -f prod destroy` in `terraform/vm-hb-pulse`. Expect the Key Vault and its 9 secrets, 2 role assignments, the tunnel and its config, and 2 random strings. The CNAME is already gone. Check the plan has no `google_*`.
+   5. Merge, then `bin/tf -f prod apply` in `terraform/pulse-v2`. Expect 2 imports (Drive API, service account) and 0 changes.
+   6. On vm1: `sudo rm -rf /secrets/hb-pulse`, `docker image rm pulse:0.3.1`; archive or delete `/data/hb-pulse`.
 
 ## Open decisions
 - Content migration: by hand or by script. Depends on how many documents the backup finds.

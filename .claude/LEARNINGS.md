@@ -690,6 +690,8 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - SSH direct: `ssh -i ~/.ssh/heartbeat_vm_access_key vmadmin@20.58.140.44` (IP in manifests/hb-pulse/RUNBOOK.md); the vm1 tunnel hostname may be down.
 - v1 never persisted uploads: `UPLOAD_DIR` is unset, so files went to `/app/data/uploads` inside the container, not the `/data/hb-pulse/uploads` mount. Each redeploy loses them; the 6 March–April images are gone.
 - A transient DNS failure (`EAI_AGAIN pulse-db`) crashes the v1 app; Docker restarts it, and Cloudflare shows 530 meanwhile.
-- pulse-v2 deploys from a prebuilt bundle with our own `manifests/pulse-v2/wrangler.jsonc` (pulse-v2 docs/deploy.md §10). wrangler refuses a first deploy whose `secrets.required` are unset unless they come via `--secrets-file`; `<(secrets.sh)` works, but call the wrangler binary directly (npx may drop the fd).
+- pulse-v2 deploys from a prebuilt bundle with our own `manifests/pulse-v2/wrangler.jsonc` (pulse-v2 docs/deploy.md §10). wrangler refuses a first deploy whose `secrets.required` are unset unless they come via `--secrets-file`. Pipe them on stdin with `--secrets-file /dev/stdin`: a `<(...)` path fails with EBADF because the wrangler binary re-launches node.
 - `tofu apply -target=...` does not store outputs that depend on nothing (e.g. `"https://${var.hostname}"`), so scripts must not rely on them after a targeted first apply.
 - Workers custom domains need the Worker to exist, and fail if a DNS record already holds the name.
+- R2 must be enabled once per Cloudflare account in the dashboard (error 10042 otherwise); tofu can't do it.
+- The v1 stack owned the Drive service account v2 uses: `tofu state rm` it before destroying vm-hb-pulse (pulse-v2's drive.tf imports it).
