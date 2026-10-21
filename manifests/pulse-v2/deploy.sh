@@ -4,9 +4,10 @@
 # (pulse-v2 docs/deploy.md section 10: an infra repo keeps its own wrangler.jsonc).
 #
 # Usage (from the heartbeat repo root, in its nix shell, after `wrangler login`):
-#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --ref <git ref>] [--secrets] [--rotate-hmac]
+#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>] [--secrets] [--rotate-hmac]
 #
 #   --release   download that GitHub release's bundle (charlesverdad/pulse-v2)
+#   --bundle    a local pulse-<version>.tar.gz (checked against its .sha256 next to it)
 #   --ref       build the bundle from ~/work/pulse-v2 at this ref, in a throwaway
 #               worktree (default: origin/main). Use until releases are cut.
 #   --secrets   also upload the secrets from Azure Key Vault (secrets.sh). Needs
@@ -25,11 +26,13 @@ PULSE_V2_REPO="${PULSE_V2_REPO:-$HOME/work/pulse-v2}"
 GH_REPO="charlesverdad/pulse-v2"
 
 release=""
+bundle_file=""
 ref="origin/main"
 with_secrets=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --release) release="$2"; shift 2 ;;
+        --bundle) bundle_file="$2"; shift 2 ;;
         --ref) ref="$2"; shift 2 ;;
         --secrets) with_secrets=yes; shift ;;
         --rotate-hmac) export ROTATE_HMAC=yes; shift ;;
@@ -70,6 +73,10 @@ if [[ -n "$release" ]]; then
     gh release download "$release" -R "$GH_REPO" -p "pulse-$release.tar.gz*" -D "$work"
     (cd "$work" && shasum -a 256 -c "pulse-$release.tar.gz.sha256")
     tarball="$work/pulse-$release.tar.gz"
+elif [[ -n "$bundle_file" ]]; then
+    log "Using $bundle_file"
+    (cd "$(dirname "$bundle_file")" && shasum -a 256 -c "$(basename "$bundle_file").sha256")
+    tarball="$bundle_file"
 else
     git -C "$PULSE_V2_REPO" fetch -q origin
     sha=$(git -C "$PULSE_V2_REPO" rev-parse --short "$ref")

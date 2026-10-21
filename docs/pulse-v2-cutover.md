@@ -23,15 +23,13 @@ It contains 4 spaces, 12 collections, 42 documents, 261 revisions, 20 users and 
 ## Steps
 
 1. **Back up v1.** `bin/pulse-v1-backup.mjs` copies every space, collection and document through the API, using an admin's key so drafts and restricted docs are included. Images aren't included, because `/uploads` needs a browser session. `manifests/hb-pulse/backup-vm.sh` is optional: it adds the full `pg_dump` and the uploads tarball. Azure also keeps daily data-disk snapshots for 60 days (`terraform/vm/backup.tf`).
-2. **Provision and deploy v2** to `pulse-v2.heartbeatchurch.com.au`: `terraform/pulse-v2/README.md` stage 1. Tofu creates D1, R2, the queue and the domain, and `manifests/pulse-v2/deploy.sh` deploys a bundle built from pulse-v2 `main`. The Google sign-in client and the Drive key are reused from v1's Key Vault. Push (VAPID), tunnel, session and SMTP secrets are not carried over.
+2. **Provision and deploy v2** straight onto `pulse.heartbeatchurch.com.au` (v1 has no real users): `terraform/pulse-v2/README.md`, First deploy. Tofu creates D1, R2, the queue and the domain. `manifests/pulse-v2/deploy.sh` deploys the v0.2.0 bundle. The Google sign-in client and the Drive key are reused from v1's Key Vault. Push (VAPID), tunnel, session and SMTP secrets are not carried over.
 3. **Choose an email provider.** v2 can't use v1's Gmail SMTP. Pick Cloudflare Email or Resend, verify the domain, and leave sending mode Off until a test email arrives.
-4. **Test on the staging hostname.** It is the production Worker and database, so whatever is set up there carries over at promotion.
-5. **Migrate content.** v2 has no importer (decision 007). Options:
+4. **Migrate content.** v2 has no importer (decision 007). Options:
    - Re-author by hand. Fine if there are only a few dozen docs.
    - Script it: v1 HTML → TipTap JSON (`@tiptap/html` `generateJSON` with v2's extension set), then v2 `POST /api/v1/pages` + `POST /pages/{id}/publish` using a `write:docs` key. Spaces and collections are made in the UI first, because the API only creates pages. Images have to be uploaded again by hand, since v2's API has no attachment upload.
-6. **Rebuild access.** v2 permissions *add* (decision 014), while v1's narrowed. Re-check anything that was restricted in v1, such as Digital Platform Team › Internal. Re-invite people. v1 accounts and sessions don't carry over.
-7. **Promote:** `terraform/pulse-v2/README.md` stage 2. Delete v1's tunnel CNAME, switch `hostname`, apply, redeploy.
-8. **Decommission v1** (follow-up PR, after a quiet week or two): remove the `vm-hb-pulse` stack and the hb-pulse containers on vm1. Keep `/data/hb-pulse` and the backups until v2 has run for a while.
+5. **Rebuild access.** v2 permissions *add* (decision 014), while v1's narrowed. Re-check anything that was restricted in v1, such as Digital Platform Team › Internal. Re-invite people. v1 accounts and sessions don't carry over.
+6. **Decommission v1** (follow-up PR, after a quiet week or two): remove the `vm-hb-pulse` stack and the hb-pulse containers on vm1. Keep `/data/hb-pulse` and the backups until v2 has run for a while.
 
 ## Open decisions
 - Content migration: by hand or by script. Depends on how many documents the backup finds.
