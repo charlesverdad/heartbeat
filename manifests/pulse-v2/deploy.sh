@@ -4,15 +4,12 @@
 # (pulse-v2 docs/deploy.md section 10: an infra repo keeps its own wrangler.jsonc).
 #
 # Usage (from the heartbeat repo root, with direnv loaded: .envrc supplies the Cloudflare account and token):
-#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>] [--secrets] [--rotate-hmac]
+#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>]
 #
 #   --release   download that GitHub release's bundle (charlesverdad/pulse-v2)
 #   --bundle    a local pulse-<version>.tar.gz (checked against its .sha256 next to it)
 #   --ref       build the bundle from ~/work/pulse-v2 at this ref, in a throwaway
 #               worktree (default: origin/main). Use until releases are cut.
-#   --secrets   also upload the secrets from Azure Key Vault (secrets.sh). Needs
-#               ADMIN_EMAILS. Required on the first deploy.
-#   --rotate-hmac  include a new HMAC_SECRET (first deploy only: it signs everyone out)
 #
 # Reads the D1 id from terraform/pulse-v2's outputs and PUBLIC_ORIGIN from its
 # prod.tfvars, applies remote D1 migrations, then deploys env.production.
@@ -28,14 +25,11 @@ GH_REPO="charlesverdad/pulse-v2"
 release=""
 bundle_file=""
 ref="origin/main"
-with_secrets=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --release) release="$2"; shift 2 ;;
         --bundle) bundle_file="$2"; shift 2 ;;
         --ref) ref="$2"; shift 2 ;;
-        --secrets) with_secrets=yes; shift ;;
-        --rotate-hmac) export ROTATE_HMAC=yes; shift ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -43,10 +37,6 @@ done
 if [[ "${CONFIRM:-}" != "yes" ]]; then
     echo "Refusing to deploy: this changes production. Re-run with CONFIRM=yes." >&2
     exit 1
-fi
-if [[ -n "${ROTATE_HMAC:-}" && -z "$with_secrets" ]]; then
-    echo "--rotate-hmac needs --secrets" >&2
-    exit 2
 fi
 
 log() { echo "==> $*" >&2; }
@@ -121,24 +111,11 @@ if [[ "$theirs" != "$ours" ]]; then
     exit 1
 fi
 
-# Read secrets before touching anything, so a failure (az login expired, missing
-# Key Vault entry) stops the deploy. Held in memory only; printf is a builtin, so
-# the values never reach argv.
-secrets_json=""
-if [[ -n "$with_secrets" ]]; then
-    secrets_json=$("$HERE/secrets.sh")
-fi
-
 # ── Migrate, then deploy ────────────────────────────────────────────────────
 log "Applying D1 migrations"
 wrangler d1 migrations apply DB --remote --env production
 
 log "Deploying"
-if [[ -n "$with_secrets" ]]; then
-    # stdin, not <(...): the wrangler binary re-launches node, which drops other inherited descriptors.
-    printf '%s' "$secrets_json" | wrangler deploy --env production --secrets-file /dev/stdin
-else
-    wrangler deploy --env production
-fi
+wrangler deploy --env production
 
 log "Deployed. Smoke test: curl -sI $public_origin/ (docs/deploy.md section 5 in pulse-v2)"
