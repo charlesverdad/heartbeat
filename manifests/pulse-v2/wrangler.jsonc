@@ -9,6 +9,8 @@
 //   ADMIN_EMAILS is one of them, so it is deliberately not a var here (keep_vars would not protect it).
 {
 	"name": "pulse",
+	// keep_vars is top-level only (wrangler ignores it per environment).
+	"keep_vars": true,
 	"account_id": "d26a8771162442a563371ea8097acc89",
 	"main": "worker/worker.js",
 	"no_bundle": true,
@@ -18,7 +20,6 @@
 
 	"env": {
 		"production": {
-			"keep_vars": true,
 			"name": "pulse",
 			"workers_dev": false,
 			"preview_urls": false,

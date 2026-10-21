@@ -95,7 +95,6 @@ mkdir -p "$bundle"
 tar -xzf "$tarball" -C "$bundle"
 wrangler_version=$(sed -n 's/.*Built with wrangler \([0-9.]*\).*/\1/p' "$bundle/DEPLOY.md")
 [[ -n "$wrangler_version" ]] || { echo "wrangler version not found in DEPLOY.md" >&2; exit 1; }
-# A local install, called directly: npx would not pass the <(secrets.sh) descriptor through.
 log "Installing wrangler $wrangler_version"
 npm install --silent --no-save --prefix "$work/wrangler" "wrangler@$wrangler_version" >&2
 wrangler() { (cd "$bundle" && "$work/wrangler/node_modules/.bin/wrangler" "$@"); }
@@ -136,7 +135,8 @@ wrangler d1 migrations apply DB --remote --env production
 
 log "Deploying"
 if [[ -n "$with_secrets" ]]; then
-    wrangler deploy --env production --secrets-file <(printf '%s' "$secrets_json")
+    # stdin, not <(...): the wrangler binary re-launches node, which drops other inherited descriptors.
+    printf '%s' "$secrets_json" | wrangler deploy --env production --secrets-file /dev/stdin
 else
     wrangler deploy --env production
 fi
