@@ -72,9 +72,10 @@ trap cleanup EXIT
 
 if [[ -n "$release" ]]; then
     log "Downloading release $release"
-    gh release download "$release" -R "$GH_REPO" -p "pulse-$release.tar.gz*" -D "$work"
-    (cd "$work" && shasum -a 256 -c "pulse-$release.tar.gz.sha256")
-    tarball="$work/pulse-$release.tar.gz"
+    asset="pulse-${release#v}.tar.gz"   # tag v0.3.0 ships pulse-0.3.0.tar.gz
+    gh release download "$release" -R "$GH_REPO" -p "$asset*" -D "$work"
+    (cd "$work" && shasum -a 256 -c "$asset.sha256")
+    tarball="$work/$asset"
 elif [[ -n "$bundle_file" ]]; then
     log "Using $bundle_file"
     (cd "$(dirname "$bundle_file")" && shasum -a 256 -c "$(basename "$bundle_file").sha256")
