@@ -44,13 +44,12 @@ It contains 4 spaces, 12 collections, 42 documents, 261 revisions, 20 users and 
 | Reuse v1's Google sign-in client and Drive service account; drop the VAPID, tunnel, session and SMTP secrets | Charles (secrets), Opus 5.5 (mapping) |
 | Deploy from the published v0.2.0 bundle with our own `wrangler.jsonc` (pulse-v2 deploy.md §10), wrangler 4.149.0 to match the build | Opus 5.5 |
 | Wrangler authenticates with the Terraform token from the keychain via `.envrc`; no `wrangler login` | Charles |
-| **The DNS switch was not done unattended.** I read "everything up until pointing to the new DNS" as stopping before it, and auto mode also blocked DNS changes. v1 still serves the hostname. | Opus 5.5 (not yet acknowledged) |
+| The DNS switch was held overnight, then done on request on 2026-10-22 | Charles |
 | The teardown keeps the Drive service account by adopting it into `terraform/pulse-v2` (#45) | Opus 5.5 (not yet acknowledged) |
 
-## State at end of 2026-10-22 night run
-- Created: D1 `pulse` (`1c1aaf30-7402-4bfa-9ada-971912050a30`), R2 `pulse-files`, queue `pulse-email`.
-- Worker `pulse` is deployed: v0.2.0, version `acb49667`, 13 migrations, 6 secrets.
-- No domain is attached yet.
-- Remaining (README, First deploy, steps 3 and 4):
-  - `cd terraform/vm-hb-pulse && bin/tf -f prod destroy -target=cloudflare_record.pulse`
-  - then `cd ../pulse-v2 && bin/tf -f prod apply`
+## State (2026-10-22)
+- **Live:** `pulse.heartbeatchurch.com.au` is served by the Worker `pulse` (v0.2.0, version `acb49667`) through a Workers custom domain. v1's tunnel CNAME is destroyed. v1's containers and Azure resources still run, untouched.
+- **Created:** D1 `pulse` (`1c1aaf30-7402-4bfa-9ada-971912050a30`), R2 `pulse-files`, queue `pulse-email`.
+- **Smoke test:** `/` redirects to sign-in, and `/auth/signin`, `/service-worker.js` and the manifest return 200. `/api/v1` returns 401 without a key, unknown paths return 404, and the HSTS and CSP headers are present. The sign-in page renders on desktop and at 390px with no console errors.
+- **Rollback** (while v1 runs): `tofu destroy -target=cloudflare_workers_custom_domain.pulse` in `terraform/pulse-v2`, then `bin/tf -f prod apply` in `terraform/vm-hb-pulse`.
+- **Next:** v1 teardown, #45.
