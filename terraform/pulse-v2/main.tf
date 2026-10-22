@@ -1,8 +1,8 @@
-# Pulse v2 (~/work/pulse-v2): a Cloudflare Worker with D1, R2 and a queue.
+# Pulse v2 (~/work/pulse-v2): a Cloudflare Worker with D1, R2, a queue and a KV namespace.
 #
 # Tofu owns the resources and the custom domains. The Worker code and its secrets
 # are deployed with wrangler by manifests/pulse-v2/deploy.sh, which reads the
-# D1 id and PUBLIC_ORIGIN from this stack's outputs.
+# D1 and KV ids and PUBLIC_ORIGIN from this stack's outputs.
 #
 # Rollout and promotion steps: README.md.
 
@@ -25,6 +25,12 @@ resource "cloudflare_r2_bucket" "files" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+# OAuth clients, grants and tokens for assistants (MCP), binding OAUTH_KV (pulse-v2 #138, from v0.3.0).
+resource "cloudflare_workers_kv_namespace" "oauth" {
+  account_id = var.cloudflare_account_id
+  title      = "pulse-oauth"
 }
 
 resource "cloudflare_queue" "email" {

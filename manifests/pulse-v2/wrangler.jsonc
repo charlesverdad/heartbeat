@@ -34,6 +34,7 @@
 				}
 			],
 			"r2_buckets": [{ "binding": "FILES", "bucket_name": "pulse-files" }],
+			"kv_namespaces": [{ "binding": "OAUTH_KV", "id": "__OAUTH_KV_ID__" }],
 			"queues": {
 				"producers": [{ "binding": "EMAIL_QUEUE", "queue": "pulse-email" }],
 				"consumers": [
