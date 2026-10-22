@@ -53,11 +53,13 @@ log() { echo "==> $*" >&2; }
 
 # ── Values from terraform/pulse-v2 ──────────────────────────────────────────
 d1_id=$(tofu -chdir="$TF_DIR" output -raw d1_database_id)
+kv_id=$(tofu -chdir="$TF_DIR" output -raw oauth_kv_id)
 hostname=$(sed -n 's/^hostname *= *"\(.*\)"/\1/p' "$TF_DIR/prod.tfvars")
 [[ "$d1_id" =~ ^[0-9a-f-]{36}$ ]] || { echo "bad d1_database_id from tofu: $d1_id" >&2; exit 1; }
+[[ "$kv_id" =~ ^[0-9a-f]{32}$ ]] || { echo "bad oauth_kv_id from tofu: $kv_id" >&2; exit 1; }
 [[ -n "$hostname" ]] || { echo "hostname not found in $TF_DIR/prod.tfvars" >&2; exit 1; }
 public_origin="https://$hostname"
-log "D1 $d1_id, PUBLIC_ORIGIN $public_origin"
+log "D1 $d1_id, KV $kv_id, PUBLIC_ORIGIN $public_origin"
 
 # ── Get the bundle ──────────────────────────────────────────────────────────
 work=$(mktemp -d)
@@ -100,7 +102,7 @@ npm install --silent --no-save --prefix "$work/wrangler" "wrangler@$wrangler_ver
 wrangler() { (cd "$bundle" && "$work/wrangler/node_modules/.bin/wrangler" "$@"); }
 log "$(head -3 "$bundle/DEPLOY.md" | tr '\n' ' ')"
 
-sed -e "s/__D1_DATABASE_ID__/$d1_id/" -e "s#__PUBLIC_ORIGIN__#$public_origin#" \
+sed -e "s/__D1_DATABASE_ID__/$d1_id/" -e "s/__OAUTH_KV_ID__/$kv_id/" -e "s#__PUBLIC_ORIGIN__#$public_origin#" \
     "$HERE/wrangler.jsonc" > "$bundle/wrangler.jsonc"
 
 # ── Our config must declare the same bindings as the bundle's example ───────
