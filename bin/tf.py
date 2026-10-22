@@ -178,7 +178,7 @@ def main():
     os.environ['TF_VAR_environment'] = environment
     
     # Execute terraform with processed arguments
-    terraform_cmd = ['terraform'] + terraform_args
+    terraform_cmd = ['tofu'] + terraform_args
     log_info(f"Executing: {' '.join(terraform_cmd)}")
     
     try:
@@ -186,7 +186,7 @@ def main():
         result = subprocess.run(terraform_cmd, env=os.environ.copy())
         sys.exit(result.returncode)
     except FileNotFoundError:
-        log_error("Terraform is not installed or not in PATH")
+        log_error("OpenTofu (tofu) is not installed or not in PATH")
         sys.exit(1)
 
 
