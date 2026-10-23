@@ -16,7 +16,8 @@ Run everything from the repo root, in the nix shell with direnv loaded.
 
 - **Tofu:** `bin/tf` loads the Cloudflare token (`tf-cloudflare-api-token` in `kv-terraform-terraform`). It is a
   *user* token (id `a98f9cc48382cd62c78a8e217777b05f`) under My Profile > API Tokens of the login that created it.
-  - Account permissions: D1, Workers R2 Storage, Queues and Workers Scripts edit, plus Account Settings read.
+  - Account permissions: D1, Workers R2 Storage, Workers KV Storage, Queues and Workers Scripts edit, plus Account
+    Settings read.
   - Zone permissions: DNS and Workers Routes edit.
 - **Wrangler:** `.envrc` pins `CLOUDFLARE_ACCOUNT_ID` and exports the same token from the keychain
   (`heartbeat-cloudflare-api-token`), so no `wrangler login` is needed. To copy it there once (then `direnv allow`):
