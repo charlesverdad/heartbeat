@@ -14,6 +14,8 @@
 	"account_id": "d26a8771162442a563371ea8097acc89",
 	"main": "worker/worker.js",
 	"no_bundle": true,
+	// pulse-v2 W18P: skip esbuild's __name() wrappers, which cost CPU on every request.
+	"keep_names": false,
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat", "nodejs_als", "global_fetch_strictly_public"],
 	"assets": { "directory": "assets", "binding": "ASSETS" },
