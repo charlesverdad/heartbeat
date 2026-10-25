@@ -37,6 +37,15 @@ site an **embed** URL rather than a watch URL:
     preview_styles.py      # contact sheet of placements/sizes over real frames
     bake_subs.py           # only if a caption track is not an option (see below)
 
+Farsi + Traditional Chinese, one line each (`/sermon-farsi-subtitles`):
+
+    (translate)            # subagents again, TRANSLATION_BRIEF_fa.md + glossary_fa.json -> fa_N.json
+    check_batches.py --lang fa
+    build_bilingual.py     # one Farsi + one zh-Hant line per cue, shared timing
+    qa_bilingual.py        # text checks, contact sheets to LOOK at, Whisper sync spot-check
+    bilingual_ass.py       # house style (stacked, outline + shadow) and the burn
+    fetch_fonts.py         # Noto Sans CJK TC + Vazirmatn into ./fonts (gitignored)
+
 The translate step is done by Claude subagents, not by an external API. That is
 the whole point of running it as a skill: the model driving the pipeline is the one
 that translates, with `TRANSLATION_BRIEF.md` and `glossary_zh.json` in front of it.

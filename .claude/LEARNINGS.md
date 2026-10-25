@@ -685,3 +685,21 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - **`apply_edits.py` rewrites `overrides_zh.json`** and rebuilds the English from `sentences_marked.json`. Any manual overrides made before it runs are lost, so re-apply them afterwards.
 - **The cut runs to the end of Josh's closing prayer**, which often plays over the last song. Check that `filter_song.py` didn't tag the prayer as music.
 - **When `make_editor.py --fetch` gets 403s**, build the review copy from the local `audio.m4a` with ffmpeg (32k mono, `+faststart`) instead of fetching it again.
+
+## zh-Hant subtitles, guest speaker (2026-10-25, Julie Kim, `pL8YRgUKNSE`)
+
+- **Not every sermon is Pastor Josh.** Guest Sundays: the cut starts at the introducer's line right after "This is the word of God" (grep the throwaway base ASR for it). The user asked to run to the end of the stream; the Sydney stream ended mid-benediction.
+- **`filter_song.py` misses closing worship that Whisper splits into short lines** ("Jesus be the name." x10 read as speech) and silent-prayer "Thank you." hallucinations. Hand-mark them by index after reading every line after the sermon.
+- **`bake_subs.py --preview` writes an HTML page with an embedded JPEG whatever `--out` says.** Pull the base64 image out to view it.
+- **`tailscale funnel --bg 8777` works publicly, but `curl` from this Mac to its own ts.net name fails TLS (resolves to 100.x).** Test with `--resolve host:443:<public ip from dig @1.1.1.1>`.
+- **direnv may block `.envrc` after an edit.** For rclone, run it inside `nix-shell` with `RCLONE_PASSWORD_COMMAND` exported by hand instead of approving the file on the user's behalf. Link a Drive file as `https://drive.google.com/file/d/<lsjson ID>/view`; `rclone link` changes sharing.
+
+## Farsi + zh-Hant bilingual subtitles (2026-10-25)
+
+- **Compare subtitle sizes by measuring glyphs on rendered frames, never by the Fontsize number.** libass Fontsize is the font's line height, so Noto CJK at 64 came out ~20% *smaller* than the old Hiragino size-18 burn. I told the user the opposite before measuring.
+- **Farsi in libass needs `Encoding -1` plus a U+200F prefix**, or punctuation lands on the wrong end and Latin-initial lines run left to right.
+- **cjk.split_text is wrong for single-line cues:** with one comma it yields one long piece plus one-character slivers. `build_bilingual.zh_split` balances by width.
+- **Splitting by share of text keeps Farsi and Chinese pieces only roughly aligned** (the Farsi can be half a clause ahead). Each viewer reads one line, so this is acceptable, but don't promise word-level alignment.
+- **Sync can be checked without listening:** Whisper base on the audio under a cue, scored against the cue's English (`qa_bilingual.py --sync`). The first run had a median of 100%.
+- **Slides whose text reaches ~85% of frame height collide with the stacked Farsi line** (Numbers 6 slide). Report it; the layout is the user's call.
+- **Monitor's maximum timeout is 30 min**, which is why a `chime receive --watch` listener "times out". Re-arm it; it isn't a chime bug.
