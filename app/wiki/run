@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$SCRIPT_DIR/backend"
+FRONTEND_DIR="$SCRIPT_DIR/frontend"
+
+usage() {
+    echo "Usage: ./run <command>"
+    echo ""
+    echo "Commands:"
+    echo "  dev     Start both frontend and backend dev servers"
+    echo "  test    Run all unit tests (backend)"
+    echo ""
+}
+
+cmd_dev() {
+    echo "Starting backend and frontend dev servers..."
+
+    # Start backend in background
+    nix-shell "$SCRIPT_DIR/shell.nix" --pure --run "cd $BACKEND_DIR && uv run uvicorn app.main:app --reload --port 8000" &
+    BACKEND_PID=$!
+
+    # Start frontend in background
+    nix-shell "$SCRIPT_DIR/shell.nix" --pure --run "cd $FRONTEND_DIR && yarn dev" &
+    FRONTEND_PID=$!
+
+    # Handle cleanup on exit
+    trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
+
+    echo ""
+    echo "Backend running on http://localhost:8000"
+    echo "Frontend running on http://localhost:3000"
+    echo "Press Ctrl+C to stop both servers"
+    echo ""
+
+    # Wait for both processes
+    wait
+}
+
+cmd_test() {
+    echo "Running backend tests..."
+    nix-shell "$SCRIPT_DIR/shell.nix" --pure --run "cd $BACKEND_DIR && uv run pytest -v $*"
+}
+
+case "${1:-}" in
+    dev)
+        cmd_dev
+        ;;
+    test)
+        shift
+        cmd_test "$@"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac

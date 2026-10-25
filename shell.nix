@@ -4,6 +4,7 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     # Python environment
     python3
+    uv
     python3Packages.pip
     python3Packages.virtualenv
     
