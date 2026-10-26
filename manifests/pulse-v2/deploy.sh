@@ -72,7 +72,10 @@ trap cleanup EXIT
 
 if [[ -n "$release" ]]; then
     log "Downloading release $release"
-    asset="pulse-${release#v}.tar.gz"   # tag v0.3.0 ships pulse-0.3.0.tar.gz
+    # Tags up to v0.7.0 ship pulse-0.7.0.tar.gz; from v0.7.1 the asset keeps the v (pulse-v0.7.1.tar.gz).
+    asset=$(gh release view "$release" -R "$GH_REPO" --json assets -q '.assets[].name' \
+        | grep -xE "pulse-v?${release#v}\.tar\.gz" | head -1)
+    [[ -n "$asset" ]] || { echo "no pulse-*.tar.gz asset on release $release" >&2; exit 1; }
     gh release download "$release" -R "$GH_REPO" -p "$asset*" -D "$work"
     (cd "$work" && shasum -a 256 -c "$asset.sha256")
     tarball="$work/$asset"
