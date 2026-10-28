@@ -57,6 +57,9 @@
 			"vars": {
 				"PUBLIC_ORIGIN": "__PUBLIC_ORIGIN__",
 				"MCP_ALLOWED_ORIGINS": "",
+				// Account emails (Invite, Welcome) go out over Gmail SMTP as v1's sender. Its app password is the
+				// GMAIL_APP_PASSWORD secret, from Key Vault smtp-pass (secrets.sh).
+				"GMAIL_USER": "noreply@heartbeatchurch.com.au",
 				"D1_READ_MODE": "primary"
 			},
 			"secrets": { "required": ["HMAC_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] }
