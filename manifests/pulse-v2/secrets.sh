@@ -9,6 +9,7 @@
 #
 #   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET  <- google-client-id / google-client-secret (v1's sign-in client)
 #   GDRIVE_SA_EMAIL / GDRIVE_SA_PRIVATE_KEY  <- google-service-account-key (Drive folder embeds)
+#   GMAIL_APP_PASSWORD                       <- smtp-pass (v1's Google Workspace app password for GMAIL_USER)
 #   ADMIN_EMAILS                             <- $ADMIN_EMAILS (comma list of bootstrap admins)
 #   HMAC_SECRET                              <- freshly generated, only with ROTATE_HMAC=yes
 #
@@ -39,6 +40,7 @@ jq -n \
     --rawfile id <(kv google-client-id) \
     --rawfile secret <(kv google-client-secret) \
     --rawfile sa <(kv google-service-account-key) \
+    --rawfile gmail <(kv smtp-pass) \
     --rawfile hmac <(hmac) \
     --arg admins "$ADMIN_EMAILS" '
     def need($name): if . == "" then error("missing \($name)") else . end;
@@ -48,6 +50,7 @@ jq -n \
         GOOGLE_CLIENT_SECRET: ($secret | rtrimstr("\n") | need("google-client-secret")),
         GDRIVE_SA_EMAIL: ($key.client_email | need("client_email")),
         GDRIVE_SA_PRIVATE_KEY: ($key.private_key | need("private_key")),
+        GMAIL_APP_PASSWORD: ($gmail | rtrimstr("\n") | need("smtp-pass")),
         ADMIN_EMAILS: $admins
       }
     + (if $hmac == "" then {} else { HMAC_SECRET: ($hmac | gsub("\\s"; "")) } end)'
