@@ -686,6 +686,17 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - **The cut runs to the end of Josh's closing prayer**, which often plays over the last song. Check that `filter_song.py` didn't tag the prayer as music.
 - **When `make_editor.py --fetch` gets 403s**, build the review copy from the local `audio.m4a` with ffmpeg (32k mono, `+faststart`) instead of fetching it again.
 
+## hb-pulse (v1) on vm1 and the pulse-v2 move
+- SSH direct: `ssh -i ~/.ssh/heartbeat_vm_access_key vmadmin@20.58.140.44` (IP in manifests/hb-pulse/RUNBOOK.md); the vm1 tunnel hostname may be down.
+- v1 never persisted uploads: `UPLOAD_DIR` is unset, so files went to `/app/data/uploads` inside the container, not the `/data/hb-pulse/uploads` mount. Each redeploy loses them; the 6 March–April images are gone.
+- A transient DNS failure (`EAI_AGAIN pulse-db`) crashes the v1 app; Docker restarts it, and Cloudflare shows 530 meanwhile.
+- pulse-v2 deploys from a prebuilt bundle with our own `manifests/pulse-v2/wrangler.jsonc` (pulse-v2 docs/deploy.md §10). wrangler refuses a first deploy whose `secrets.required` are unset unless they come via `--secrets-file`. Pipe them to `--secrets-file /dev/stdin`: `<(...)` fails with EBADF because the wrangler binary re-launches node.
+- `tofu apply -target=...` does not store outputs that depend on nothing (e.g. `"https://${var.hostname}"`), so scripts must not rely on them after a targeted first apply.
+- Workers custom domains need the Worker to exist, and fail if a DNS record already holds the name.
+- Content moves into prod D1 as SQL (`backups/pulse-v2-content/`: `build_content.py` writes a spec, then `hb-content-sql.ts`, run from a pulse-v2 checkout at the deployed tag, writes idempotent `nod_hb_*` rows). Take `wrangler d1 time-travel info pulse` first.
+- pulse-v2's `htmlToDoc` (scripts/heartbeat/convert.ts) unwraps site-relative links (it treats them as v1-internal) and turns every callout into a note. Parse authored HTML straight into the editor schema instead.
+- The v2 wiki path is the slugs from the space down: `/wiki/<space>/<collection>/<page>`. Relative `/wiki/...` links are allowed in page content and open in the same tab.
+
 ## zh-Hant subtitles, guest speaker (2026-10-25, Julie Kim, `pL8YRgUKNSE`)
 
 - **Not every sermon is Pastor Josh.** Guest Sundays: the cut starts at the introducer's line right after "This is the word of God" (grep the throwaway base ASR for it). The user asked to run to the end of the stream; the Sydney stream ended mid-benediction.
