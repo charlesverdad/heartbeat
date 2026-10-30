@@ -113,3 +113,6 @@ youtube/zh_subs/subtitle_size_zh.html
 # tracks (~4 GB), plus per-session working files. The tooling beside them is tracked.
 youtube/ptw-course/session-*/
 youtube/ptw-course/.work/
+
+# Bundled subtitle fonts (~16 MB), fetched by youtube/zh_subs/fetch_fonts.py
+youtube/zh_subs/fonts/

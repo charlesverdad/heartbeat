@@ -757,6 +757,60 @@ def test_offset_staleness_guard():
     check("the error names both numbers and the drift",
           "0.0" in out and "2481.0" in out and "2481s" in out, out[:220])
 
+# ---------------------------------------------------------------- bilingual
+def test_bilingual():
+    print("\nbilingual: one Farsi line over one Chinese line")
+    import fa, build_bilingual, bilingual_ass
+    check("Arabic letter forms become Persian", fa.normalise("كتاب مقدس عيسي") == "کتاب مقدس عیسی")
+    check("Islamic register is flagged", fa.problems("الله را نماز بخوانیم") and not fa.problems("خدا را دعا کنیم"))
+    long_fa = "اما وقتی به متن عبری این فرمان عمیق‌تر نگاه کنیم، معنایش خیلی بیشتر از این است و باید با دقت بخوانیم."
+    parts = fa.split_text(long_fa, 2)
+    check("Farsi splits into whole words only", " ".join(parts) == long_fa and len(parts) == 2, parts)
+    check("Farsi prefers to split after punctuation", parts[0].endswith("،"), parts)
+
+    zh = "但其實當我們深入看這條誡命的希伯來文，它的意思遠不止於此，遠遠不止於此。"
+    pieces = build_bilingual.split_pair(zh, long_fa, 8.0)
+    check("long sentence is cut into the same number of pieces in both languages",
+          len(pieces) >= 2 and all(z and f for z, f, _ in pieces), pieces)
+    check("every Chinese piece fits one line",
+          all(cjk.visual_len(z) <= build_bilingual.ZH_MAX for z, _, _ in pieces), pieces)
+    check("pieces carry all the text", "".join(z for z, _, _ in pieces) == zh
+          and " ".join(f for _, f, _ in pieces) == long_fa)
+    check("piece weights sum to one", abs(sum(w for _, _, w in pieces) - 1) < 1e-6)
+    check("a short sentence is sliced only as far as width demands",
+          all(cjk.visual_len(z) <= build_bilingual.ZH_MAX and len(f) <= fa.MAX_CHARS
+              for z, f, _ in build_bilingual.split_pair(zh, long_fa, 1.5)))
+    check("a short line that fits is never sliced",
+          len(build_bilingual.split_pair("阿們。", "آمین.", 0.4)) == 1)
+    parts = build_bilingual.zh_split("今天我想和大家分享我們讀過的約翰福音14章中的一小段：你們若愛我。", 2)
+    check("Chinese single-line split is balanced, not a long piece plus slivers",
+          len(parts) == 2 and min(map(len, parts)) >= 10, parts)
+
+    marked = {"offset": 100.0, "sentences": [
+        {"start": 0.0, "end": 8.0, "text": " ".join(["word"] * 30), "kind": "speech"},
+        {"start": 8.1, "end": 9.0, "text": "Amen.", "kind": "speech"},
+        {"start": 9.5, "end": 30.0, "text": "la la la", "kind": "song"},
+        {"start": 30.0, "end": 31.0, "text": "Okay.", "kind": "speech"}]}
+    cues = build_bilingual.build(marked, {0: zh, 1: "阿们。", 2: "啦", 3: "好。"},
+                                 {0: long_fa, 1: "آمین.", 2: "لا", 3: "خب."}, marked["offset"])
+    check("cues are in full-video time", cues[0]["start"] == 100.0, cues[0])
+    check("song gets no cue", all(c["id"] != 2 for c in cues))
+    check("no two cues on screen at once",
+          all(a["end"] <= b["start"] for a, b in zip(cues, cues[1:])), [(c["start"], c["end"]) for c in cues])
+    check("Chinese is converted to Traditional", any(c["zh"] == "阿們。" for c in cues))
+    q = build_bilingual.build({"offset": 0, "sentences": [{"start": 0, "end": 3, "text": "Amen.", "kind": "speech"}]},
+                              {0: "“阿们”。"}, {0: "«آمین»."}, 0)
+    check("curly quotes become corner brackets", q[0]["zh"] == "「阿們」。", q)
+    check("English slices cover the sentence once",
+          " ".join(c["en"] for c in cues if c["id"] == 0) == marked["sentences"][0]["text"])
+
+    out = bilingual_ass.ass(cues, 100.0)
+    check("ASS is rebased onto the cut", "Dialogue: 0,0:00:00.00," in out, out[-300:])
+    check("Farsi lines carry a right-to-left mark", "FA,,0,0,0,,\u200f" in out)
+    check("stacked: Farsi bottom-aligned above Chinese",
+          re.search(r"Style: FA,.*,2,60,60,(\d+),-1", out) and int(re.search(r"Style: FA,.*,2,60,60,(\d+),-1", out)[1]) > 90)
+    check("split: Farsi at top centre", re.search(r"Style: FA,.*,8,60,60,36,-1", bilingual_ass.ass(cues, 100.0, "split")))
+
 if __name__ == "__main__":
     for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
@@ -764,7 +818,7 @@ if __name__ == "__main__":
               test_halluc_loops, test_offset_staleness_guard,
               test_style_shadow, test_preview_honours_style_flags,
               test_back_reaches_the_encode, test_to_traditional,
-              test_latin, test_merge_join, test_english_track, test_no_song):
+              test_latin, test_merge_join, test_english_track, test_no_song, test_bilingual):
         try:
             t()
         except Exception as e:

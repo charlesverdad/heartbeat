@@ -14,6 +14,9 @@ he says amen. No worship, announcements or closing song.
 Target: subtitles ready **2-3 hours after the service is published**. The compute
 is about 10 minutes; the rest is translation and your review.
 
+**Farsi as well?** For a Farsi line stacked above the Chinese, run steps 1-6
+here, then follow `/sermon-farsi-subtitles`.
+
 ## Input
 
 The user provides:

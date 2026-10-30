@@ -696,3 +696,21 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - Content moves into prod D1 as SQL (`backups/pulse-v2-content/`: `build_content.py` writes a spec, then `hb-content-sql.ts`, run from a pulse-v2 checkout at the deployed tag, writes idempotent `nod_hb_*` rows). Take `wrangler d1 time-travel info pulse` first.
 - pulse-v2's `htmlToDoc` (scripts/heartbeat/convert.ts) unwraps site-relative links (it treats them as v1-internal) and turns every callout into a note. Parse authored HTML straight into the editor schema instead.
 - The v2 wiki path is the slugs from the space down: `/wiki/<space>/<collection>/<page>`. Relative `/wiki/...` links are allowed in page content and open in the same tab.
+
+## zh-Hant subtitles, guest speaker (2026-10-25, Julie Kim, `pL8YRgUKNSE`)
+
+- **Not every sermon is Pastor Josh.** Guest Sundays: the cut starts at the introducer's line right after "This is the word of God" (grep the throwaway base ASR for it). The user asked to run to the end of the stream; the Sydney stream ended mid-benediction.
+- **`filter_song.py` misses closing worship that Whisper splits into short lines** ("Jesus be the name." x10 read as speech) and silent-prayer "Thank you." hallucinations. Hand-mark them by index after reading every line after the sermon.
+- **`bake_subs.py --preview` writes an HTML page with an embedded JPEG whatever `--out` says.** Pull the base64 image out to view it.
+- **`tailscale funnel --bg 8777` works publicly, but `curl` from this Mac to its own ts.net name fails TLS (resolves to 100.x).** Test with `--resolve host:443:<public ip from dig @1.1.1.1>`.
+- **direnv may block `.envrc` after an edit.** For rclone, run it inside `nix-shell` with `RCLONE_PASSWORD_COMMAND` exported by hand instead of approving the file on the user's behalf. Link a Drive file as `https://drive.google.com/file/d/<lsjson ID>/view`; `rclone link` changes sharing.
+
+## Farsi + zh-Hant bilingual subtitles (2026-10-25)
+
+- **Compare subtitle sizes by measuring glyphs on rendered frames, never by the Fontsize number.** libass Fontsize is the font's line height, so Noto CJK at 64 came out ~20% *smaller* than the old Hiragino size-18 burn. I told the user the opposite before measuring.
+- **Farsi in libass needs `Encoding -1` plus a U+200F prefix**, or punctuation lands on the wrong end and Latin-initial lines run left to right.
+- **cjk.split_text is wrong for single-line cues:** with one comma it yields one long piece plus one-character slivers. `build_bilingual.zh_split` balances by width.
+- **Splitting by share of text keeps Farsi and Chinese pieces only roughly aligned** (the Farsi can be half a clause ahead). Each viewer reads one line, so this is acceptable, but don't promise word-level alignment.
+- **Sync can be checked without listening:** Whisper base on the audio under a cue, scored against the cue's English (`qa_bilingual.py --sync`). The first run had a median of 100%.
+- **Slides whose text reaches ~85% of frame height collide with the stacked Farsi line** (Numbers 6 slide). Report it; the layout is the user's call.
+- **Monitor's maximum timeout is 30 min**, which is why a `chime receive --watch` listener "times out". Re-arm it; it isn't a chime bug.

@@ -11,7 +11,7 @@ it can be chained:  check_batches.py <dir> && build_srt.py ...
 """
 import argparse, json, pathlib, sys
 
-def load(batchdir):
+def load(batchdir, lang="zh"):
     bd = pathlib.Path(batchdir)
     asked, per_batch = {}, {}
     for f in sorted(bd.glob("batch_*.json")):
@@ -19,14 +19,14 @@ def load(batchdir):
         per_batch[f.stem] = ids
         asked.update({i: f.stem for i in ids})
     got, blank = set(), set()
-    for f in sorted(bd.glob("zh_*.json")):
+    for f in sorted(bd.glob(f"{lang}_*.json")):
         for t in json.load(open(f))["translations"]:
             i = int(t["id"])
-            (got if str(t.get("zh", "")).strip() else blank).add(i)
+            (got if str(t.get(lang, "")).strip() else blank).add(i)
     return asked, per_batch, got, blank
 
-def main(batchdir):
-    asked, per_batch, got, blank = load(batchdir)
+def main(batchdir, lang="zh"):
+    asked, per_batch, got, blank = load(batchdir, lang)
     if not asked:
         print(f"no batch_*.json in {batchdir}", file=sys.stderr)
         return 2
@@ -44,13 +44,13 @@ def main(batchdir):
               (f"  missing {len(miss)}: {miss[:8]}{' ...' if len(miss) > 8 else ''}" if miss else ""))
 
     if blank:
-        print(f"  !! {len(blank)} returned with empty zh: {sorted(blank)[:8]}")
+        print(f"  !! {len(blank)} returned with empty {lang}: {sorted(blank)[:8]}")
     if stray:
         print(f"  -- {len(stray)} ids nobody asked for: {sorted(stray)[:8]}")
 
     if missing or blank:
         need = sorted({asked[i] for i in missing if i in asked})
-        print(f"\nNOT READY. Re-run: {', '.join(need) if need else '(see empty zh above)'}")
+        print(f"\nNOT READY. Re-run: {', '.join(need) if need else f'(see empty {lang} above)'}")
         return 1
     print("\nevery sentence came back -- safe to build")
     return 0
@@ -59,4 +59,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("batches", help="the batches/ directory")
-    sys.exit(main(ap.parse_args().batches))
+    ap.add_argument("--lang", default="zh", help="translation files to check: zh (zh_*.json) or fa (fa_*.json)")
+    a = ap.parse_args()
+    sys.exit(main(a.batches, a.lang))
