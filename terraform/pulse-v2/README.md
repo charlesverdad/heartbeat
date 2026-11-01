@@ -86,7 +86,8 @@ domain, its DNS records, a send-only key restricted to that domain, and the webh
 the committed `.terraform.lock.hcl`; read its diff before bumping it.
 
 - **First apply:** `../../bin/tf -f prod apply -target=resend_domain.mail`, then `../../bin/tf -f prod apply` (the DNS
-  records come from the domain). Check `tofu output resend_domain_status` until it says `verified`.
+  records come from the domain). The second apply waits up to 20 minutes for Resend to verify the domain; if it
+  times out, run it again. `../../bin/tf -f prod apply -refresh-only` refreshes `resend_domain_status` later.
 - **Worker secrets:** the send-only key and the webhook's signing secret exist only in state. Upload them without
   printing them:
   ```bash

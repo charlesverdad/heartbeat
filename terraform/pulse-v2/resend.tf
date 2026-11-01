@@ -31,11 +31,16 @@ resource "resend_domain" "mail" {
 locals {
   zone_name = "heartbeatchurch.com.au"
 
-  # cloudflare_dns_record wants full names; Resend's may be relative to the zone ("send.mail").
+  resend_sub = trimsuffix(var.resend_domain, ".${local.zone_name}") # "mail"
+
+  # cloudflare_dns_record wants full names. Resend's are relative, but whether to the zone ("send.mail") or to the
+  # domain ("send") is not documented, so accept either. The precondition below catches anything else.
   resend_records = {
     for r in resend_domain.mail.records :
     "${r.record}-${r.type}-${r.name}" => merge(r, {
-      fqdn = endswith(r.name, local.zone_name) ? r.name : "${r.name}.${local.zone_name}"
+      fqdn = (endswith(r.name, ".${local.zone_name}") ? r.name
+        : r.name == local.resend_sub || endswith(r.name, ".${local.resend_sub}") ? "${r.name}.${local.zone_name}"
+      : "${r.name}.${var.resend_domain}")
     })
   }
 }
@@ -51,11 +56,24 @@ resource "cloudflare_dns_record" "resend" {
   proxied  = false
   ttl      = 1
   comment  = "Terraform (terraform/pulse-v2) - Resend ${each.value.record} for ${var.resend_domain}"
+
+  lifecycle {
+    precondition {
+      condition     = each.value.fqdn == var.resend_domain || endswith(each.value.fqdn, ".${var.resend_domain}")
+      error_message = "Resend record ${each.value.name} maps to ${each.value.fqdn}, outside ${var.resend_domain}."
+    }
+  }
 }
 
-# Asks Resend to re-check DNS once; the status settles to verified on later refreshes.
+# Waits until Resend sees the records (it re-asks Resend to check every minute). Cloudflare DNS is usually live
+# within minutes; if this times out, re-run the apply.
 resource "resend_domain_verification" "mail" {
-  domain_id = resend_domain.mail.id
+  domain_id           = resend_domain.mail.id
+  wait_until_verified = true
+
+  timeouts = {
+    create = "20m"
+  }
 
   depends_on = [cloudflare_dns_record.resend]
 }
