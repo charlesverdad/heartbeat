@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Cut editor</title>
+<link rel="stylesheet" href="/app.css">
+<div id="app">
+  <header>
+    <b>Cut editor</b>
+    <span id="stats" class="dim"></span>
+    <span class="spacer"></span>
+    <span id="saved" class="dim"></span>
+    <button id="save">Save</button>
+  </header>
+
+  <aside>
+    <div id="list"></div>
+  </aside>
+
+  <main>
+    <div id="stage">
+      <video id="vid" preload="metadata" controls></video>
+      <div id="side">
+        <div id="clipinfo"></div>
+        <div id="warn"></div>
+        <div class="btns">
+          <button data-act="playclip">▶ Clip <kbd>↵</kbd></button>
+          <button data-act="audition">▶ Edge <kbd>P</kbd></button>
+          <button data-act="playcut">▶ Cut from here <kbd>C</kbd></button>
+          <label class="chk" title="While on, every play action skips anything that is not green">
+            <input type="checkbox" id="keptonly"> Play kept only <kbd>A</kbd></label>
+        </div>
+        <div class="nudge">
+          <div class="row"><span>Start</span>
+            <button data-nudge="start,-0.5">−.5</button>
+            <button data-nudge="start,-0.1">−.1</button>
+            <button data-nudge="start,0.1">+.1</button>
+            <button data-nudge="start,0.5">+.5</button>
+          </div>
+          <div class="row"><span>End</span>
+            <button data-nudge="end,-0.5">−.5</button>
+            <button data-nudge="end,-0.1">−.1</button>
+            <button data-nudge="end,0.1">+.1</button>
+            <button data-nudge="end,0.5">+.5</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button data-act="snapstart">Snap start to pause</button>
+          <button data-act="snapend">Snap end to pause</button>
+        </div>
+        <div class="btns">
+          <button data-act="del">Drop / restore <kbd>D</kbd></button>
+          <button data-act="add">Add clip at playhead</button>
+          <button data-act="revert">Revert all to baseline</button>
+        </div>
+        <p class="hint dim">
+          <kbd>←</kbd><kbd>→</kbd> clip · <kbd>[</kbd><kbd>]</kbd> pick edge ·
+          <kbd>J</kbd><kbd>L</kbd> nudge (<kbd>⇧</kbd> bigger) · <kbd>space</kbd> play ·
+          <kbd>⌘S</kbd> save. Drag the green edges too.
+        </p>
+      </div>
+    </div>
+
+    <canvas id="detail" height="230"></canvas>
+    <div id="text"></div>
+    <canvas id="over" height="54"></canvas>
+  </main>
+</div>
+<script src="/app.js"></script>

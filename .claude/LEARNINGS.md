@@ -4,7 +4,7 @@
 
 - **Camp / special-event streams live on the Gold Coast channel** (`@heartbeatgoldcoast2173/streams`), not the main `@HeartbeatChurch` channel. If a Sunday has no stream on the main channel, check there before concluding no service happened.
 - **A "5-min read" = 1,000-1,250 words** (user-defined). Give writer subagents a hard cap; drafts at the older 1200-1800 target will need trimming.
-- **`ghost-list-posts.mjs` only lists published posts.** To check for existing drafts, copy it and change the filter `status:published` → `status:draft`. Always check drafts before creating posts (use `ghost-publish.mjs --updateId <id>` to update in place).
+- **`ghost-list-posts.mjs` defaults to published posts; pass `--status draft` (or `all`) to see drafts.** Always check drafts before creating posts (use `ghost-publish.mjs --updateId <id>` to update in place). Don't sed-patch the filter: the flag exists, and a no-op sed silently returns the published list.
 - **Camp session numbering ≠ sermon numbering.** QLD camp 2026 had 4 sessions but only 3 sermons (Session 2 was prayer pathways). In posts, refer to "Saturday night's message" rather than "session N" to avoid clashing with YouTube video titles. Session 3 was split across two videos (worship video first, sermon video second) — embed the sermon video.
 - **Pastor Josh's daughter is "Skye" and his wife is "Yoonah"** — confirmed by the user 2026-08-05. Some already-published posts spell her "Sky"; that spelling is wrong, and an earlier version of this file wrongly endorsed it from those posts. Do not derive name spellings from published posts. She and PM were commissioned as full shepherds on 2026-07-12.
 - **`ghost-publish.mjs` cannot change the slug.** There is no `--slug` flag, and Ghost keeps the existing slug on `--updateId`. If the title changes after the draft is created, the slug stays stale and must be edited by hand in the Ghost editor's post settings. Settle the title before the first publish to avoid this.
@@ -686,9 +686,16 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - **The cut runs to the end of Josh's closing prayer**, which often plays over the last song. Check that `filter_song.py` didn't tag the prayer as music.
 - **When `make_editor.py --fetch` gets 403s**, build the review copy from the local `audio.m4a` with ffmpeg (32k mono, `+faststart`) instead of fetching it again.
 
+## Sermon subtitles, 2026-10-18 (Brisbane, YclhNKdXLks)
+
+- **A just-published stream can download truncated without any error.** The first `prepare.py` pull came down at 30 KB/s and stopped at 11.5 of 91 min, and still exited 0. Always compare `stream` minutes against the yt-dlp `duration`; a re-pull ~an hour later ran at full speed.
+- **Pastor Josh preaches the monthly Brisbane service in person.** He opened with ~3 min on the Brisbane campus plan before his opening prayer; the cut started there (right after the reading), not at the "message" proper.
+- **Subagents sometimes merge a one-word fragment into the previous line and leave it empty** (`myself.` → empty zh, flagged "merged"). `check_batches.py` catches it; split the Chinese across the seam by hand instead of re-running the batch.
+
 ## hb-pulse (v1) on vm1 and the pulse-v2 move
 - SSH direct: `ssh -i ~/.ssh/heartbeat_vm_access_key vmadmin@20.58.140.44` (IP in manifests/hb-pulse/RUNBOOK.md); the vm1 tunnel hostname may be down.
 - v1 never persisted uploads: `UPLOAD_DIR` is unset, so files went to `/app/data/uploads` inside the container, not the `/data/hb-pulse/uploads` mount. Each redeploy loses them; the 6 March–April images are gone.
+- Full backup: `HOST=vmadmin@20.58.140.44 SSH_KEY=~/.ssh/heartbeat_vm_access_key manifests/hb-pulse/backup-vm.sh` (pg_restore isn't on the Mac; the final check needs the hb-pulse nix shell).
 - A transient DNS failure (`EAI_AGAIN pulse-db`) crashes the v1 app; Docker restarts it, and Cloudflare shows 530 meanwhile.
 - pulse-v2 deploys from a prebuilt bundle with our own `manifests/pulse-v2/wrangler.jsonc` (pulse-v2 docs/deploy.md §10). wrangler refuses a first deploy whose `secrets.required` are unset unless they come via `--secrets-file`. Pipe them to `--secrets-file /dev/stdin`: `<(...)` fails with EBADF because the wrangler binary re-launches node.
 - `tofu apply -target=...` does not store outputs that depend on nothing (e.g. `"https://${var.hostname}"`), so scripts must not rely on them after a targeted first apply.
@@ -702,8 +709,28 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - **Not every sermon is Pastor Josh.** Guest Sundays: the cut starts at the introducer's line right after "This is the word of God" (grep the throwaway base ASR for it). The user asked to run to the end of the stream; the Sydney stream ended mid-benediction.
 - **`filter_song.py` misses closing worship that Whisper splits into short lines** ("Jesus be the name." x10 read as speech) and silent-prayer "Thank you." hallucinations. Hand-mark them by index after reading every line after the sermon.
 - **`bake_subs.py --preview` writes an HTML page with an embedded JPEG whatever `--out` says.** Pull the base64 image out to view it.
+- **Low placement (`--align 2 --margin 4 --size 18 --border box`) is clean on the Sydney stream**, which has no burned English captions.
 - **`tailscale funnel --bg 8777` works publicly, but `curl` from this Mac to its own ts.net name fails TLS (resolves to 100.x).** Test with `--resolve host:443:<public ip from dig @1.1.1.1>`.
 - **direnv may block `.envrc` after an edit.** For rclone, run it inside `nix-shell` with `RCLONE_PASSWORD_COMMAND` exported by hand instead of approving the file on the user's behalf. Link a Drive file as `https://drive.google.com/file/d/<lsjson ID>/view`; `rclone link` changes sharing.
+
+## Pastor Josh quote catalogue (2026-10-30)
+
+- `youtube/josh-quotes/` contains the catalogue. It is gitignored and kept local (like `youtube/transcripts/`), because this repo is public:
+  - `mining/batch*.jsonl` is the raw output of the Sonnet miners. `mining/BRIEF.md` is their brief.
+  - `build_catalog.py` builds `catalog.json`.
+  - `render_catalog.py` writes `CATALOG.md`, and its hand-picked highlights live in `PICKS`.
+  - `cut_clips.py` writes the 720p clips to `clips/`, which is gitignored.
+- **Don't trust miners' timestamps.** `build_catalog.py` finds each quote's opening words in the transcript and takes
+  the `[HH:MM:SS]` marker at or before them. Untimed transcripts are mapped through a `-timed` re-transcription.
+  - Check alignment by transcribing the clip with whisper-base. 77–95% quote coverage means it's aligned.
+- **Our CLI transcriber doesn't force English.** Whisper guesses the language from the opening music, so whole services
+  can come out as Portuguese or Welsh gibberish (02-08, 03-29).
+  - Re-run them with `language="en"` and `condition_on_previous_text=False`.
+  - `-retx` files are the fixed copies.
+- **YouTube gives these livestreams no auto-captions**, so captions can't supply timestamps. Re-transcribe instead.
+- **Blog meta `youtube_url` is sometimes the wrong upload for that date** (02-08, 08-16, 09-27). Check the transcript's
+  last marker against `yt-dlp --print duration` before trusting it.
+- **Some transcripts aren't Pastor Josh at all.** 05-24, 05-17, 06-28, 09-27 and 10-25 are shepherd or guest Sundays.
 
 ## Farsi + zh-Hant bilingual subtitles (2026-10-25)
 

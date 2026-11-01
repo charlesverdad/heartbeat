@@ -18,7 +18,7 @@ pkgs.mkShell {
     direnv
     azure-cli
     google-cloud-sdk
-    terraform
+    opentofu
     cloudflared
     kubectl
     kubelogin

@@ -1,0 +1,225 @@
+<title>PTW Subtitle Styles</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#ECE8E1; --surface:#F6F3EE; --ink:#1F201D; --muted:#6B675F; --faint:#8E897F;
+  --line:#D5CFC4; --accent:#3F5C4E; --accent-ink:#F4F1EB; --shipped:#B0613F;
+  --stage-edge:rgba(31,32,29,.12);
+  --sans:"Hanken Grotesk","Helvetica Neue",Helvetica,Arial,"PingFang TC","Heiti TC",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#141512; --surface:#1D1E1A; --ink:#E9E5DD; --muted:#A09B91; --faint:#7C786F;
+    --line:#34352F; --accent:#9DBDAB; --accent-ink:#141512; --shipped:#DE9072;
+    --stage-edge:rgba(233,229,221,.10); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#141512; --surface:#1D1E1A; --ink:#E9E5DD; --muted:#A09B91; --faint:#7C786F;
+  --line:#34352F; --accent:#9DBDAB; --accent-ink:#141512; --shipped:#DE9072;
+  --stage-edge:rgba(233,229,221,.10); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:400 15px/1.55 var(--sans);
+  padding-inline:clamp(16px,3vw,40px);padding-block:28px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:22px}
+header{display:grid;gap:6px}
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-weight:300;font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:0;max-width:68ch}
+kbd{font:500 11.5px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+  padding:0 5px;background:var(--surface);color:var(--ink);white-space:nowrap}
+
+.layout{display:grid;gap:22px;grid-template-columns:minmax(0,1fr) 290px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+figure{margin:0;display:grid;gap:12px}
+.stage{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;overflow:hidden;
+  background:#000;box-shadow:0 0 0 1px var(--stage-edge)}
+.stage img{position:absolute;display:block;max-width:none;user-select:none;-webkit-user-drag:none}
+#base{inset:0;width:100%;height:100%}
+.compare-flag{position:absolute;top:10px;left:10px;font:500 11px var(--sans);letter-spacing:.12em;
+  text-transform:uppercase;background:var(--shipped);color:#fff;padding:4px 8px;border-radius:3px}
+figcaption{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between}
+.cap-name{font-weight:500}
+.cap-time{font:400 12.5px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.cap-note{color:var(--muted);font-size:14px;flex-basis:100%;margin:0}
+
+aside{display:grid;gap:22px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+legend{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0;margin-bottom:8px;
+  display:flex;gap:8px;align-items:baseline;width:100%}
+legend .keys{margin-left:auto;letter-spacing:0;text-transform:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.moments{display:grid;gap:6px}
+.moment{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;text-align:left;
+  background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 8px 4px 4px}
+.moment img{width:64px;aspect-ratio:16/9;object-fit:cover;display:block;border-radius:2px}
+.moment .n{font:400 11.5px var(--mono);color:var(--faint)}
+.moment:hover{border-color:var(--line)}
+.moment[aria-pressed="true"]{background:var(--surface);border-color:var(--line)}
+.moment[aria-pressed="true"] .t{font-weight:600}
+
+.styles{display:grid;gap:6px}
+.opt{display:flex;align-items:center;gap:8px;text-align:left;background:transparent;border:1px solid var(--line);
+  border-radius:6px;padding:8px 11px}
+.opt:hover{background:var(--surface)}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+.tag{margin-left:auto;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--shipped);font-weight:600}
+.opt[aria-pressed="true"] .tag{color:var(--accent-ink);opacity:.85}
+
+.sizes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.size{position:relative;background:transparent;border:1px solid var(--line);border-radius:6px;padding:8px 0 7px;
+  font-variant-numeric:tabular-nums;font-weight:500}
+.size:hover{background:var(--surface)}
+.size[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.size.is-shipped::after{content:"";position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;
+  background:var(--shipped)}
+.size-read{font-size:13px;color:var(--muted);margin:2px 0 0}
+
+.hold{background:transparent;border:1px dashed var(--shipped);color:var(--shipped);border-radius:6px;
+  padding:9px 11px;font-weight:500;touch-action:none;user-select:none;-webkit-user-select:none}
+.hold:active,.hold.on{background:var(--shipped);color:#fff;border-style:solid}
+
+.readout{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:18px}
+.readout h2{font-size:17px;font-weight:500;margin:0}
+.readout p{margin:0;max-width:72ch}
+pre{margin:0;font:400 12.5px/1.6 var(--mono);background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
+.fine{font-size:13px;color:var(--faint)}
+@media (prefers-reduced-motion:no-preference){.opt,.size,.moment{transition:background-color .12s,border-color .12s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Practicing the Way &middot; Session 01 &middot; Traditional Chinese burn-in</p>
+    <h1>Subtitle styles</h1>
+    <p class="lede">Five moments from the session, five styles, five sizes. Each style changes one thing from what shipped, so whatever looks different is that one thing. <kbd>&larr;</kbd><kbd>&rarr;</kbd> size &middot; <kbd>&uarr;</kbd><kbd>&darr;</kbd> style &middot; <kbd>1</kbd>&ndash;<kbd>5</kbd> moment &middot; hold <kbd>Space</kbd> to flash the shipped style.</p>
+  </header>
+
+  <div class="layout">
+    <div class="wrap" style="gap:18px">
+      <figure>
+        <div class="stage" id="stage">
+          <img id="base" alt="">
+          <img id="ov" alt="">
+          <span class="compare-flag" id="flag" hidden>Shipped</span>
+        </div>
+        <figcaption>
+          <span class="cap-name" id="capName"></span>
+          <span class="cap-time" id="capTime"></span>
+          <p class="cap-note" id="capNote"></p>
+        </figcaption>
+      </figure>
+
+      <section class="readout" aria-live="polite">
+        <h2 id="roTitle"></h2>
+        <p id="roNote"></p>
+        <pre id="roFlags"></pre>
+        <p class="fine">Arguments for <code>bake_subs.py</code> / <code>run_stage4.py</code>. Each overlay is libass&rsquo;s own render, laid over the untouched frame; measured against a real burn-in of the same frame, the subtitle area differs by under two levels in 255 on average.</p>
+      </section>
+    </div>
+
+    <aside>
+      <fieldset>
+        <legend>Moment <span class="keys"><kbd>1</kbd>&ndash;<kbd>5</kbd></span></legend>
+        <div class="moments" id="moments"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Style <span class="keys"><kbd>&uarr;</kbd><kbd>&darr;</kbd></span></legend>
+        <div class="styles" id="styles"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Size <span class="keys"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span></legend>
+        <div class="sizes" id="sizes"></div>
+        <p class="size-read" id="sizeRead"></p>
+      </fieldset>
+      <button class="hold" id="hold" type="button">Hold to compare with shipped</button>
+    </aside>
+  </div>
+</div>
+
+<script>
+const D = /*DATA*/null;
+const [W, H] = D.size;
+const st = {m: 1, s: D.shipped.style, z: D.shipped.size};
+let comparing = false;
+const $ = id => document.getElementById(id);
+const fmt = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+
+D.moments.forEach((m, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "moment"; b.id = "moment-" + i; b.dataset.i = i;
+  b.innerHTML = `<img alt="" src="${m.base}"><span class="t">${m.name}</span><span class="n">${i + 1}</span>`;
+  b.onclick = () => { st.m = i; show(); };
+  $("moments").append(b);
+});
+D.styles.forEach(s => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "opt"; b.id = "style-" + s.id; b.dataset.id = s.id;
+  b.innerHTML = `<span>${s.label}</span>` + (s.id === D.shipped.style ? `<span class="tag">shipped</span>` : "");
+  b.onclick = () => { st.s = s.id; show(); };
+  $("styles").append(b);
+});
+D.sizes.forEach(z => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "size" + (z === D.shipped.size ? " is-shipped" : "");
+  b.id = "size-" + z; b.dataset.z = z; b.textContent = z;
+  b.title = z === D.shipped.size ? "Shipped size" : "";
+  b.onclick = () => { st.z = z; show(); };
+  $("sizes").append(b);
+});
+
+function show() {
+  const view = comparing ? {m: st.m, s: D.shipped.style, z: D.shipped.size} : st;
+  const m = D.moments[view.m], s = D.styles.find(x => x.id === view.s);
+  const [x, y, w, h, src] = D.overlays[`${view.m}|${view.s}|${view.z}`];
+  $("base").src = m.base;
+  const ov = $("ov");
+  ov.src = src;
+  Object.assign(ov.style, {left: x / W * 100 + "%", top: y / H * 100 + "%", width: w / W * 100 + "%", height: h / H * 100 + "%"});
+  $("flag").hidden = !comparing;
+  $("capName").textContent = m.name;
+  $("capTime").textContent = `${fmt(m.t)} · ${m.t.toFixed(1)}s`;
+  $("capNote").textContent = m.note;
+  $("roTitle").textContent = `${s.label}, size ${view.z}`;
+  $("roNote").textContent = s.note;
+  $("roFlags").textContent = s.flags[view.z];
+  // FontSize is in libass script units on a 288-row canvas, so it is a share of frame height
+  $("sizeRead").textContent = `Size ${st.z} = ${(st.z / 288 * 100).toFixed(1)}% of frame height, about ${Math.round(st.z * 720 / 288)}px on this 720p source.`;
+  document.querySelectorAll(".moment").forEach(b => b.setAttribute("aria-pressed", +b.dataset.i === st.m));
+  document.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === st.s));
+  document.querySelectorAll(".size").forEach(b => b.setAttribute("aria-pressed", +b.dataset.z === st.z));
+}
+
+const step = (arr, cur, d) => arr[(arr.indexOf(cur) + d + arr.length) % arr.length];
+const styleIds = D.styles.map(s => s.id);
+addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === " ") { if (!e.repeat) { comparing = true; show(); } e.preventDefault(); return; }
+  if (e.key === "ArrowRight") st.z = step(D.sizes, st.z, 1);
+  else if (e.key === "ArrowLeft") st.z = step(D.sizes, st.z, -1);
+  else if (e.key === "ArrowDown") st.s = step(styleIds, st.s, 1);
+  else if (e.key === "ArrowUp") st.s = step(styleIds, st.s, -1);
+  else if (/^[1-9]$/.test(e.key) && D.moments[+e.key - 1]) st.m = +e.key - 1;
+  else return;
+  e.preventDefault(); show();
+});
+addEventListener("keyup", e => { if (e.key === " ") { comparing = false; show(); } });
+addEventListener("blur", () => { if (comparing) { comparing = false; show(); } });
+const hold = $("hold");
+const on = e => { e.preventDefault(); comparing = true; hold.classList.add("on"); show(); };
+const off = () => { if (!comparing) return; comparing = false; hold.classList.remove("on"); show(); };
+hold.addEventListener("pointerdown", on);
+["pointerup", "pointerleave", "pointercancel"].forEach(t => hold.addEventListener(t, off));
+hold.addEventListener("keydown", e => { if (e.key === "Enter") on(e); });
+hold.addEventListener("keyup", e => { if (e.key === "Enter") off(); });
+show();
+</script>

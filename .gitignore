@@ -116,3 +116,18 @@ youtube/ptw-course/.work/
 
 # Bundled subtitle fonts (~16 MB), fetched by youtube/zh_subs/fetch_fonts.py
 youtube/zh_subs/fonts/
+
+# Kept local because this repo is public: internal church material and work derived from the
+# (also local) sermon transcripts.
+youtube/josh-quotes/
+docs/explainer-videos/
+docs/security/
+youtube/ptw-course/pdf-translate/
+
+# Local build output and media
+app/wiki/frontend/.next/
+app/wiki/frontend/next-env.d.ts
+app/wiki/backend/wiki.db
+youtube/subtitle_downloader/*.mp3
+website/ghost/templates/casper
+website/ghost/templates/source

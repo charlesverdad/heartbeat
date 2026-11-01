@@ -1,811 +1,541 @@
 # Live Multilingual Subtitles for Church Livestream
 
-## 1. Overview
+Design reviewed 2026-09-25. Evidence and reproduction details are in
+[validation.md](validation.md).
 
-The church currently livestreams from the sending location to another church location using an ATEM Mini Pro-class Blackmagic switcher and YouTube Live.
+## 1. Decision and validation status
 
-The goal is to provide near-real-time translated subtitles at the receiving location without modifying or re-encoding the existing video stream.
+Keep the **ATEM → YouTube → receiving browser** video path independent of
+caption generation. Generate speech recognition and translations at the sending
+location, deliver timestamped text through a separate service, and render it
+below the embedded player.
 
-The proposed solution is to transcribe and translate the service at the **sending location**, then send timestamped subtitle data independently of the YouTube stream. The receiving location uses a custom web frontend containing the YouTube player and a synchronized subtitle display.
+This is a **feasible prototype architecture, conditional on an on-site timing
+rehearsal**, not yet a validated production system. Research and a temporary
+spike support the transport and scheduling approach. Actual YouTube timeline
+alignment, church network latency, RX 9070 stability, and translation quality
+remain deployment gates.
 
-A key advantage of this design is that YouTube's livestream latency can be used as processing headroom. The transcription and translation system can wait for meaningful speech chunks or complete sentences while the corresponding video is still travelling through YouTube's delivery pipeline.
+The original design needed four material changes:
 
----
+- `getCurrentTime()` is useful only **after source-to-player calibration**. It
+  does not establish that both clocks share an origin.
+- Processing headroom includes collecting the speech chunk, stabilizing ASR,
+  inference, translation, queueing, and delivery. YouTube latency is not a
+  guaranteed minimum buffer.
+- ASR decoding windows, stable transcript commits, and display cues are different
+  things. Independently transcribing two-second cuts damaged text in the spike.
+- Caption history, replay, session identity, revisions, and failure isolation are
+  required in the first prototype. They cannot be deferred while claiming DVR
+  or reconnect support.
 
-# 2. Current Environment
+## 2. Requirements and scope
 
-## Sending location
+The sending location has an ATEM Mini Pro-class switcher, an existing service
+mix, and a caption PC with an AMD Radeon RX 9070 that has occasionally crashed.
+The exact ATEM model, caption PC OS/driver, audio routing, YouTube latency/DVR
+settings, embedding permissions, and receiving browser must be inventoried.
 
-Existing infrastructure:
+The initial pilot is English speech to Simplified Chinese (`zh-Hans`), with
+English available explicitly as a fallback. Korean (`ko`) and Farsi (`fa`) use
+the same architecture after language review. Spoken sermon/announcements are
+in scope; reliable lyric transcription, overlapping speakers, automatic language
+switching, and automatic Bible quotation replacement are not pilot commitments.
 
-- Blackmagic ATEM Mini Pro or similar ATEM Mini model with direct livestream capability.
-- YouTube Live as the livestream transport.
-- Desktop computer available for AI processing.
-- AMD Radeon RX 9070 GPU.
-- Existing audio source available from the service/mixer.
+Required behavior:
 
-The ATEM and YouTube livestream should remain independent of the subtitle system.
+- No caption process controls the ATEM encoder or sits between it and YouTube.
+- Failure or shutdown of the caption PC leaves normal livestream playback usable.
+- Captions follow calibrated playback, including supported pause and DVR use.
+- Each receiving location chooses its language independently.
+- Volunteers get language, captions on/off, size, projector fullscreen, and a
+  clear captions/synchronization status. Calibration belongs in an operator panel.
+- The normal YouTube watch link is always available as a video-only fallback.
 
-If the subtitle PC or GPU crashes, the livestream must continue normally.
-
-## Receiving location
-
-The remote location currently watches the YouTube livestream.
-
-The proposed system replaces the normal YouTube viewing page with a purpose-built web frontend containing:
-
-- embedded YouTube Live player;
-- translated subtitle display;
-- language selector;
-- fullscreen/projector mode.
-
----
-
-# 3. Problem
-
-The receiving congregation needs translated subtitles for the live service.
-
-A straightforward approach would be:
-
-1. receive the video stream;
-2. transcribe the audio;
-3. translate the transcript;
-4. burn subtitles into the video;
-5. re-encode/output the result.
-
-This introduces several undesirable characteristics:
-
-- additional video encode/decode stages;
-- additional latency;
-- significantly more processing;
-- a new critical component in the video path;
-- reduced reliability;
-- difficulty supporting multiple languages;
-- potential video quality degradation.
-
-Performing transcription at the receiving location also means the subtitles inherently appear after additional transcription and translation latency.
-
-For example:
+## 3. Architecture and audio capture
 
 ```text
-YouTube video arrives
-        ↓
-audio heard
-        ↓
-speech recognition
-        ↓
-translation
-        ↓
-subtitle displayed
+Service program audio ─────► ATEM ─────► YouTube ─────► embedded player
+          │                                                │
+          └► independent audio input                       │
+                 │                                         │
+                 ▼                                         │
+          capture + sample clock                           │
+                 │                                         │
+          streaming ASR worker                             │
+                 │                                         │
+          committed source cues                            │
+                 │                                         │
+          translation workers                              │
+                 │                                         │
+          outbound HTTPS publish                           │
+                 ▼                                         │
+          caption hub + durable history ─► SSE ─► calibrated scheduler
+                                                          │
+                                                          ▼
+                                              separate subtitle region
 ```
 
-Even a fast pipeline therefore causes the subtitle to trail the spoken audio.
+Use a spare mixer program output or independently tested audio tap. It must
+contain the same microphones, playback, and mute decisions heard in the stream,
+not merely the room/house mix. Account for any ATEM audio delay during calibration.
+Do not make the caption PC an audio bridge or require its USB connection for the
+ATEM to keep streaming. Test this physically by turning the caption PC off.
 
----
+Capture continuously, including silence. Timestamp audio from the device sample
+position and preserve its relationship to the ASR input after resampling to
+16 kHz mono. Verify channel selection/downmixing, clipping, and phase cancellation.
+VAD must not concatenate speech and thereby remove gaps from the timeline.
+Capture overruns, missing samples, device reconnection, and clock discontinuities
+must be detected and recorded, not silently compressed away.
 
-# 4. Design Principle
+Run capture/supervision separately from GPU inference. Use bounded queues and a
+watchdog so a hung inference worker cannot block capture. A GPU driver failure
+can still take down the entire PC; only the separate physical video path gives
+protection against that failure. Shared power, mixer, and network remain shared
+dependencies. Limit caption upload/retry traffic so it cannot congest the stream.
 
-Video and subtitles should be treated as **two independent synchronized streams**.
+## 4. Three clocks and explicit alignment
+
+Define the clocks before implementing a scheduler:
+
+| Clock | Meaning | Use |
+| --- | --- | --- |
+| Source `s` | Seconds from captured sample positions within a capture epoch | Cue start/end and ASR window offsets |
+| Player `p` | `getCurrentTime()` reported by this receiver's player | Presentation lookup |
+| Wall/monotonic time | UTC for correlation; monotonic time for elapsed work | Diagnostics, deadlines, heartbeats |
+
+The [IFrame API](https://developers.google.com/youtube/iframe_api_reference)
+provides playback position and player state. Its live `getDuration()` describes
+elapsed streaming time, which can include pre-event streaming and interruptions.
+The documented API does not establish a mapping to our audio capture clock.
+
+For each verified source/player epoch, model the relationship as:
 
 ```text
-VIDEO PATH
-
-ATEM
-  ↓
-YouTube Live
-  ↓
-Receiving browser
-
-
-CAPTION PATH
-
-Mixer/audio
-  ↓
-Speech recognition
-  ↓
-Translation
-  ↓
-Timestamped caption messages
-  ↓
-Receiving browser
+p = a × s + b
+s_playing = (p - b) / a
+show cue when cue.start_s <= s_playing < cue.end_s
 ```
 
-The video stream remains completely unchanged.
+Start with `a = 1`; obtain `b` by observing the **same content marker** in source
+audio and YouTube playback. The offset absorbs different start times and fixed
+audio-path delays. It is not the viewer's current network latency. Buffering
+changes when a position is reached; it does not itself justify changing `b`.
 
-The receiving frontend combines the two at presentation time.
+Do not infer `b` from starting both programs together, subtracting wall clocks,
+`getDuration() - getCurrentTime()`, or the broadcast's scheduled/actual start.
+The [broadcast resource](https://developers.google.com/youtube/v3/live/docs/liveBroadcasts)
+reports broadcast metadata, not an audio-sample anchor. Clock synchronization
+helps measure latency but does not prove content alignment.
 
----
+### Pilot calibration procedure
 
-# 5. Proposed Architecture
+1. Start capture and normal streaming before the service. Create a session tied
+   to the actual YouTube video ID and a unique capture epoch.
+2. Record the source sample time of an identifiable spoken phrase/onset. During
+   rehearsal, a distinctive counted phrase is useful; normal program speech can
+   be used without adding anything to the production stream.
+3. At each receiver, identify that same onset and record player time. With DVR,
+   replay/pause around the onset to improve precision. Calculate `b = p - s`.
+4. Verify against at least two more markers spanning a minute. Record residual
+   error and operator uncertainty. Enable captions only after this check passes.
+5. Check a marker every 15 minutes initially, and after receiver reload,
+   player recreation, capture discontinuity, or stream interruption.
 
-## High-level architecture
+Keep calibration local to the receiver/player instance until tests demonstrate
+that it can safely be shared. A refresh must revalidate it. Store anchor pairs,
+video ID, capture epoch, player epoch, mapping revision, and verified ranges.
+Retain earlier mappings for historical playback; do not apply a new mapping
+across an unverified discontinuity.
+
+A fixed offset may drift: the spike's assumed 100 ppm clock difference creates
+1.08 seconds of error in three hours. This is an illustration, not a measurement
+of the church's equipment. Fit a rate `a` only from sufficiently separated,
+consistent anchors; noisy manual markers must not create aggressive corrections.
+
+A large unexplained player jump can mean a seek or a timeline reset. The public
+API does not give us a reliable content-identity proof for every case. Tested
+DVR seeks within a verified mapping can use that mapping; ambiguous jumps,
+rejoins, and resets hide captions until alignment is checked. Automatic audio
+fingerprinting is a separate research option, requiring access to the receiving
+audio; it is not available just by reading the cross-origin iframe.
+
+## 5. Latency budget and overload policy
+
+For a cue starting at source time `s0`, the subtitle must reach the receiver
+before playback reaches the mapped start. Its critical-path generation delay is:
 
 ```text
-                         SENDING LOCATION
-
-                    ┌─────────────────────┐
-                    │ Service audio/mixer │
-                    └──────────┬──────────┘
-                               │
-                   ┌───────────┴───────────┐
-                   │                       │
-                   ▼                       ▼
-
-               ATEM Mini               Caption PC
-                   │                       │
-                   │                    Whisper
-                   │                       │
-                   │               transcript chunks
-                   │                       │
-                   │                  Translation
-                   │                       │
-                   │              multilingual captions
-                   │                       │
-                   │                  WebSocket/API
-                   │                       │
-                   ▼                       │
-              YouTube Live                 │
-                   │                       │
-                   └───────────┬───────────┘
-                               │
-                               ▼
-
-                        RECEIVING LOCATION
-
-                    Custom livestream webpage
-
-                ┌───────────────────────────┐
-                │                           │
-                │      YouTube player       │
-                │                           │
-                ├───────────────────────────┤
-                │ translated subtitle text  │
-                └───────────────────────────┘
-
-                     Language: 中文 ▼
+G = speech collection + ASR stabilization/lookahead + remaining ASR work
+    + translation + queue waits + delivery
+headroom = source-to-viewer video delay - G - safety margin
 ```
 
----
+Instrument actual stage timestamps to avoid double-counting concurrent work.
+Fast inference alone is insufficient. Full-cue text cannot be finalized before
+enough of that cue has been spoken.
 
-# 6. Source-Side Transcription
+The spike used these **illustrative inputs**, not measured service latencies:
+0.5 s stabilization, 1.0 s ASR, 1.5 s translation, 0.2 s delivery, no queue wait,
+and 0.5 s safety margin.
 
-Speech recognition should run at the sending location.
+| Video delay | 2 s speech chunk: remaining headroom | 5 s speech chunk: remaining headroom |
+| --- | ---: | ---: |
+| 3 s | -2.7 s | -5.7 s |
+| 5 s | -0.7 s | -3.7 s |
+| 8 s | 2.3 s | -0.7 s |
+| 12 s | 6.3 s | 3.3 s |
 
-The transcription system receives the same service audio that ultimately enters the livestream.
+[YouTube's latency guidance](https://support.google.com/youtube/answer/7444635?hl=en)
+describes most low-latency viewers as below ten seconds and ultra-low-latency
+viewers as below five seconds. Those are not minimums or processing guarantees.
+Normal latency is the first rehearsal candidate if the church accepts its delay;
+measure the existing configuration before deciding to change it.
 
-A likely implementation is Whisper or a Whisper-derived streaming implementation.
+Measure generation delay and receiver lead time per cue/language, especially at
+the live edge. Report percentiles and the late/missing fraction, not just averages.
+A conservative planning check is `G_p95 + margin < video_delay_p05`; actual
+per-cue arrival-before-playback measurements are the acceptance test. Clock error
+must be bounded for any cross-machine latency statistic.
 
-Possible runtime options include:
+If headroom is insufficient, reduce stabilization/chunk latency without losing
+accuracy, select a faster model/provider, reduce the active language set, or use
+a rehearsed higher-latency setting. An operator may deliberately watch behind the
+live edge with DVR, but this is an explicit viewing choice that must be measured;
+do not automatically pause or seek video to wait for captions.
 
-- whisper.cpp;
-- another Whisper implementation with AMD/Vulkan/ROCm support;
-- a cloud transcription API if local GPU reliability becomes a problem.
+Queues must have both size and age limits. Drop/cancel work that cannot meet the
+configured live deadline rather than continually getting further behind. Preserve
+gap metadata and measure missing captions so shedding does not make latency
+statistics look artificially good. A separate backfill job may populate history;
+it must not compete with current live work. The overload simulation accumulated
+119 seconds of wait after 120 chunks when 2-second arrivals needed 3 seconds of
+serial work each.
 
-The Radeon RX 9070 should be treated as an accelerator, not as part of the critical livestream path.
+## 6. ASR, stabilization, and segmentation
 
-If transcription crashes, the YouTube livestream continues unaffected.
+Treat these as separate stages:
 
----
+1. **Decoding window:** bounded rolling audio with overlap and preceding context.
+2. **Commit policy:** publish only transcript words that are stable enough to use.
+3. **Translation/display cue:** divide committed speech at useful linguistic
+   boundaries while retaining source start/end times.
 
-# 7. Speech Chunking
+A 2–5 second cue is a starting target, not an instruction to cut independent
+2–5 second files for Whisper. In the local 60-second sermon experiment, two-second
+cuts produced broken words and phrases; longer windows recovered some context.
+No human reference was available, so the experiment does not establish WER or a
+production model choice.
 
-Translation should not be performed word-by-word.
+Use speech detection plus overlapping decoding and timestamp-aware deduplication.
+Compare successive hypotheses; commit agreed prefixes or a finalized endpoint,
+with a bounded hold time. [Whisper-Streaming](https://github.com/ufal/whisper_streaming)
+describes local agreement and handling repeated/inaccurate boundaries; its current
+README also points to SimulStreaming as its successor. Borrow the stabilization
+contract, not an assumption that either project's backend supports this GPU.
 
-Machine translation generally benefits substantially from receiving enough context to understand the sentence structure, negation, terminology and intended meaning.
+Initial tuning candidates for rehearsal:
 
-However, waiting indefinitely for grammatical sentence boundaries is unsuitable for live speech because speakers often produce long sentences.
+- Decode from a rolling context window; benchmark its repeated computation cost.
+- Commit stable speech into roughly 2–5 second cues, preferring pauses or clause
+  boundaries. Start testing an approximately 0.5-second endpoint pause.
+- Use a configurable maximum hold, initially 6 seconds. If no stable usable
+  prefix exists at the deadline, record a gap; do not publish guessed text.
+- Keep overlap/context internally, but never emit the same words twice.
+- Use source timestamps, not inference completion times. Whisper word boundaries
+  are estimates and need validation against the audio.
+- Require actual speech evidence. Test silence, music, applause, repeated phrases,
+  accents, quiet speech, and interpreter transitions. One zero-audio test returning
+  empty text does not prove hallucination suppression.
 
-The transcription system should therefore produce **stable semantic chunks**.
+Committed source cues are immutable in the live pipeline. Corrections require a
+new source revision and matching regenerated translations; do not attach an old
+translation to corrected text. Prefer to keep already displayed text stable.
 
-Suggested target:
+## 7. Runtime choice and RX 9070 qualification
 
-- approximately 2–5 seconds of speech;
-- approximately 8–20 words;
-- preferably ending on a natural speech pause;
-- shorter when a clear sentence boundary occurs.
+The first **candidate**, not a qualified selection, is `whisper.cpp` with Vulkan,
+plus a smaller CPU model as a separately benchmarked fallback. Its
+[upstream documentation](https://github.com/ggml-org/whisper.cpp) describes Vulkan,
+HIP/ROCm, CPU inference, and a basic microphone streaming example. That example
+is not a complete stable-cue pipeline.
 
-Example source speech:
+Compare Vulkan and HIP/ROCm on the actual PC. AMD's
+[Radeon Linux compatibility matrix](https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/compatibility/compatibilityrad/native_linux/native_linux_compatibility.html)
+explicitly includes RX 9070 in its documented 7.2.1 matrix; that page now points
+to unified documentation for newer releases. This is support evidence, not an
+instruction to install an old release. Select a current supported combination of
+GPU, OS, driver, runtime, and inference framework and pin the working versions.
+Check the separate Windows requirements if applicable.
 
-```text
-"I think what Paul is telling us here /
-is that salvation isn't something we earn /
-but something God gives us through grace."
-```
+Do not choose `faster-whisper` for AMD acceleration based on its CUDA benchmarks:
+its [documented GPU setup](https://github.com/SYSTRAN/faster-whisper) requires
+NVIDIA CUDA/cuDNN. CPU use or an explicitly tested alternative build is a separate
+choice. DirectML is not an interchangeable switch for these runtimes.
 
-These can become three separate subtitle units while retaining enough context for good translation.
+Benchmark realistic rolling windows, stabilization, warm-up, and concurrent
+translation. Measure peak memory, queue age, service-time percentiles, and
+accuracy during a full-service soak. Start with ASR alone on the GPU; an API
+translator avoids immediately making ASR and an LLM compete for GPU resources.
+A local translator remains an option if it meets the same quality and load tests.
 
----
+The spike ran cached Whisper `base` on an Apple M4 Max CPU only. It cannot predict
+RX 9070 throughput, driver stability, a larger model's accuracy, or recovery from
+GPU failure. Cloud fallback is an operational option only after its provider,
+credentials, audio handling, cost, and deadlines are configured and rehearsed.
 
-# 8. Translation
+## 8. Translation and language review
 
-The stable transcript chunk is translated into all required target languages.
+Initially translate one language per bounded job. Publish each language as it
+becomes ready; a slow or failed Farsi translation must not hold Chinese captions.
+Per-language queues should preserve source order/context with bounded concurrency.
+A multi-language call may be evaluated later, but do not wait for a combined
+result merely for transport convenience. The spike demonstrated this coupling
+with injected timings; it did not benchmark a translation model.
 
-Example:
+Each request contains the current committed source cue, previous 1–3 source
+cues as context, source/target language, a small approved glossary, and cue ID /
+source revision. Return only the current cue's translation in validated structured
+output. Validate identity, language field, nonempty text, length, and revision.
+Treat sermon text as data, including speech that resembles model instructions.
+Timeouts, malformed output, and stale responses become explicit language states.
+Retries are bounded by the cue's deadline.
 
-```text
-English transcript
-        │
-        ├── Simplified Chinese
-        ├── Korean
-        ├── Farsi
-        └── future languages
-```
+Preserve negation, names, numbers, theological meaning, and quoted versus
+paraphrased speech. Do not summarize or add interpretation to fit the screen.
+Use prior context without repeating it. If translated text needs multiple display
+cues, retain the whole translation and assign reasonable intervals within the
+source span; validate reading speed and line breaking with native readers.
+Do not divide target words mechanically by source word timestamps.
 
-Translation may initially be implemented using:
+The existing [glossary](../glossary.json) is mainly English ASR correction data,
+not an approved multilingual terminology table. Reuse it cautiously and add
+reviewed mappings for each language. Do not blindly replace ordinary uses of
+“heartbeat” or “grace” with church-specific meanings. Scripture substitution is
+deferred: an inferred reference must not silently replace what the speaker said.
 
-- an LLM API;
-- a local multilingual LLM;
-- a dedicated translation model.
+Before adding a language, compare candidate translators on the same sermon
+samples, including interrupted clauses, negation, scripture, names, and code
+switching. Measure latency/cost and get a bilingual reviewer to assess meaning
+and readability. No translator or quality winner was established in this spike.
 
-Because video delivery through YouTube introduces several seconds of latency, the translation pipeline does not have to optimize exclusively for minimum latency.
+## 9. Caption and session contract
 
-It can instead favour translation quality.
-
-The translator should receive recent linguistic context.
-
-For example:
-
-```text
-Previous transcript:
-[previous 1–3 chunks]
-
-Current chunk:
-[chunk to translate]
-```
-
-Only the current chunk is emitted as the subtitle.
-
-The previous text is context only.
-
----
-
-# 9. Translation Prompting / Domain Context
-
-Church services contain terminology for which generic translations may be inconsistent.
-
-The system should support a domain glossary.
-
-Examples:
-
-```text
-Heartbeat Church
-Jesus Christ
-Holy Spirit
-grace
-salvation
-discipleship
-Ephesians
-1 Corinthians
-Full Life in Christ
-```
-
-Translation instructions should prioritize:
-
-- preserving theological meaning;
-- avoiding summarization;
-- avoiding additional interpretation;
-- consistent terminology;
-- natural subtitle-length target language;
-- standard Christian vocabulary in the target language.
-
-Future improvements may include using canonical Bible translations when scripture references or quotations are detected.
-
----
-
-# 10. Multilingual Caption Message
-
-Each subtitle event should contain one source segment and zero or more translations.
-
-Conceptually:
+Use explicit versioned messages. For example, a full cue snapshot after one
+language has completed:
 
 ```json
 {
-  "id": 1842,
-  "start": 173.4,
-  "end": 177.8,
-  "source": "We receive grace rather than earn it.",
+  "schema_version": 1,
+  "session_id": "service-2026-09-27-unique-id",
+  "video_id": "EXAMPLE1234",
+  "capture_epoch": "capture-unique-id",
+  "event_seq": 1842,
+  "cue_id": "cue-317",
+  "revision": 2,
+  "source_revision": 1,
+  "start_s": 173.4,
+  "end_s": 177.8,
+  "source": {"language": "en", "text": "We receive grace rather than earn it."},
   "translations": {
-    "zh-CN": "...",
-    "ko": "...",
-    "fa": "..."
+    "zh-Hans": {"status": "ready", "source_revision": 1, "text": "我们领受恩典，而不是赚取恩典。"},
+    "ko": {"status": "pending", "source_revision": 1},
+    "fa": {"status": "failed", "source_revision": 1}
   }
 }
 ```
 
-The exact schema is implementation-specific.
-
-The important properties are:
-
-- stable unique ID;
-- source timing;
-- original transcript;
-- translations;
-- ability to add new languages without modifying the video pipeline.
-
----
-
-# 11. Timing Model
-
-Timing is the critical part of the design.
-
-The captions should be generated against the source audio timeline.
-
-The receiving frontend should not simply display a subtitle when it arrives.
-
-Instead:
-
-```text
-caption arrives
-      ↓
-place in queue
-      ↓
-compare caption timestamp with video playback position
-      ↓
-display when matching video reaches that position
-```
-
-This means the subtitle can arrive several seconds before the corresponding video.
-
----
-
-# 12. Using YouTube Latency as Processing Headroom
-
-The system intentionally takes advantage of livestream latency.
-
-Example:
-
-```text
-T+0.0   Speaker begins sentence
-
-T+2.5   enough context available
-T+2.8   transcription finalized
-T+3.2   translation completed
-T+3.3   subtitle arrives at receiving browser
-
-T+8.0   corresponding YouTube video/audio reaches viewer
-```
-
-In this example, the receiving browser has the translated subtitle approximately five seconds before it needs to display it.
-
-This permits substantially better translation than a receiver-side transcription pipeline.
-
-The exact available buffer depends on the configured YouTube livestream latency mode and real-world delivery latency.
-
-The system must therefore not rely on a hardcoded assumption such as "YouTube is always eight seconds behind."
-
----
-
-# 13. Synchronization
-
-The receiving frontend should synchronize subtitles against the actual YouTube player position.
-
-The YouTube IFrame Player API exposes the player's current playback position.
-
-Conceptually:
-
-```javascript
-videoTime = player.getCurrentTime()
-caption = captionTimeline.lookup(videoTime)
-```
-
-The subtitle scheduler can poll playback position several times per second.
-
-Speech subtitles do not require frame-accurate synchronization.
-
-This has several benefits.
-
-If the YouTube player:
-
-- buffers;
-- pauses;
-- falls behind;
-- reconnects;
-- rewinds using DVR;
-
-the caption system follows the actual video playback rather than assuming fixed network latency.
-
----
-
-# 14. Timeline Mapping
-
-One implementation question requiring validation is how best to map source timestamps onto YouTube player timestamps during a live event.
-
-Potential representations include:
-
-### Stream-relative timestamp
-
-```text
-173.4 seconds since beginning of broadcast
-```
-
-### Absolute source timestamp
-
-```text
-2026-09-27T11:32:18.420+10:00
-```
-
-The system needs a reliable mapping between:
-
-```text
-source audio time
-        ↕
-YouTube playback position
-```
-
-This mapping could be established at session start and updated if required.
-
-This should be specifically validated during implementation because YouTube live-player behaviour, DVR windows and player timing semantics may influence the best strategy.
-
----
-
-# 15. Receiving Frontend
-
-The receiving site should use a custom web application.
-
-Example:
-
-```text
-Heartbeat Live
-
-Language: [ 中文 ▼ ]
-
-┌─────────────────────────────────────────┐
-│                                         │
-│              YouTube Live               │
-│                                         │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│      我们得救是本乎恩典，也因着信。       │
-└─────────────────────────────────────────┘
-
-                    [ Fullscreen ]
-```
-
-Primary controls:
-
-- language;
-- captions on/off;
-- font size;
-- fullscreen.
-
-Potential future controls:
-
-- bilingual mode;
-- font;
-- number of subtitle lines;
-- subtitle history;
-- source transcript;
-- accessibility options.
-
----
-
-# 16. Subtitle Rendering
-
-The technically easiest implementation is an absolutely positioned HTML element over the YouTube iframe.
-
-However, YouTube's embedded-player requirements restrict placing overlays over the player.
-
-Therefore the initial production design should place subtitles in a separate visual region immediately below the YouTube player.
-
-Example:
-
-```text
-┌───────────────────────────────────────┐
-│                                       │
-│             YouTube video             │
-│                                       │
-├───────────────────────────────────────┤
-│      translated subtitle region       │
-└───────────────────────────────────────┘
-```
-
-For a projector this should still appear visually integrated.
-
-If true on-video captions become necessary, a separate local compositor such as OBS can combine the webpage/video output with the caption layer for projection.
-
-The actual YouTube stream still does not need to be modified.
-
----
-
-# 17. Multiple Languages
-
-The architecture naturally supports multiple languages.
-
-The source transcript is generated once.
-
-Translations are generated independently:
-
-```text
-                  ┌── zh-CN
-                  │
-English transcript├── ko
-                  │
-                  ├── fa
-                  │
-                  └── future languages
-```
-
-Every receiving location can watch exactly the same YouTube stream while selecting a different subtitle language.
-
-Examples:
-
-```text
-/live?lang=zh-CN
-/live?lang=fa
-/live?lang=ko
-```
-
-Alternatively the user selects the language using the frontend.
-
-Adding another language should require no changes to the video infrastructure.
-
----
-
-# 18. Caption Transport
-
-Caption messages can be delivered independently over normal internet infrastructure.
-
-Likely choices:
-
-- WebSocket;
-- Server-Sent Events;
-- realtime database/pub-sub service;
-- polling HTTP endpoint.
-
-WebSocket is the initial preferred model because:
-
-- captions are small;
-- updates are realtime;
-- one source can fan out to many viewers;
-- frontend implementation is simple.
-
-Bandwidth requirements are negligible compared with the video stream.
-
----
-
-# 19. Reliability
-
-A major design requirement is that subtitles must never become a critical dependency for the livestream.
-
-The architecture should degrade as:
-
-```text
-ATEM              working
-YouTube           working
-video             working
-
-Caption PC        failed
-GPU               failed
-translation       failed
-WebSocket         failed
-
-Result:
-video continues normally
-captions disappear
-```
-
-This is preferable to a design where video is passed through a subtitle PC before reaching the audience.
-
-Potential resilience improvements:
-
-- CPU transcription fallback;
-- smaller fallback ASR model;
-- cloud transcription fallback;
-- automatic reconnect for caption clients;
-- WebSocket message replay;
-- caption sequence numbers.
-
----
-
-# 20. Radeon RX 9070
-
-The sending PC contains an AMD Radeon RX 9070.
-
-The GPU should be used for local inference where practical.
-
-The implementation should favour runtimes with demonstrated AMD compatibility, potentially through:
-
-- Vulkan;
-- ROCm/HIP;
-- DirectML where appropriate.
-
-Because the machine has experienced occasional GPU crashes, the first implementation should not place any video processing dependency on this machine.
-
-Only subtitle generation should use the GPU.
-
-A GPU failure should not affect:
-
-- ATEM switching;
-- YouTube encoding;
-- YouTube delivery;
-- playback at the receiving location.
-
----
-
-# 21. Operational Workflow
-
-A target Sunday workflow should eventually be:
-
-### Sending location
-
-1. Start normal ATEM / YouTube livestream.
-2. Open caption service.
-3. Select target languages.
-4. Start caption generation.
-
-### Receiving location
-
-1. Open Heartbeat livestream webpage.
-2. Select language.
-3. Enter fullscreen.
-4. Project.
-
-No AI tooling should need to be visible to volunteers.
-
----
-
-# 22. Other Solutions Considered
-
-The following alternatives were considered but are not currently preferred:
-
-- receiver-side transcription and translation;
-- re-ingesting and re-encoding the YouTube feed with burned-in subtitles;
-- generating captions and injecting them directly into the outgoing broadcast;
-- YouTube-native automatic or translated captions;
-- audio fingerprint synchronization at the receiving location;
-- subtitle generation followed by OBS composition;
-- embedded broadcast closed-caption standards such as CEA-608/708;
-- dedicated translation hardware/service.
-
-Audio fingerprinting remains potentially useful as a future compatibility mechanism where the receiving subtitle device does not control the video player.
-
----
-
-# 23. Why the Proposed Design Is Preferred
-
-The proposed system has several important properties:
-
-### Existing livestream remains unchanged
-
-The ATEM → YouTube path remains the primary reliable transport.
-
-### Better translation quality
-
-The sender can wait for semantic chunks or complete thoughts before translating.
-
-### YouTube latency becomes useful
-
-The video delivery delay provides processing time before subtitles are required.
-
-### Multiple languages are inexpensive
-
-One transcript can feed many translations.
-
-### No video re-encoding
-
-Only lightweight text data is transmitted separately.
-
-### Subtitle failure is non-critical
-
-A subtitle system failure does not interrupt the service.
-
-### Synchronization follows actual playback
-
-The custom receiver frontend can synchronize against the YouTube player's real playback position rather than estimated network latency.
-
----
-
-# 24. Questions Requiring Validation
-
-Before implementation, the following assumptions should be technically validated.
-
-1. **YouTube timeline mapping**
-   - Determine the most reliable method for mapping source audio timestamps to live YouTube player playback time.
-   - Test behaviour after buffering, reconnecting and DVR rewind.
-
-2. **Available latency**
-   - Measure actual source-to-receiver YouTube latency under the church's current stream settings.
-   - Determine how much processing budget is consistently available.
-
-3. **Whisper streaming implementation**
-   - Validate the best local ASR runtime for RX 9070.
-   - Measure transcription latency and accuracy during real sermons.
-
-4. **AMD stability**
-   - Determine whether Vulkan, ROCm or another inference backend is most reliable on the existing Radeon machine.
-
-5. **Speech segmentation**
-   - Experiment with stable semantic chunk sizes.
-   - Balance translation context against subtitle responsiveness.
-
-6. **Translation quality**
-   - Compare an LLM against dedicated translation models for sermon speech.
-   - Validate theological terminology in target languages.
-
-7. **Multi-language generation**
-   - Determine whether translating all target languages in one LLM call or separate calls produces better reliability, latency and output consistency.
-
-8. **YouTube embed limitations**
-   - Validate the intended player/subtitle layout against current YouTube embedded-player requirements.
-   - Prefer a separate subtitle region unless a compliant overlay mechanism is identified.
-
-9. **Caption transport**
-   - Compare WebSocket, SSE and managed realtime systems for simplicity and reconnect behaviour.
-
-10. **Failure handling**
-    - Confirm that every caption component can fail independently without affecting the livestream.
-
----
-
-# 25. Suggested Prototype
-
-The first prototype should minimize integration work.
-
-## Sender
-
-```text
-Mixer audio
-   ↓
-Whisper
-   ↓
-semantic chunks
-   ↓
-LLM translation
-   ↓
-timestamp + translations
-   ↓
-WebSocket server
-```
-
-## Receiver
-
-```text
-Simple webpage
-   │
-   ├── YouTube IFrame Player
-   │
-   └── WebSocket caption client
-              │
-              ↓
-       caption scheduler
-              │
-              ↓
-       subtitle region
-```
-
-The prototype should initially support:
-
-- English transcription;
-- one translated language;
-- basic timestamp synchronization;
-- manual calibration if required;
-- fullscreen receiver UI.
-
-After synchronization is demonstrated to work reliably, add:
-
-- additional languages;
-- automatic timeline alignment;
-- translation context;
-- terminology glossary;
-- monitoring and recovery;
-- improved subtitle styling.
-
----
-
-# 26. Success Criteria
-
-The system should be considered successful when:
-
-- the existing YouTube livestream remains unchanged;
-- captions are generated entirely outside the video path;
-- translated captions correspond correctly to the spoken content;
-- subtitles appear synchronized with the receiving YouTube playback;
-- meaningful sentence/chunk context can be used for translation without captions arriving late;
-- multiple subtitle languages can be offered from one source transcript;
-- receiving volunteers can operate the system through a simple webpage;
-- failure of the subtitle system does not interrupt the livestream;
-- the end-to-end subtitle experience remains usable during buffering or minor YouTube latency variation.
-
-The central hypothesis to validate is:
-
-> **YouTube's delivery latency provides enough headroom to perform source-side transcription and high-quality contextual translation before the corresponding video reaches the receiving location, while a custom receiving frontend can use the YouTube player's actual playback position to present those captions at the correct time.**
+The example translation is illustrative, not reviewed terminology.
+
+- `session_id` identifies the service; a video ID alone is insufficient for resets.
+- `capture_epoch` changes when capture continuity is lost. ASR worker restart alone
+  need not change it if capture and its sample clock continued.
+- Cue identity and `[start_s, end_s)` refer to source audio within that epoch.
+- `revision` increases when the hub merges an accepted cue update. Older or
+  duplicate snapshots cannot overwrite newer state. Workers must not independently
+  replace the whole translations map and lose another language's result.
+- `event_seq` is the hub's durable ordering/replay cursor, including translation
+  updates. It is not the cue ID. Reject stale source revisions before merging.
+- Session metadata carries languages, video ID, retention bounds, capture epochs,
+  status, and a snapshot cursor. Receiver calibration is stored separately.
+
+Validate finite ordered times, text size, supported languages, session ownership,
+and revisions at ingestion. Reject overlapping committed cues unless an explicit
+multi-speaker policy exists. Log producer idempotency keys and acknowledgements
+so retries after a network failure do not create duplicate cues.
+
+## 10. Delivery, replay, and retention
+
+Use **HTTPS POST from sender to hub, HTTP snapshot/history plus SSE to receivers**
+for the pilot. No inbound connection to the church PC is required. The viewer
+needs a one-way event stream; control requests can use ordinary HTTP.
+
+[SSE/EventSource](https://html.spec.whatwg.org/multipage/server-sent-events.html)
+defines reconnection and `Last-Event-ID`. It does not provide storage or replay
+by itself. WebSocket is also viable, but requires an application reconnect/replay
+protocol; there is no demonstrated need for bidirectional streaming here.
+
+The local experiment verified actual HTTP streaming, automatic EventSource
+reconnection, replay, and a snapshot/subscription race. It used Node's experimental
+EventSource implementation, not the production browser or hosting proxy.
+
+Required protocol:
+
+1. Fetch a consistent session/cue snapshot and its `through_seq` cursor.
+2. Subscribe to events after that cursor. Events committed between snapshot and
+   subscription are included in replay; then follow live events without a gap.
+3. Use the last applied event cursor to resume. A fresh page or new EventSource
+   instance must bootstrap explicitly; in-memory automatic reconnect is not
+   durable client state.
+4. Apply revisions idempotently. Persist cursor and corresponding state together,
+   or discard both and resnapshot after a crash. Do not persist only the cursor.
+5. If replay has expired or session identity changed, send an explicit reset;
+   close the old subscription, obtain a snapshot, and resume from its watermark.
+6. Publish heartbeats and session/capture status. Set heartbeat/proxy timeouts,
+   disable response buffering, and bound each client's output queue. Disconnect
+   slow clients and let replay recover them rather than blocking the producer.
+
+The hub atomically persists cue state plus event log before acknowledging writes.
+A single instance with SQLite is sufficient for an initial small deployment;
+restarts must preserve event sequencing. Managed pub/sub alone is not history.
+Use TLS and authenticated publisher/operator endpoints, keep provider keys off
+receivers, and make receiver authorization match the intended audience. Render
+caption strings as text, never HTML. For restricted viewers, prefer same-origin
+session-cookie authentication: native EventSource does not offer arbitrary request
+headers. Do not put long-lived bearer credentials in the stream URL.
+
+Retain cue snapshots and epoch mappings for the **entire pilot service**, with a
+configured four-hour pilot maximum and at least 24-hour server retention after
+it ends. Event replay may have a shorter, explicit window because snapshots can
+recover it. DVR needs cue history, not just unacknowledged transport messages.
+Bound receiver memory; fetch missing historical ranges or clearly show that
+captions are unavailable for that position. Extend retention before longer events.
+YouTube's own [DVR limits](https://support.google.com/youtube/answer/9296823?hl=en)
+are separate from our caption retention.
+
+## 11. Receiver scheduling and presentation
+
+Keep cues indexed by source time/epoch. Do not destructively pop a live FIFO;
+rewinding must be able to find old cues. Poll playback around every 200 ms and
+resample immediately after relevant player/visibility events. Polling rate is a
+starting setting, not a guarantee against background-tab throttling.
+
+| Situation | Caption behavior |
+| --- | --- |
+| Playing with verified mapping | Look up the cue at mapped player position |
+| Paused/buffering with unchanged position | Keep the matching cue; do not advance by wall time |
+| Silence or no matching cue | Clear text |
+| Seek/live return within verified timeline | Look up destination; skip intervening cues |
+| Late translation within its cue | Show only if useful reading time remains; count as late |
+| Translation arriving after cue end | Retain for history; never flash it over later speech |
+| Missing/failed selected language | Clear text or use explicitly selected English fallback |
+| Invalid position, stopped/error player, unknown mapping | Hide captions and show status outside player |
+| Caption transport disconnected | Continue valid cached cues; reconnect; clear when none match |
+| Source restart or ambiguous player reset | Require a matching epoch/verified mapping before display |
+
+Do not repeatedly replace a cue's visible translation once it has started showing.
+A new language selection may render that cue in the selected language. Status
+messages distinguish unavailable captions from ordinary silence without exposing
+AI tooling to volunteers.
+
+Keep captions **below** the player in a separate region. YouTube's
+[embedded-player requirements](https://developers.google.com/youtube/terms/required-minimum-functionality)
+prohibit obscuring the player with overlays and require client identification via
+HTTP Referer. Serve the receiver over HTTPS with an appropriate referrer policy;
+do not run it as a `file://` page. Include the documented `origin` parameter.
+Keep controls and branding accessible and respect player minimum dimensions.
+
+Fullscreen the page container holding **both** the iframe and subtitle region.
+The player's own fullscreen control can show only the video, losing the external
+captions; explain the page's “Projector fullscreen” control and test it on the
+actual browser/projector. Handle blocked autoplay with a normal user play action.
+Use `lang`, Farsi RTL direction/bidi isolation, and fonts supporting all scripts;
+verify size/line wrapping from the back of the room.
+
+Ads, redirects, and platform interruptions can invalidate assumptions about what
+content is visible. The public IFrame API is not a reliable ad-status/content
+identity interface. Rehearse the actual account/stream configuration and provide
+an operator captions-off control. Do not suppress ads or claim automatic sync
+through every interruption. OBS composition over an embedded YouTube player is
+not an established workaround for its overlay requirements; it is outside this
+design.
+
+## 12. Reliability and operation
+
+| Failure | Recovery |
+| --- | --- |
+| ASR worker hangs/crashes | Watchdog restarts worker; keep capture clock if valid; mark missing span |
+| GPU driver/PC fails | Captions stop; ATEM/YouTube continue; restart creates/verifies capture epoch |
+| Translation language fails | That language unavailable; others continue; bounded retries |
+| Publisher network fails | Bounded local outbox; idempotent retry; stale work cannot starve live work |
+| Hub restarts | Restore persisted session/cues/cursor; receivers replay or resnapshot |
+| Receiver caption code fails | Leave player mounted; offer normal YouTube fallback |
+| YouTube player fails or loses alignment | Hide captions; recover video separately; revalidate mapping |
+
+CPU fallback cannot rescue a PC that has crashed. No fallback is considered
+available until benchmarked and exercised. Stop generating rather than silently
+accumulating an unusable backlog.
+
+Sender workflow: start the existing stream, select its video ID and languages,
+verify audio capture, warm models, and check a sample cue. Receiver workflow:
+open the page, start playback, select language, verify/calibrate alignment, then
+use projector fullscreen. Check alignment and status during the service. End the
+caption session explicitly and retain its history according to policy.
+
+Operator diagnostics should include audio level/dropouts, capture epoch, ASR
+commit lag, oldest queue age, per-language completion/failure, sender/hub heartbeat,
+receiver lead time, late/missing cue rate, and calibration age/error. Distinguish
+an unaligned player, an unavailable language, and a quiet microphone.
+
+## 13. Alternatives and when to revisit them
+
+| Alternative | Assessment |
+| --- | --- |
+| Receiver-side ASR/translation | Avoids sender setup, but processing follows heard audio unless playback is deliberately delayed; fallback for separate use cases |
+| YouTube native live captions | Worth a separate single-language trial: HTTP caption ingestion exists independently of video encoding; documented live caption feeds are limited, so it does not establish selectable Chinese/Korean/Farsi support |
+| Embedded CEA-608/708 | Requires a supported encoder path and has YouTube track constraints; not a reason to risk the independent ATEM setup |
+| Re-encode/burn captions into video | Adds a video dependency and prevents per-viewer language choice; outside current scope |
+| Local audio fingerprint alignment | Potential automatic calibration if permitted receiving-audio access exists; unvalidated |
+| WebSocket or managed realtime | Valid transport alternatives if hosting needs them; must preserve the same snapshot/replay/history contract |
+
+YouTube documents both [live caption delivery options and track/feed limits](https://support.google.com/youtube/answer/3068031?hl=en).
+Do not confuse those with uploading caption files for recorded videos via the
+Data API, or assume native caption ingestion requires video re-encoding.
+
+## 14. Prototype order and go/no-go criteria
+
+1. **Prove timing first:** a receiver diagnostic page, manually timestamped known
+   source phrases, a real test livestream, per-receiver calibration, pause/DVR,
+   refresh, reconnect, and stream interruption. No ASR is needed to expose clock
+   mapping failures. The temporary spike includes an unexecuted field probe.
+2. **Add real ASR and one language:** rolling context/stability, immutable source
+   cues, glossary, bounded translation, durable hub/SSE replay, and status. Replay
+   representative sermon audio in real time before attaching live capture.
+3. **Rehearse a whole service on target equipment:** observe drift and load;
+   disconnect caption network, restart hub/worker, and turn off the caption PC.
+4. **Expand languages only after review:** compare meaning/readability, deadlines,
+   partial failure, GPU/API load, and cost for each additional language.
+
+Proposed pilot acceptance targets, to be confirmed during rehearsal:
+
+- Video continues throughout every caption-component failure injection.
+- At least 95% of reviewed cue boundaries are within ±1 second of corresponding
+  received speech, including tested pause/DVR/recovery scenarios.
+- At least 95% of expected cues per enabled language arrive at least 0.5 seconds
+  before their mapped start at normal viewing position. Report gaps, rejected
+  outputs, and late drops in the denominator; also report worst lateness. Establish
+  expected speech coverage from annotated rehearsal audio, not only the cues the
+  ASR happened to emit.
+- No sustained growth in queue age during a full service. Demonstrate recovery
+  from caption-network loss without duplicate, stale, or wrong-session text.
+- Representative bilingual review finds no critical changes to negation,
+  scripture references, names, or theological meaning; remaining readability
+  problems are resolved before congregation use.
+- Volunteers can start playback, choose language, calibrate with the operator
+  procedure, enter projector fullscreen, and restore video-only viewing.
+
+A failed clock-mapping test is a stop condition for this custom-player approach;
+revisit native caption ingestion or a player/transport with explicit media-clock
+mapping. A failed latency budget requires a changed processing/viewing strategy.
+Neither is fixed by selecting WebSocket or a faster polling interval.

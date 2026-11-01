@@ -1,0 +1,263 @@
+================================================================================
+HEARTBEAT DOCS — COVER IMAGE GENERATION PROMPTS
+================================================================================
+
+TARGET: docs.heartbeatchurch.com.au (BookStack instance)
+OUTPUT: 880x500px landscape (2x of 440x250 display size), PNG or WebP
+STYLE: Consistent across all images (see style guide below)
+
+--------------------------------------------------------------------------------
+STYLE GUIDE (prepend to every prompt)
+--------------------------------------------------------------------------------
+
+Use this prefix for ALL prompts below:
+
+  "Minimalist, modern illustration in a flat design style with soft gradients.
+   Muted warm color palette (soft navy, warm cream, gentle gold accents).
+   Clean, abstract, editorial feel — no text, no people's faces, no photorealism.
+   Subtle geometric shapes and flowing lines. Landscape orientation 880x500
+   (roughly 16:9). Suitable as a website card/cover thumbnail image. Keep
+   the composition simple and readable at small sizes — avoid fine detail."
+
+Then append the specific prompt for each image.
+
+================================================================================
+SHELF COVERS (4 needed — "Start Here" already has one)
+================================================================================
+
+FILE: shelf_ministries.png
+SHELF: Ministries (id: 13)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of diverse hands reaching toward a
+   central glowing heart shape. Conveys teamwork, service, and community.
+   Warm tones with soft navy background."
+
+FILE: shelf_campus.png
+SHELF: Campus (id: 14)
+PROMPT:
+  [STYLE PREFIX] + "Three minimal building silhouettes connected by flowing
+   curved lines, representing interconnected church campuses across different
+   cities. Soft gradient sky backdrop in warm cream and pale blue."
+
+FILE: shelf_leadership.png
+SHELF: Leadership & Governance (id: 22)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of a shepherd's staff intertwined
+   with a subtle shield shape. Conveys guidance, stewardship, and governance.
+   Deep navy and muted gold tones. Dignified and understated."
+
+FILE: shelf_resources.png
+SHELF: Resources (id: 28)
+PROMPT:
+  [STYLE PREFIX] + "Open book with abstract light rays and small leaf/branch
+   motifs emerging from the pages. Conveys growth, learning, and discipleship
+   resources. Warm cream background with soft green and gold accents."
+
+================================================================================
+BOOK COVERS — START HERE SHELF
+================================================================================
+
+FILE: book_welcome.png
+BOOK: Welcome! (id: 15)
+PROMPT:
+  [STYLE PREFIX] + "Warm, inviting open doorway with soft golden light spilling
+   through. Abstract plant elements on either side. Conveys welcome, new
+   beginnings, and hospitality. Cream and warm gold palette."
+
+================================================================================
+BOOK COVERS — MINISTRIES SHELF
+================================================================================
+
+FILE: book_media_team.png
+BOOK: Media Team (id: 21)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of a camera lens, screen display, and
+   sound wave forms arranged in a flowing composition. Conveys multimedia
+   production and visual storytelling. Navy and soft teal accents."
+
+FILE: book_welcome_team.png
+BOOK: Welcome Team (id: 30)
+PROMPT:
+  [STYLE PREFIX] + "Two minimal abstract figures greeting each other with an
+   open hand gesture, surrounded by a warm circular glow. Conveys hospitality
+   and first impressions. Warm gold and cream palette."
+
+FILE: book_praise_team.png
+BOOK: Praise Team (id: 32)
+PROMPT:
+  [STYLE PREFIX] + "Abstract musical notes and sound waves flowing upward in a
+   joyful arc. A subtle microphone silhouette and guitar neck shape integrated
+   into the composition. Warm and uplifting tones — gold, soft coral, cream."
+
+FILE: book_missions_team.png
+BOOK: Missions Team (id: 4)
+PROMPT:
+  [STYLE PREFIX] + "Abstract globe with flowing paths/routes connecting points
+   across continents. Small compass rose element. Conveys global outreach and
+   sending. Deep navy with warm gold route lines."
+
+FILE: book_digital_platform.png
+BOOK: Digital Platform Team (id: 2)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of interconnected browser windows,
+   code brackets, and a subtle church steeple silhouette integrated into a
+   circuit-like pattern. Conveys digital infrastructure for the church.
+   Navy and soft teal."
+
+FILE: book_intercessory_prayer.png
+BOOK: Intercessory Prayer Team (id: 31)
+PROMPT:
+  [STYLE PREFIX] + "Abstract praying hands silhouette with soft concentric
+   light rings emanating outward. Conveys intercession, stillness, and
+   spiritual depth. Deep warm navy with gentle golden glow."
+
+FILE: book_sunday_service.png
+BOOK: Sunday Service (id: 36)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of a podium/lectern silhouette with
+   soft radiating light, and minimal chair rows in the foreground. Conveys a
+   gathered worship service. Warm cream and soft navy."
+
+FILE: book_neighbours.png
+BOOK: Neighbours Ministry (id: 44)
+PROMPT:
+  [STYLE PREFIX] + "Abstract row of simple house shapes side by side with a
+   warm glow connecting them at their foundations. Conveys community,
+   neighbourhood outreach, and local love. Warm earthy tones — terracotta,
+   cream, soft gold."
+
+FILE: book_kidswave.png
+BOOK: Kidswave (id: 51)
+PROMPT:
+  [STYLE PREFIX] + "Playful abstract wave shapes in bright but soft colors —
+   sky blue, sunshine yellow, coral pink. Small star and heart shapes scattered
+   throughout. Conveys fun, energy, and children's ministry. Lighter and more
+   vibrant than the other covers but still cohesive."
+
+FILE: book_lighthouse.png
+BOOK: Lighthouse (id: 52)
+PROMPT:
+  [STYLE PREFIX] + "Abstract lighthouse silhouette with a sweeping beam of
+   soft golden light across a calm navy sea. Conveys guidance, hope, and youth
+   direction. Navy and warm gold palette."
+
+================================================================================
+BOOK COVERS — CAMPUS SHELF
+================================================================================
+
+FILE: book_sydney_campus.png
+BOOK: Sydney Campus (id: 18)
+PROMPT:
+  [STYLE PREFIX] + "Minimal abstract Sydney skyline silhouette (Opera House and
+   Harbour Bridge hints) with a small heart/heartbeat line integrated. Warm
+   sunrise gradient from gold to soft coral. Conveys Sydney identity."
+
+FILE: book_melbourne_campus.png
+BOOK: Melbourne Campus (id: 19)
+PROMPT:
+  [STYLE PREFIX] + "Minimal abstract Melbourne skyline silhouette (Flinders
+   Street Station and Arts Centre spire hints) with a small heart/heartbeat
+   line integrated. Cool blue-grey to warm gold gradient. Conveys Melbourne
+   identity."
+
+FILE: book_gold_coast_campus.png
+BOOK: Gold Coast Campus (id: 20)
+PROMPT:
+  [STYLE PREFIX] + "Minimal abstract Gold Coast skyline silhouette (Surfers
+   Paradise high-rises and ocean wave hints) with a small heart/heartbeat
+   line integrated. Tropical warm gradient — teal, gold, soft sand.
+   Conveys Gold Coast identity."
+
+================================================================================
+BOOK COVERS — LEADERSHIP & GOVERNANCE SHELF
+================================================================================
+
+FILE: book_digital_resources.png
+BOOK: Digital Resources and Tools (id: 50)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of a toolbox with digital elements —
+   a key, a gear, a cloud shape, and a lock icon arranged neatly. Conveys
+   admin tools and digital resources. Navy with muted teal accents."
+
+================================================================================
+BOOK COVERS — RESOURCES SHELF
+================================================================================
+
+FILE: book_house_churches.png
+BOOK: House Churches (id: 46)
+PROMPT:
+  [STYLE PREFIX] + "Small group of abstract figures seated in a circle inside
+   a warm house silhouette. A gentle glow at the center. Conveys intimate
+   fellowship, home gathering, and house church community. Warm cream,
+   soft amber, and gentle navy."
+
+FILE: book_discipleship.png
+BOOK: Discipleship Materials (id: 47)
+PROMPT:
+  [STYLE PREFIX] + "Open Bible or book with a small seedling growing from its
+   pages, surrounded by soft light rays. Conveys spiritual growth, learning,
+   and discipleship. Warm green, cream, and soft gold."
+
+================================================================================
+BOOK COVERS — UNSHELFED / INTERNAL
+================================================================================
+
+FILE: book_structure_guide.png
+BOOK: Structure & Usage Guide (id: 10)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of a clean sitemap or organizational
+   tree with connected nodes. A small compass or map pin at the top node.
+   Conveys structure, navigation, and documentation. Navy and soft grey-blue."
+
+FILE: book_templates.png
+BOOK: Templates (id: 6)
+PROMPT:
+  [STYLE PREFIX] + "Abstract illustration of overlapping document shapes with
+   dotted placeholder lines and a subtle copy/duplicate icon. Conveys
+   reusable templates and standardisation. Light grey, cream, and soft navy."
+
+================================================================================
+SUMMARY — 23 IMAGES TOTAL
+================================================================================
+
+SHELVES (4):
+  shelf_ministries.png        -> Shelf id: 13
+  shelf_campus.png            -> Shelf id: 14
+  shelf_leadership.png        -> Shelf id: 22
+  shelf_resources.png         -> Shelf id: 28
+
+BOOKS (19):
+  book_welcome.png            -> Book id: 15
+  book_media_team.png         -> Book id: 21
+  book_welcome_team.png       -> Book id: 30
+  book_praise_team.png        -> Book id: 32
+  book_missions_team.png      -> Book id: 4
+  book_digital_platform.png   -> Book id: 2
+  book_intercessory_prayer.png -> Book id: 31
+  book_sunday_service.png     -> Book id: 36
+  book_neighbours.png         -> Book id: 44
+  book_kidswave.png           -> Book id: 51
+  book_lighthouse.png         -> Book id: 52
+  book_sydney_campus.png      -> Book id: 18
+  book_melbourne_campus.png   -> Book id: 19
+  book_gold_coast_campus.png  -> Book id: 20
+  book_digital_resources.png  -> Book id: 50
+  book_house_churches.png     -> Book id: 46
+  book_discipleship.png       -> Book id: 47
+  book_structure_guide.png    -> Book id: 10
+  book_templates.png          -> Book id: 6
+
+================================================================================
+NOTES FOR GEMINI
+================================================================================
+
+- All images should feel like they belong to the SAME visual family
+- No text in the images — BookStack overlays the title automatically
+- No photorealistic human faces — keep it abstract/illustrative
+- Landscape 880x500 (2x retina of 440x250 display size) — BookStack will
+  flexibly scale & crop to fit different UI contexts
+- Keep compositions SIMPLE — these display as small card thumbnails, fine
+  detail will be lost
+- Keep the visual weight toward the center (edges may be cropped)
+- Muted, warm palette throughout — avoid harsh/saturated colors
+- The three campus covers should clearly be a matching set with city-specific elements
