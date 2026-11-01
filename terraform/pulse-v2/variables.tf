@@ -18,3 +18,13 @@ variable "hostname" {
   description = "Custom domain served by the Worker; also its PUBLIC_ORIGIN (sign-in redirects, email links)"
   type        = string
 }
+
+variable "resend_domain" {
+  description = "Domain Pulse sends account email from, through Resend"
+  type        = string
+}
+
+variable "resend_region" {
+  description = "Resend sending region (us-east-1, eu-west-1, sa-east-1 or ap-northeast-1). Changing it replaces the domain"
+  type        = string
+}

@@ -74,6 +74,25 @@ def get_cloudflare_token(keyvault_name, secret_name):
         sys.exit(1)
 
 
+def load_optional_secret(keyvault_name, secret_name, env_name):
+    """Export a Key Vault secret as env_name for the stacks that need it; warn and carry on if it is missing.
+    Overrides any env_name already set, which may be a different (e.g. send-only) key."""
+    result = subprocess.run([
+        'az', 'keyvault', 'secret', 'show',
+        '--vault-name', keyvault_name,
+        '--name', secret_name,
+        '--query', 'value',
+        '--output', 'tsv'
+    ], capture_output=True, text=True)
+    value = result.stdout.strip()
+    if result.returncode != 0 or not value:
+        log_warn(f"{secret_name} not found in {keyvault_name}; {env_name} is unset")
+        os.environ.pop(env_name, None)
+        return
+    os.environ[env_name] = value
+    log_info(f"✓ {env_name} loaded from Key Vault")
+
+
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
@@ -174,6 +193,10 @@ def main():
         log_warn(f"Failed to fetch Cloudflare API token: {e}")
         log_warn("Continuing without Cloudflare API token - some operations may fail")
     
+    # Full-access Resend key for the Resend provider (terraform/pulse-v2)
+    if Path('resend.tf').exists():
+        load_optional_secret(keyvault_name, 'tf-resend-api-key', 'RESEND_API_KEY')
+
     # Set other common Terraform variables
     os.environ['TF_VAR_environment'] = environment
     

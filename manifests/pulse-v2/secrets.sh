@@ -10,6 +10,8 @@
 #   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET  <- google-client-id / google-client-secret (v1's sign-in client)
 #   GDRIVE_SA_EMAIL / GDRIVE_SA_PRIVATE_KEY  <- google-service-account-key (Drive folder embeds)
 #   GMAIL_APP_PASSWORD                       <- smtp-pass (v1's Google Workspace app password for GMAIL_USER)
+#   RESEND_API_KEY / RESEND_WEBHOOK_SECRET   <- terraform/pulse-v2 outputs resend_api_key / resend_webhook_secret
+#                                               (send-only key and webhook signing secret; skipped until applied)
 #   ADMIN_EMAILS                             <- $ADMIN_EMAILS (comma list of bootstrap admins)
 #   HMAC_SECRET                              <- freshly generated, only with ROTATE_HMAC=yes
 #
@@ -32,6 +34,9 @@ fi
 echo "Reading secrets from Key Vault $KV" >&2
 
 kv() { az keyvault secret show --vault-name "$KV" --name "$1" --query value -o tsv; }
+# Empty (not an error) when the output does not exist yet, so deploys keep working before the Resend apply.
+TF_DIR="$(cd "$(dirname "$0")/../../terraform/pulse-v2" && pwd)"
+tfout() { tofu -chdir="$TF_DIR" output -raw "$1" 2>/dev/null || true; }
 hmac() { if [[ "${ROTATE_HMAC:-}" == "yes" ]]; then openssl rand -base64 48; fi; }
 
 # Process substitutions keep values out of argv. Their exit codes are lost, so
@@ -42,6 +47,8 @@ jq -n \
     --rawfile sa <(kv google-service-account-key) \
     --rawfile gmail <(kv smtp-pass) \
     --rawfile hmac <(hmac) \
+    --rawfile resend <(tfout resend_api_key) \
+    --rawfile resendhook <(tfout resend_webhook_secret) \
     --arg admins "$ADMIN_EMAILS" '
     def need($name): if . == "" then error("missing \($name)") else . end;
     ($sa | fromjson) as $key
@@ -53,4 +60,6 @@ jq -n \
         GMAIL_APP_PASSWORD: ($gmail | rtrimstr("\n") | need("smtp-pass")),
         ADMIN_EMAILS: $admins
       }
-    + (if $hmac == "" then {} else { HMAC_SECRET: ($hmac | gsub("\\s"; "")) } end)'
+    + (if $hmac == "" then {} else { HMAC_SECRET: ($hmac | gsub("\\s"; "")) } end)
+    + (if ($resend | rtrimstr("\n")) == "" then {} else { RESEND_API_KEY: ($resend | rtrimstr("\n")) } end)
+    + (if ($resendhook | rtrimstr("\n")) == "" then {} else { RESEND_WEBHOOK_SECRET: ($resendhook | rtrimstr("\n")) } end)'

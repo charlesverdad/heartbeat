@@ -28,3 +28,15 @@ resource "cloudflare_record" "ipt_lovable_verify" {
   ttl     = 1
   comment = "Terraform - Lovable verification - owner: Kevin Kim (GC)"
 }
+
+# DMARC for the whole domain, including Google Workspace mail and Resend's mail.heartbeatchurch.com.au (Pulse).
+# Monitoring only (p=none): nothing is rejected. Tighten to quarantine once SPF and DKIM pass for every sender.
+# No rua yet: add one when there is a mailbox to receive the reports.
+resource "cloudflare_record" "dmarc" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_dmarc"
+  content = "v=DMARC1; p=none"
+  type    = "TXT"
+  ttl     = 1
+  comment = "Terraform - DMARC (monitoring only) - owner: Charles"
+}
