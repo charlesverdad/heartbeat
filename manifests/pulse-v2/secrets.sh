@@ -51,7 +51,9 @@ jq -n \
     --rawfile tf <(printf '%s' "$tf_outputs") \
     --arg admins "$ADMIN_EMAILS" '
     def need($name): if . == "" then error("missing \($name)") else . end;
-    def tfval($name): ($tf | fromjson)[$name].value // "" | if type == "string" then . else error("\($name) is not a string") end;
+    # try/catch: jq would otherwise print the unparsable input, secrets and all, in its error.
+    ($tf | try fromjson catch error("tofu output -json is not valid JSON")) as $tfout
+    | def tfval($name): $tfout[$name].value // "" | if type == "string" then . else error("\($name) is not a string") end;
     ($sa | fromjson) as $key
     | {
         GOOGLE_CLIENT_ID: ($id | rtrimstr("\n") | need("google-client-id")),
