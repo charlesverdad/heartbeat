@@ -80,6 +80,9 @@ Key Vault: `ADMIN_EMAILS=... CONFIRM=yes manifests/pulse-v2/deploy.sh --release 
 
 ## Email (Resend)
 
+The Resend account belongs to the **hello@heartbeatchurch.com.au** login: sign in with it to reach the dashboard, keys
+and billing.
+
 Pulse's account email goes through Resend from `mail.heartbeatchurch.com.au` (`resend.tf`). This stack owns the Resend
 domain, its DNS records, a send-only key restricted to that domain, and the webhook to
 `/api/webhooks/resend`. The provider is the community `softwarehuset-com/resend`, pinned to 2.0.0 with its checksums in

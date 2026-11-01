@@ -1,4 +1,5 @@
 # Resend for Pulse's account email (Invite, Welcome, ...), sent from var.resend_domain.
+# The Resend account is the hello@heartbeatchurch.com.au login.
 #
 # The Resend provider is a community one (softwarehuset-com/resend; Resend publishes none), pinned exactly in
 # providers.tf. It authenticates with a full-access key, RESEND_API_KEY, which bin/tf loads from Key Vault.
