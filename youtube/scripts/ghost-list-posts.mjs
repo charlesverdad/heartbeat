@@ -8,12 +8,16 @@
  *
  * Usage:
  *   node ghost-list-posts.mjs [--limit 5] [--tag sermons] [--html] [--fields title,html]
+ *   node ghost-list-posts.mjs --status draft   # drafts are invisible to the default listing
  *
  * Options:
  *   --limit N     Number of posts to fetch (default: 5)
  *   --tag TAG     Filter by tag slug (e.g. "sermons")
  *   --html        Include full HTML body in output (default: excluded for brevity)
  *   --fields F    Comma-separated fields (default: title,slug,published_at,custom_excerpt)
+ *   --status S    published (default), draft, scheduled, or all. A Sunday may already
+ *                 have a draft waiting, and listing only published ones hides it --
+ *                 which is how you end up generating a second post for the same sermon.
  *
  * Environment variables:
  *   GHOST_ADMIN_API_KEY - Ghost Admin API key in "id:secret" format
@@ -97,17 +101,21 @@ async function main() {
   const limit = parseInt(args.limit) || 5;
   const fields = args.fields || 'title,slug,published_at,custom_excerpt';
 
-  let filter = 'status:published';
+  const status = args.status || 'published';
+  let filter = status === 'all' ? '' : `status:${status}`;
   if (args.tag) {
-    filter += `+tag:${args.tag}`;
+    filter += filter ? `+tag:${args.tag}` : `tag:${args.tag}`;
   }
 
+  // drafts have no published_at, so ordering by it puts them in an arbitrary heap
+  const order = status === 'published' ? 'published_at desc' : 'updated_at desc';
+
   const params = new URLSearchParams({
-    filter,
     limit: limit.toString(),
-    order: 'published_at desc',
+    order,
     fields,
   });
+  if (filter) params.set('filter', filter);
 
   if (args.html) {
     params.set('formats', 'html');
