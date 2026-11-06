@@ -79,6 +79,8 @@ htmlcov/
 # Terraform
 .terraform/
 .terraform.*
+# Pins the checksums of pulse-v2's community Resend provider
+!terraform/pulse-v2/.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 *.tfstate.*.backup

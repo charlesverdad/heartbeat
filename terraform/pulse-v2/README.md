@@ -19,6 +19,8 @@ Run everything from the repo root, in the nix shell with direnv loaded.
   - Account permissions: D1, Workers R2 Storage, Workers KV Storage, Queues and Workers Scripts edit, plus Account
     Settings read.
   - Zone permissions: DNS and Workers Routes edit.
+- **Resend:** `bin/tf` also loads a full-access Resend key (`tf-resend-api-key` in `kv-terraform-terraform`) as
+  `RESEND_API_KEY` for the Resend provider. The Worker never gets this key; see Email below.
 - **Wrangler:** `.envrc` pins `CLOUDFLARE_ACCOUNT_ID` and exports the same token from the keychain
   (`heartbeat-cloudflare-api-token`), so no `wrangler login` is needed. To copy it there once (then `direnv allow`):
   `security add-generic-password -U -a "$USER" -s heartbeat-cloudflare-api-token -w "$(az keyvault secret show --vault-name kv-terraform-terraform --name tf-cloudflare-api-token --query value -o tsv)"`.
@@ -75,6 +77,32 @@ These live only in the Worker. List them with `wrangler secret list --name pulse
 
 Until v1 is torn down (#45), `manifests/pulse-v2/secrets.sh` can also re-upload the Google and Drive values from v1's
 Key Vault: `ADMIN_EMAILS=... CONFIRM=yes manifests/pulse-v2/deploy.sh --release vX.Y.Z --secrets`.
+
+## Email (Resend)
+
+The Resend account belongs to the **hello@heartbeatchurch.com.au** login: sign in with it to reach the dashboard, keys
+and billing.
+
+Pulse's account email goes through Resend from `mail.heartbeatchurch.com.au` (`resend.tf`). This stack owns the Resend
+domain, its DNS records, a send-only key restricted to that domain, and the webhook to
+`/api/webhooks/resend`. The provider is the community `softwarehuset-com/resend`, pinned to 2.0.0 with its checksums in
+the committed `.terraform.lock.hcl`; read its diff before bumping it.
+
+- **First apply:** `../../bin/tf -f prod apply -target=resend_domain.mail`, then `../../bin/tf -f prod apply` (the DNS
+  records come from the domain). The second apply waits up to 20 minutes for Resend to verify the domain; if it
+  times out, run it again. `../../bin/tf -f prod apply -refresh-only` refreshes `resend_domain_status` later.
+- **Worker secrets:** the send-only key and the webhook's signing secret exist only in state. Upload them without
+  printing them:
+  ```bash
+  tofu -chdir=terraform/pulse-v2 output -raw resend_api_key | npx wrangler secret put RESEND_API_KEY --name pulse
+  tofu -chdir=terraform/pulse-v2 output -raw resend_webhook_secret | npx wrangler secret put RESEND_WEBHOOK_SECRET --name pulse
+  ```
+  `deploy.sh --secrets` includes both from then on.
+- **Pulse settings** (`/admin/email`, not Terraform): provider `resend`, From `pulse@mail.heartbeatchurch.com.au`,
+  sender name `Heartbeat Pulse`. Test with the allowlist before switching to Live (pulse-v2 `docs/owner-setup.md` §5).
+- **Rotate the send-only key:** `../../bin/tf -f prod apply -replace=resend_api_key.pulse`, then re-upload it as above.
+- **Suppressions:** the send-only key can't remove an address from Resend's suppression list. Do it in the dashboard
+  (Emails > Suppressions).
 
 ## Rebuild from scratch
 
