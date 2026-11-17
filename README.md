@@ -60,7 +60,7 @@ heartbeat/
 │   └── subtitle_downloader/    #   Subtitle downloader
 ├── .claude/                    # Claude Code skills (sermon-to-blog pipeline)
 ├── shell.nix                   # Nix dev environment definition
-├── .envrc                      # Direnv config (loads nix + .env, rclone keychain password)
+├── .envrc                      # Direnv config (loads nix + .env, keychain secrets: rclone, Cloudflare, Pulse)
 └── .env                        # Environment variables (not committed)
 ```
 
@@ -106,6 +106,24 @@ Claude Code skills in `.claude/commands/` automate turning YouTube sermon record
 | `/sermon-to-blog` | End-to-end: transcribe, generate, and publish |
 
 These skills require the `GHOST_ADMIN_API_KEY` and `GHOST_URL` environment variables set in `.env`.
+
+## Pulse API
+
+Pulse (https://pulse.heartbeatchurch.com.au) has a read/write API documented at `/api/docs` (OpenAPI spec at `/api/docs/openapi.json`, which needs the key too). A key acts as the person who owns it and is limited to 60 requests a minute.
+
+The key lives in the macOS keychain as `heartbeat-pulse-api-key`, never in `.env` or any file. Store it once per machine (create the key in Pulse under your profile):
+
+```bash
+security add-generic-password -a "$USER" -s heartbeat-pulse-api-key -w   # paste the key at the prompt
+```
+
+`.envrc` exports it as `PULSE_API_KEY`. Where direnv hasn't loaded (such as Claude Code's Bash tool), use `direnv exec .`:
+
+```bash
+direnv exec . sh -c 'curl -s -H "Authorization: Bearer $PULSE_API_KEY" https://pulse.heartbeatchurch.com.au/api/v1/spaces'
+```
+
+Scripts can also read it straight from the keychain, as `bin/pulse-v1-backup.mjs` does. Never print the key.
 
 ## Google Drive (rclone)
 
