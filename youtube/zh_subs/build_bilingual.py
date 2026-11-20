@@ -100,7 +100,7 @@ def split_pair(zh, fat, dur, zh_max=ZH_MAX, fa_max=fa.MAX_CHARS):
     zt, ft = sum(cjk.visual_len(p) for p in zp) or 1, sum(len(p) for p in fp) or 1
     return [(z, f, (cjk.visual_len(z) / zt + len(f) / ft) / 2) for z, f in zip(zp, fp)]
 
-def build(marked, zh, fat, offset, variant="tw"):
+def build(marked, zh, fat, offset, variant="tw", zh_max=ZH_MAX, fa_max=fa.MAX_CHARS, linger=0.0):
     sents = marked["sentences"]
     keep = [i for i, s in enumerate(sents) if s["kind"] == "speech" and i in zh and i in fat]
     cues = []
@@ -112,7 +112,7 @@ def build(marked, zh, fat, offset, variant="tw"):
         t0, t1 = s["start"], max(t1, s["start"] + 0.01)
         words = s.get("text", "").split()
         z = convert(clean_zh(zh[i]), variant).translate(QUOTES)
-        pieces = split_pair(z, fa.normalise(fat[i]), t1 - t0)
+        pieces = split_pair(z, fa.normalise(fat[i]), t1 - t0, zh_max, fa_max)
         t, w0, acc = t0, 0, 0.0
         for k, (zp, fp, weight) in enumerate(pieces):
             acc += weight
@@ -128,7 +128,13 @@ def build(marked, zh, fat, offset, variant="tw"):
             continue
         ceiling = (cues[k + 1][0] - SEP) if k + 1 < len(cues) else c[1] + need
         c[1] = max(c[1], min(c[0] + need, ceiling))
-    cues = _merge_slivers(build_srt._enforce_order(cues))
+    # linger: keep each cue up a little into the pause after it, so a line
+    # doesn't vanish the instant the words end (never into the next cue)
+    if linger > 0:
+        for k, c in enumerate(cues):
+            nxt = cues[k + 1][0] - SEP if k + 1 < len(cues) else c[1] + linger
+            c[1] = max(c[1], min(c[1] + linger, nxt))
+    cues = _merge_slivers(build_srt._enforce_order(cues), zh_max=zh_max, fa_max=fa_max)
     return [dict(start=round(c[0], 3), end=round(c[1], 3), zh=c[2], fa=c[3], en=c[4], id=c[5])
             for c in cues]
 
@@ -167,6 +173,11 @@ if __name__ == "__main__":
     ap.add_argument("batches", help="directory holding zh_*.json and fa_*.json")
     ap.add_argument("out",     help="output cues JSON, e.g. sermon.fa-zhHant.cues.json")
     ap.add_argument("--variant", default="tw", choices=["tw", "hk"])
+    ap.add_argument("--zh-max", type=int, default=ZH_MAX,
+                    help="Chinese chars per line; 27 fits 1920px at size 90 (measured 2026-11-15, ~62 px/char)")
+    ap.add_argument("--fa-max", type=int, default=fa.MAX_CHARS,
+                    help="Farsi chars per line; 72 fits 1920px at size 94 (~22 px/char). Wider is fine with --layout split")
+    ap.add_argument("--linger", type=float, default=0.0, help="seconds a cue may stay into the following silence")
     ap.add_argument("--fa-overrides", help="JSON {id: farsi} -- human Farsi, used verbatim")
     a = ap.parse_args()
 
@@ -175,7 +186,7 @@ if __name__ == "__main__":
     if a.fa_overrides:
         fat.update({int(k): v for k, v in json.load(open(a.fa_overrides)).items() if v.strip()})
     speech = [i for i, s in enumerate(marked["sentences"]) if s["kind"] == "speech"]
-    cues = build(marked, zh, fat, marked.get("offset", 0.0), a.variant)
+    cues = build(marked, zh, fat, marked.get("offset", 0.0), a.variant, a.zh_max, a.fa_max, a.linger)
     pathlib.Path(a.out).write_text(json.dumps(cues, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print(f"speech sentences : {len(speech)}")

@@ -741,3 +741,82 @@ The pipeline lives in `youtube/ptw-course/pdf-translate/`, which is kept local a
 - **Sync can be checked without listening:** Whisper base on the audio under a cue, scored against the cue's English (`qa_bilingual.py --sync`). The first run had a median of 100%.
 - **Slides whose text reaches ~85% of frame height collide with the stacked Farsi line** (Numbers 6 slide). Report it; the layout is the user's call.
 - **Monitor's maximum timeout is 30 min**, which is why a `chime receive --watch` listener "times out". Re-arm it; it isn't a chime bug.
+
+## Korean subtitles on a produced video (2026-11-03, `2026 HB Church Intro (CoC)`)
+
+- **Check a produced video for burned captions and on-screen text before choosing a style.** The house style (big, hard outline) suits sermon streams. Here the user wanted the Korean to match the built-in captions: Noto Serif CJK KR Medium, size 50, margin 44, outline 0.6, shadow 1, blur 1.5, alpha A0, on a 1080-line script.
+- **Whisper drops scripture read softly over music.** Lowering thresholds didn't recover all of it. Read on-screen verses and captions from a frame strip (`crop` + `tile` + `drawtext`), which also corrects ASR errors. With `-ss` before `-i`, `%{pts}` labels restart at 0.
+- **Korean terms and scripture:** 가정교회 (house church), 목자 (shepherd), 목회자 (generic "pastors"; 목사 stays a title), 개역개정 for verses.
+- **In nix-shell, `sed` is GNU, so `sed -i ''` fails.** The chained command carried on and burned stale settings. Assert an edit landed before a long render.
+- **The one-off scripts live in `youtube/work/hb-intro-coc/` (gitignored).** `fetch_fonts.py` doesn't fetch the KR fonts yet.
+- **To sync with burned captions, read them off the frames instead of the ASR.** Apple Vision OCR over a caption-band crop of every frame gave frame-accurate on/off times (`swiftc` needs `env -i` and `-sdk /Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`, because nix's `DEVELOPER_DIR` breaks it). Saved to `youtube/work/hb-intro-coc/english_caption_timings.json`. Write one target-language line per caption, shifting words between neighbours so each line reads naturally.
+
+## Split Chinese + Farsi burn on a captioned video (2026-11-03)
+
+**Compare subtitle sizes by rendered glyphs per font.** Noto Naskh Arabic at 88 balances Noto Serif CJK TC at 56; the numbers aren't comparable across fonts.
+
+**Keep each language to one line.** Double lines covered faces. Shrink long verses with a per-line `\\fs` rather than wrapping, and check with a script that no cue has `\\N`.
+
+**The top of the frame is the hardest background for Farsi.** The user rejected heavier weights and chose medium weight, outline 0.8, shadow 1.5, because it blends with the video's own English.
+
+**bible.com serves NMV verse by verse through WebFetch.** Its passage view truncates and Bible Gateway's NMV page has no verse text. WebFetch quotes are capped at 125 characters, so ask for the remainder of long verses, and get a human to compare against a printed copy.
+
+## Nemotron 3.5 ASR Streaming 0.6B vs Whisper turbo (2026-11-03)
+
+**Corrected sermon transcripts favour Whisper.** Reviewers fix about 40 lines per sermon and leave the rest as Whisper wrote it, so plain WER against them says little. Also score the lines they changed, and use a reference not derived from Whisper, such as the intro video's own captions.
+
+**`huggingface_hub` from `mlx-audio==0.6.4` can crash while downloading** (`process() takes no keyword arguments` in `httpx2`). Fetch the files with curl, check them against the API's sha256 values, and load the local folder.
+
+
+## Sermon backfill (2026-11-11, 01/11 + 08/11)
+
+- **Finding gaps:** `ghost-list-posts.mjs --tag sermons --status all --limit 80` and walk the Sundays. Posts before April 2026 are NOT tagged `sermons` (they exist untagged), so a tagged listing makes Jan-Mar look missing. "Backfill" means the recent run of missing Sundays only, not old gaps.
+- **Per-campus streams now carry the campus in the title** ("Heartbeat Church Sydney - Sunday Service 1/11/2026", "...Gold Coast...", "...Brisbane..."). That is not a sign of a shepherd Sunday: on 01/11 and 08/11 every stream was the same Pastor Josh sermon. Grep each transcript for "I'm preaching" / the passage before planning more posts.
+- **Pastor Josh may preach the same sermon twice in person** (Brisbane morning, Gold Coast afternoon on 08/11: "I already preached the message in Brisbane"). One post.
+- **A campus's own upload can be too short to hold the relayed sermon.** The 08/11 Brisbane upload (84 min) started 20 min before the Sydney relay, so the sermon would end at ~113 min. Embed the complete relay instead.
+- **17/05 on the main channel is a replay of the 12/04 Melbourne sermon** (already posted as "Well Done for Surviving One More Day"). No post needed.
+- **`yt-dlp -j` hit "Sign in to confirm you're not a bot" but the following download of the same video worked**; just retry metadata with `--print`.
+- **The main transcriber CLI has no language flag.** For these runs, call `mlx_whisper.transcribe(..., language="en", condition_on_previous_text=False)` directly.
+
+## PTW course: Korean + zh-Hant burn, session 06 (2026-11-13)
+
+- **The PTW zh tracks can drop spoken Bible quotes.** Session 05's ASR lost the quote after
+  "He writes," (181.9-199.5s) and "Jesus said," (700.3-710.6s): the gap audio is -25 dB speech.
+  Check: re-transcribe the full file with whisper turbo + `word_timestamps=True`,
+  `condition_on_previous_text=False`, and list words outside every speech sentence span
+  (±0.6s). For session 06 only "Thank you." hallucinations remained, so it was clean.
+- **Silent course cards need translations too.** PTW's Personal Reflection card holds the
+  questions on screen for ~5 min with no voice. `ptw-course/ko/ko_zh_ass.py --cards` renders
+  them as a KO|ZH panel in the card's empty lower band, plus inline terracotta (#B06A5A)
+  translations under cream title cards. Card start and end times: run a 16x9 mean-colour pass
+  at fps=4 (cream ≈ 224,219,212; terracotta has r-b > 40). ffmpeg's `scene` detection misses
+  these cross-dissolves.
+- `build_bilingual.load()` globs `<lang>_*.json`, so input files named `ko_in_*.json` get read
+  as outputs and crash. Keep translator inputs out of `batches/`.
+- Drive: PTW course videos live in their own course folder (session-NN-*/ subfolders; ID in
+  agent memory), not HBC Media › Translated Sermons.
+
+## ASR clean-up before review (2026-11-15)
+
+Decided by Opus 5.5, for Charles's request to "only correct a few" lines:
+- **Whisper's word confidence finds only about half of what reviewers fix.** On mjHAolwGpoA, p<0.4 flagged 18 of Charles's 38 corrections. "Harpete Church", "John Mark Homer" and "No man is in Ireland" came out at p≈0.97.
+- **So a Fable agent reads the WHOLE transcript** (`ASR_RESOLVER_BRIEF.md`). Scored blind against those 38: it made the substantive fix on about 30. It missed 6, mostly punctuation and grammar, which the brief says to leave. It also fixed about 25 real errors the reviewer had missed ("accept your call", "Rambo", 1 Tim 4:7 "irreverent"). Unusual name spellings (Narae, Pios) still need a human. Cost: about 100k tokens and 2 minutes for a 60-minute sermon.
+- A second hearing of suspect spans (`asr_suspects.py`, large-v3 + turbo with a vocabulary prompt) takes about 6 minutes per sermon and gives the resolver evidence beyond context.
+- Fixes land **before translation**, so the translators work from the clean English and only the reviewer's own edits need re-translating.
+- Editor: on a phone it shows English only. "Send to Claude" POSTs to the server, guarded by the `?k=` token because the page sits on a public funnel. `#check` opens the doubts filter directly.
+- chrome-devtools MCP could not connect. For a phone-width check, serve a page that iframes the editor at 390px and screenshot it with headless Chrome. `--window-size=390` alone overflows (min window width).
+- **First live run (GrJrEeRagdg, Sydney, Romans 12):** Fable fixed 26 lines and gave options on 27. Charles sent back 11 edits, all names. Save those names to `asr_vocab.txt`.
+- **Find the sermon span in ONE turbo run over the whole service.** Mark sentences outside it `kind: outside` and keep the offset at 0. That saves a second transcription, and the burn still cuts with `--start/--end`.
+- **Charles switched to Farsi on top (`--layout split`) on 2026-11-15**, and asked for subtitles that are slower and longer. Measured glyph widths: ZH 90 ≈ 62 px/char, FA 94 ≈ 22 px/char. Build with `--zh-max 26 --fa-max 70 --linger 0.8` (QA takes the same max flags). That gave 905 → 766 cues, a median of 2.9 → 3.8 s, and half as many sub-1.5 s flashes.
+- **OpenCC s2tw turns 教你系统 into 教你係統,** because it reads 你係 as Cantonese "you are". Grep the cues for 係統 before burning.
+- **The sandbox blocks curl to this Mac's own funnel.** Test it with `dangerouslyDisableSandbox` and `--resolve` to the public IP.
+
+## Farsi + zh-Hant burn, 2026-11-01 (YoAGy5khXD4)
+
+- **The 1080p H.264 source is only about 0.74 Mbps, whatever `yt-dlp -F` says.** Format 137 lists 5019k, but that is a peak estimate; the real file was 594 MB for 107 min. VP9 1080p (248) is about the same size and a little sharper by crop comparison. Without `--js-runtimes node`, YouTube offers fewer formats. When the burn looks soft, crop the source and the burn at the same frame before blaming the encode: CRF 20/veryfast was visually transparent against this source.
+- **`yt-dlp -f 248` from a post-live stream writes unindexed WebM fragments** (duration N/A, "unknown-length element" spam). Remux with `ffmpeg -fflags +genpts -i x.webm -c copy x.mkv`, then mux in the audio with `-map 0:v -map 1:a -c copy`.
+- **A post-live stream's listed duration can exceed the media.** The listing said 6433 s, but every download was 6415.7 s, ending mid-benediction. Re-downloading doesn't recover the difference.
+- **Pause the review editor's English only, and translate in parallel.** The editor keeps edits in localStorage, so rebuilding `editor_zh.html` once translations land is safe. `apply_edits.py` only queues zh; translate the same queue into Farsi as `fa_retrans.json`. `build_bilingual.load` sorts `*_retrans.json` after `*_N.json`, so the retranslations win.
+- **The split layout (FA at the top, ZH at the bottom) allows two lines per language.** One-line cues measured a median of 2.9 s on screen, with 29% under 2 s, which is too fast. `pair_cues.py` regroups whole sentences into two-line cues: 759 cues, median 4.7 s. It re-splits from the whole sentence at punctuation, else after a particle (的/了/是…), and never next to a digit. Re-pairing the old one-line pieces keeps their mid-word cuts ("很容 / 易").
+- **`bilingual_ass.py` now takes `--crf` and `--preset`.**
+- **Never cancel a Drive upload of a good burn to make room for a better one.** On a 15-minute deadline, nothing was on Drive because v2's upload had been stopped twice. The uplink does ~50 Mbps (850 MB in about 3 min).

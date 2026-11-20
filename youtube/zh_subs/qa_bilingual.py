@@ -20,7 +20,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import cjk, fa, bilingual_ass
 from build_bilingual import ZH_MAX
 
-def text_checks(cues):
+def text_checks(cues, zh_max=ZH_MAX, fa_max=fa.MAX_CHARS):
     issues, warn = [], []
     from to_traditional import convert
     for k, c in enumerate(cues):
@@ -33,9 +33,9 @@ def text_checks(cues):
         if dur < 0.7:
             warn.append(f"{tag} only {dur:.2f}s on screen")
         zl, fl = cjk.visual_len(c["zh"]), len(c["fa"])
-        if zl > ZH_MAX + 2:
+        if zl > zh_max + 2:
             issues.append(f"{tag} zh {zl:.0f} chars wide: {c['zh']}")
-        if fl > fa.MAX_CHARS + 8:
+        if fl > fa_max + 8:
             issues.append(f"{tag} fa {fl} chars wide: {c['fa']}")
         if zl / max(dur, .01) > cjk.CHARS_PER_SEC * 1.25:
             warn.append(f"{tag} zh {zl / dur:.1f} chars/s: {c['zh']}")
@@ -140,10 +140,12 @@ if __name__ == "__main__":
     ap.add_argument("--sync", type=int, default=0, metavar="N", help="spot-check N cues against the audio")
     ap.add_argument("--audio", help="full-length audio (or video) for --sync")
     ap.add_argument("--outdir", default="qa_bilingual")
+    ap.add_argument("--zh-max", type=int, default=ZH_MAX, help="as given to build_bilingual.py")
+    ap.add_argument("--fa-max", type=int, default=fa.MAX_CHARS, help="as given to build_bilingual.py")
     a = ap.parse_args()
 
     cues = json.load(open(a.cues))
-    issues, warn = text_checks(cues)
+    issues, warn = text_checks(cues, a.zh_max, a.fa_max)
     print(f"cues: {len(cues)}   issues: {len(issues)}   warnings: {len(warn)}")
     for s in issues: print("  !!", s)
     for s in warn[:25]: print("  --", s)

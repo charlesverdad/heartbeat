@@ -811,6 +811,72 @@ def test_bilingual():
           re.search(r"Style: FA,.*,2,60,60,(\d+),-1", out) and int(re.search(r"Style: FA,.*,2,60,60,(\d+),-1", out)[1]) > 90)
     check("split: Farsi at top centre", re.search(r"Style: FA,.*,8,60,60,36,-1", bilingual_ass.ass(cues, 100.0, "split")))
 
+def test_asr_fixes():
+    """The resolver's fixes land before translation, keep what Whisper heard,
+    and a re-run starts from the raw ASR rather than stacking on itself."""
+    print("\nasr_apply_fixes: confident fixes, doubts, idempotence")
+    import asr_apply_fixes, make_editor
+    with tempfile.TemporaryDirectory() as d:
+        w = pathlib.Path(d); (w / "batches").mkdir()
+        sents = [{"start": 0, "end": 2, "text": "Welcome to Harpete Church.", "kind": "speech"},
+                 {"start": 3, "end": 5, "text": "And our team, you and I, me.", "kind": "speech"},
+                 {"start": 6, "end": 9, "text": "la la la", "kind": "song"},
+                 {"start": 10, "end": 12, "text": "Mumble garble.", "kind": "speech"}]
+        (w / "sentences_marked.json").write_text(json.dumps({"offset": 100.0, "sentences": sents}))
+        fx = w / "fix.json"
+        fx.write_text(json.dumps({"fixes": [
+            {"id": 0, "en": "Welcome to Heartbeat Church.", "confidence": "high", "why": "church name"},
+            {"id": 1, "en": "And our team, Yoonah, me.", "confidence": "low", "why": "list of names",
+             "options": ["And our team, Yoonah, me."]},
+            {"id": 2, "en": "sung", "confidence": "high"},
+            {"id": 3, "en": "Something else.", "confidence": "unclear", "why": "can't tell"}]}))
+        asr_apply_fixes.main(w, fx)
+        asr_apply_fixes.main(w, fx)                      # twice: must not stack
+        out = json.load(open(w / "sentences_marked.json"))["sentences"]
+        check("high fix replaces en and text", out[0]["en"] == out[0]["text"] == "Welcome to Heartbeat Church.")
+        check("high fix keeps the ASR as en_asr", out[0].get("en_asr") == "Welcome to Harpete Church.")
+        check("re-run starts from raw ASR", out[0]["en_asr"] == "Welcome to Harpete Church.", out[0])
+        check("low fix is applied and offers the ASR back",
+              out[1]["en"] == "And our team, Yoonah, me." and out[1]["asr_doubt"]["options"] == ["And our team, you and I, me."],
+              out[1])
+        check("song lines are never touched", out[2]["text"] == "la la la" and "en_asr" not in out[2])
+        check("unclear keeps the ASR text but flags it",
+              out[3]["text"] == "Mumble garble." and out[3]["asr_doubt"]["level"] == "unclear")
+        rows_page = make_editor.build(w, "vid", "T", "D")
+        html = rows_page.read_text()
+        check("editor carries what was heard", '"asr": "Welcome to Harpete Church."' in html)
+        check("editor flags the doubts", html.count('"doubt"') == 2)
+
+def test_editor_save_endpoint():
+    """The page may sit on a public funnel: the save endpoint must want the token."""
+    print("\nmake_editor: POST /save needs the token and writes only the edits file")
+    import make_editor, functools, socketserver
+    with tempfile.TemporaryDirectory() as d:
+        class S(socketserver.ThreadingTCPServer):
+            allow_reuse_address = True; daemon_threads = True
+        make_editor.EditorHandler.token, make_editor.EditorHandler.video = "tok123", "vid"
+        srv = S(("127.0.0.1", 0), functools.partial(make_editor.EditorHandler, directory=d))
+        port = srv.server_address[1]
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        def post(q, body):
+            r = urllib.request.Request(f"http://127.0.0.1:{port}/save{q}", data=body, method="POST",
+                                       headers={"Content-Type": "application/json"})
+            try:
+                return urllib.request.urlopen(r, timeout=10).status
+            except urllib.error.HTTPError as e:
+                return e.code
+        good = json.dumps({"edits": {"3": {"en": "x"}}}).encode()
+        check("no token -> 403", post("", good) == 403)
+        check("wrong token -> 403", post("?k=nope", good) == 403)
+        check("not JSON -> 400", post("?k=tok123", b"<html>") == 400)
+        check("draft save -> 200", post("?k=tok123&draft=1", good) == 200)
+        check("draft lands in edits.vid.draft.json", (pathlib.Path(d) / "edits.vid.draft.json").exists())
+        check("final save -> 200", post("?k=tok123", good) == 200)
+        files = sorted(x.name for x in pathlib.Path(d).iterdir())
+        check("final save writes edits.vid.json plus a timestamped copy",
+              "edits.vid.json" in files and len(files) == 3, files)
+        srv.shutdown()
+
 if __name__ == "__main__":
     for t in (test_cjk, test_build, test_provenance, test_shift, test_range_server, test_apply_edits,
               test_no_overlap_ever, test_416_keepalive, test_apply_edits_exit_code, test_preview_cleans_up,
@@ -818,7 +884,8 @@ if __name__ == "__main__":
               test_halluc_loops, test_offset_staleness_guard,
               test_style_shadow, test_preview_honours_style_flags,
               test_back_reaches_the_encode, test_to_traditional,
-              test_latin, test_merge_join, test_english_track, test_no_song, test_bilingual):
+              test_latin, test_merge_join, test_english_track, test_no_song, test_bilingual,
+              test_asr_fixes, test_editor_save_endpoint):
         try:
             t()
         except Exception as e:

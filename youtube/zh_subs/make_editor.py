@@ -8,7 +8,7 @@ is the only thing that has to survive -- `build_srt.py --edits` folds it back in
 
     python3 make_editor.py <workdir> <video_id> [--title T] [--date D] [--serve]
 """
-import argparse, json, os, pathlib, re, shutil, subprocess, sys, http.server, socketserver, functools, webbrowser
+import argparse, json, os, pathlib, re, secrets, shutil, subprocess, sys, time, http.server, socketserver, functools, webbrowser
 
 HERE = pathlib.Path(__file__).parent
 
@@ -32,13 +32,19 @@ def load_flags(work, rows):
         flagged |= {int(i) for i in d.get("flagged", [])}
         notes.update({int(k): v for k, v in d.get("notes", {}).items()})
     for r in rows:
+        if r.get("doubt"):
+            flagged.add(r["id"])
+            notes.setdefault(r["id"], "ASR: " + (r["doubt"].get("why") or "unsure what was said"))
+    # Shape checks on the translation are for whoever reads Chinese; they
+    # don't belong in the English reviewer's "Needs a check" list.
+    for r in rows:
         zh, en = r["zh"], r["en"]
         if not zh.strip():
-            flagged.add(r["id"]); notes.setdefault(r["id"], "no translation")
+            r["trnote"] = "no translation"
         elif LATIN.search(zh):
-            flagged.add(r["id"]); notes.setdefault(r["id"], "untranslated English left in")
+            r["trnote"] = "untranslated English left in"
         elif len(en.split()) >= 12 and len(zh) <= 4:
-            flagged.add(r["id"]); notes.setdefault(r["id"], "suspiciously short for the English")
+            r["trnote"] = "suspiciously short for the English"
     return flagged, notes
 
 # ---------------------------------------------------------------- build
@@ -47,10 +53,13 @@ def build(work, video, title, date, out=None, media=None, media_offset=0.0):
     marked = json.load(open(work / "sentences_marked.json"))
     sents, off = marked["sentences"], marked.get("offset", 0.0)
 
-    zh = {}
+    zh, fa = {}, {}
     for p in sorted((work / "batches").glob("zh_*.json")):
         for t in json.load(open(p))["translations"]:
             zh[int(t["id"])] = t.get("zh", "").strip()
+    for p in sorted((work / "batches").glob("fa_*.json")):
+        for t in json.load(open(p))["translations"]:
+            fa[int(t["id"])] = t.get("fa", "").strip()
 
     rows = []
     for i, s in enumerate(sents):
@@ -60,16 +69,23 @@ def build(work, video, title, date, out=None, media=None, media_offset=0.0):
         rows.append({"id": i, "t": v,
                      "hhmm": f"{v//3600:d}:{v//60%60:02d}:{v%60:02d}",
                      "en": s.get("en", s.get("text", "")).strip(),
-                     "zh": zh.get(i, "")})
+                     "zh": zh.get(i, ""), "fa": fa.get(i, ""),
+                     # ASR clean-up (asr_apply_fixes.py): what Whisper heard, and why it changed
+                     **({"asr": s["en_asr"]} if s.get("en_asr") else {}),
+                     **({"fix": s["asr_fix"]} if "asr_fix" in s else {}),
+                     **({"doubt": s["asr_doubt"]} if s.get("asr_doubt") else {})})
     flagged, notes = load_flags(work, rows)
     for r in rows:
         r["flag"] = r["id"] in flagged
+        if r["id"] in notes:
+            r["note"] = notes[r["id"]]
 
     skipped = sum(1 for s in sents if s["kind"] != "speech")
-    heading = f"Chinese subtitle review &mdash; {title}" if title else "Chinese subtitle review"
-    sub = (f"Heartbeat Church{', ' + date if date else ''}. Simplified Chinese (zh-Hans), "
-           f"translated from the English sermon audio. {len(rows)} lines, "
-           f"{skipped} skipped as worship or silence.")
+    nfix = sum(1 for r in rows if r.get("asr"))
+    heading = f"Sermon transcript review &mdash; {title}" if title else "Sermon transcript review"
+    sub = (f"Heartbeat Church{', ' + date if date else ''}. {len(rows)} lines, "
+           f"{skipped} skipped as worship or silence"
+           + (f"; {nfix} already corrected from context" if nfix else "") + ".")
 
     msize = (work / media).stat().st_size if media and (work / media).exists() else 0
 
@@ -86,7 +102,7 @@ def build(work, video, title, date, out=None, media=None, media_offset=0.0):
     out = pathlib.Path(out) if out else work / "editor_zh.html"
     out.write_text(html, encoding="utf-8")
     print(f"lines        : {len(rows)}")
-    print(f"flagged      : {len(flagged)}  ({sum(1 for r in rows if not r['zh'])} with no translation)")
+    print(f"flagged      : {len(flagged)}  (+{sum(1 for r in rows if r.get('trnote'))} translation warnings, {sum(1 for r in rows if not r['zh'])} with no translation)")
     print(f"skipped      : {skipped} (song / hallucination)")
     print(f"player       : " + (f"local file {media}" if media else "YouTube embed")
           + (f"  ({msize/1e6:.0f} MB, " + ("held in memory" if msize <= 80e6 else "streamed") + ")"
@@ -218,7 +234,48 @@ class _Slice:
         self.f.close()
 
 
-def serve(path, port=8777):
+class EditorHandler(RangeHandler):
+    """RangeHandler plus one write: POST /save?k=<token> stores the reviewer's
+    edits next to the page, so a phone can hand them over without a download.
+
+    The page may be on a public tailscale funnel, so the write is narrow: only
+    with the token minted at --serve time, only valid JSON under 2 MB, and only
+    to edits.<video>[.draft].json (plus a timestamped copy of each final send).
+    """
+    token, video = "", ""
+
+    def do_POST(self):
+        from urllib.parse import urlparse, parse_qs
+        u = urlparse(self.path)
+        q = parse_qs(u.query)
+        if u.path.rstrip("/").split("/")[-1] != "save" or not self.token \
+                or not secrets.compare_digest(q.get("k", [""])[0], self.token):
+            self.send_error(403); return
+        n = int(self.headers.get("Content-Length") or 0)
+        if not 0 < n <= 2_000_000:
+            self.send_error(413); return
+        try:
+            body = json.loads(self.rfile.read(n))
+            assert isinstance(body.get("edits"), dict)
+        except Exception:
+            self.send_error(400); return
+        draft = q.get("draft", ["0"])[0] == "1"
+        d = pathlib.Path(self.directory)
+        name = f"edits.{self.video}" + (".draft" if draft else "") + ".json"
+        data = json.dumps(body, ensure_ascii=False, indent=1)
+        (d / name).write_text(data, encoding="utf-8")
+        if not draft:
+            (d / f"edits.{self.video}.{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(data, encoding="utf-8")
+            print(f"[{time.strftime('%H:%M:%S')}] received {len(body['edits'])} edits -> {name}", flush=True)
+        out = json.dumps({"ok": True, "saved": name, "n": len(body["edits"])}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+
+def serve(path, port=8777, video="", token=None):
     """Serve the folder over HTTP.
 
     Two reasons this is not optional. The YouTube IFrame API refuses a file://
@@ -226,14 +283,17 @@ def serve(path, port=8777):
     seekable, which the stdlib handler does not do -- see RangeHandler.
     """
     d = str(pathlib.Path(path).parent)
-    h = functools.partial(RangeHandler, directory=d)
+    EditorHandler.token = token or secrets.token_urlsafe(9)
+    EditorHandler.video = video
+    h = functools.partial(EditorHandler, directory=d)
     class Server(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
         daemon_threads = True
-    url = f"http://localhost:{port}/{pathlib.Path(path).name}"
+    url = f"http://localhost:{port}/{pathlib.Path(path).name}?k={EditorHandler.token}"
     with Server(("", port), h) as srv:
-        print(f"\nopen {url}\n(ctrl-c to stop)")
-        webbrowser.open(url)
+        print(f"\nopen {url}\n(the ?k= token lets the page send edits back; ctrl-c to stop)", flush=True)
+        if not os.environ.get("NO_BROWSER"):
+            webbrowser.open(url)
         try: srv.serve_forever()
         except KeyboardInterrupt: print("\nstopped")
 
@@ -252,8 +312,9 @@ if __name__ == "__main__":
                     help="second of the full video at which --media begins")
     ap.add_argument("--serve", action="store_true")
     ap.add_argument("--port", type=int, default=8777)
+    ap.add_argument("--token", default=None, help="fixed token for the page's ?k= (default: random)")
     a = ap.parse_args()
     media = a.media or (fetch_media(a.workdir, a.video, a.fetch) if a.fetch else None)
     p = build(a.workdir, a.video, a.title, a.date, a.out, media, a.media_offset)
     if a.serve:
-        serve(p, a.port)
+        serve(p, a.port, a.video, a.token)

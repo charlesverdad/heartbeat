@@ -3,9 +3,9 @@
 
 House style, chosen 2026-10-25 for an older Chinese reader and an Iranian
 viewer: white text with a black outline and a soft drop shadow (VLC's default
-look), no grey box. One Farsi line directly above one Traditional Chinese line,
-both at the bottom of the frame (`--layout stacked`, the default). `split` puts
-the Farsi at the top of the frame instead.
+look), no grey box. One Farsi line at the top of the frame and one Traditional
+Chinese line at the bottom (`--layout split`, the default since 2026-11-01).
+`stacked` puts the Farsi directly above the Chinese, both at the bottom.
 
 Unlike bake_subs.py this script writes its own ASS with PlayResY 1080, so sizes
 and margins here ARE pixels at 1080p, and alignment uses ASS v4+ numpad numbers
@@ -30,7 +30,7 @@ def ts(t):
     t = max(t, 0); h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
     return f"{h}:{m:02d}:{s:05.2f}"
 
-def ass(cues, t0=0.0, layout="stacked", zh_size=ZH_SIZE, fa_size=FA_SIZE, bottom=BOTTOM):
+def ass(cues, t0=0.0, layout="split", zh_size=ZH_SIZE, fa_size=FA_SIZE, bottom=BOTTOM):
     fa_align, fa_margin = (8, TOP) if layout == "split" else (2, bottom + int(zh_size * 1.15) + GAP)
     # colours are &HAABBGGRR; the drop shadow is drawn in BackColour.
     # Encoding -1 lets libass pick each line's base direction, so Farsi
@@ -69,14 +69,14 @@ def check_fonts():
     if not need <= have:
         sys.exit(f"missing fonts in {FONTS}: {sorted(need - have)}\n  run: python fetch_fonts.py")
 
-def burn(video, assfile, out, start, end=None, height=1080, bitrate=None):
+def burn(video, assfile, out, start, end=None, height=1080, bitrate=None, crf=20, preset="veryfast"):
     check_fonts()
     vf = ass_filter(assfile) + ("" if height == 1080 else f",scale=-2:{height}")
-    rate = ["-b:v", bitrate, "-maxrate", bitrate, "-bufsize", "2M"] if bitrate else ["-crf", "20"]
+    rate = ["-b:v", bitrate, "-maxrate", bitrate, "-bufsize", "2M"] if bitrate else ["-crf", str(crf)]
     cmd = ["ffmpeg", "-y", "-v", "error", "-stats", "-ss", str(start)]
     if end:
         cmd += ["-to", str(end)]
-    cmd += ["-i", str(video), "-vf", vf, "-c:v", "libx264", "-preset", "veryfast", *rate,
+    cmd += ["-i", str(video), "-vf", vf, "-c:v", "libx264", "-preset", preset, *rate,
             "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(out)]
     subprocess.run(cmd, check=True)
 
@@ -87,14 +87,16 @@ if __name__ == "__main__":
     ap.add_argument("ass_out")
     ap.add_argument("--start", type=float, default=0.0, help="cut start; cue times are rebased onto it")
     ap.add_argument("--end", type=float)
-    ap.add_argument("--layout", choices=["stacked", "split"], default="stacked")
+    ap.add_argument("--layout", choices=["stacked", "split"], default="split")
     ap.add_argument("--zh-size", type=int, default=ZH_SIZE)
     ap.add_argument("--fa-size", type=int, default=FA_SIZE)
     ap.add_argument("--bottom", type=int, default=BOTTOM, help="Chinese baseline margin, px at 1080p")
     ap.add_argument("--video", help="source video; with --out, burn the subtitles in")
     ap.add_argument("--out")
     ap.add_argument("--height", type=int, default=1080, help="720 for a phone preview")
-    ap.add_argument("--bitrate", help="target video bitrate (e.g. 900k) instead of CRF 20")
+    ap.add_argument("--bitrate", help="target video bitrate (e.g. 900k) instead of CRF")
+    ap.add_argument("--crf", type=int, default=20, help="x264 CRF; 18 for a high-bitrate source")
+    ap.add_argument("--preset", default="veryfast", help="x264 preset; medium is sharper, ~2x slower")
     a = ap.parse_args()
 
     cues = json.load(open(a.cues))
@@ -104,5 +106,5 @@ if __name__ == "__main__":
         ass(cues, a.start, a.layout, a.zh_size, a.fa_size, a.bottom), encoding="utf-8")
     print(f"wrote {a.ass_out} ({len(cues)} cues, layout {a.layout})")
     if a.video and a.out:
-        burn(a.video, a.ass_out, a.out, a.start, a.end, a.height, a.bitrate)
+        burn(a.video, a.ass_out, a.out, a.start, a.end, a.height, a.bitrate, a.crf, a.preset)
         print(f"wrote {a.out}")

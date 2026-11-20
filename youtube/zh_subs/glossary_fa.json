@@ -1,5 +1,5 @@
 {
-  "_note": "Persian (fa-IR) terms for Heartbeat sermon subtitles. Bible book names, names and quoted verses follow the Old Persian Version (ترجمهٔ قدیم). Christian, not Islamic, register throughout. Keep renderings identical every week. Bible version choice is provisional (decided by Opus 5.5, 2026-10-25) until confirmed with the Iranian viewer; the main alternative is the New Millennium Version (ترجمهٔ هزارهٔ نو), common in Iranian churches today.",
+  "_note": "Persian (fa-IR) terms for Heartbeat sermon subtitles. Bible book names, names and quoted verses follow the New Millennium Version (ترجمهٔ هزارهٔ نو, NMV). Christian, not Islamic, register throughout. Keep renderings identical every week. Bible version chosen by Charles on 2026-11-03: the more common modern version, replacing the provisional Old Persian Version.",
   "bible_books": {
     "Genesis": "پیدایش",
     "Exodus": "خروج",
@@ -147,8 +147,8 @@
   "_ambiguous": {
     "Hebrews": "عبرانیان is both the book and the people; context makes it clear",
     "Joshua": "یوشع for the Bible figure; a member called Joshua is جاشوا",
-    "shepherd": "Context decides. Quoting Scripture: follow the OPV verse (Ps 23:1 «خداوند شبان من است», John 10 شبان نیکو). A general caring/leading metaphor: شبان or شبانی کردن. Heartbeat's own lay shepherd role: رهبر گروه خانگی or سرپرست گروه -- never کشیش, which is reserved for Pastor Josh.",
+    "shepherd": "Context decides. Quoting Scripture: follow the NMV verse (Ps 23:1 «خداوند شبان من است», John 10 شبان نیکو). A general caring/leading metaphor: شبان or شبانی کردن. Heartbeat's own lay shepherd role: رهبر گروه خانگی or سرپرست گروه -- never کشیش, which is reserved for Pastor Josh.",
     "missionary": "مبشر is the church word; مُبلّغ carries Islamic/propaganda overtones",
-    "righteousness": "OPV often has عدالت; prefer پارسایی in plain speech but follow OPV inside a quoted verse"
+    "righteousness": "prefer پارسایی in plain speech but follow the NMV wording inside a quoted verse"
   }
 }
