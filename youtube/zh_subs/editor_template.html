@@ -1,5 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>__TITLE__</title>
 <style>
 :root{
@@ -40,6 +41,7 @@ button{background:var(--panel);color:var(--fg);border:1px solid var(--line);padd
        border-radius:7px;font:inherit;font-size:13px;cursor:pointer}
 button:hover{background:var(--panel2)}
 button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button[aria-pressed=true] .pill{color:rgba(255,255,255,.8)}
 button.primary{background:var(--ok);border-color:var(--ok);color:#0d1f17;font-weight:600}
 button.primary:hover{filter:brightness(1.08)}
 input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:6px 11px;
@@ -49,8 +51,26 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
 
 /* ---------- rows ---------- */
 .rows{padding:0 0 55vh}
-.row{display:grid;grid-template-columns:78px 1fr 1fr 30px;gap:12px;
+.row{display:grid;grid-template-columns:78px 1fr 30px;gap:12px;position:relative;
      padding:9px 20px;border-bottom:1px solid var(--line);align-items:start}
+.body{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
+.src,.tr{min-width:0}
+body.notr .tr,body.notr .trw{display:none}
+body.notr .body{grid-template-columns:1fr}
+.fa{direction:rtl;text-align:right;font-size:15px;color:var(--dim);margin-top:4px;
+    font-family:Vazirmatn,Tahoma,"Geeza Pro",sans-serif}
+.why{font-size:12px;color:var(--warn);margin-top:3px}
+.heard{font-size:12.5px;color:var(--dim);margin-top:4px}
+.heard s{color:#7d8696}
+.heard .tag,.why .tag{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:1px 5px;border-radius:4px;margin-right:5px;background:rgba(185,133,242,.16);color:var(--edit)}
+.why .tag{background:rgba(224,169,74,.16);color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip,.use{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:8px;
+    padding:5px 9px;font-size:13px;text-align:left;line-height:1.4}
+.chip.on{border-color:var(--ok);color:var(--ok)}
+.use{padding:2px 8px;font-size:12px;margin-left:4px}
+.row.aifix{box-shadow:inset 3px 0 0 rgba(185,133,242,.55)}
 .row:hover{background:#181b21}
 .row.flag{background:rgba(224,169,74,.07)}
 .row.cur{background:rgba(91,157,255,.14);box-shadow:inset 3px 0 0 var(--acc)}
@@ -62,7 +82,7 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
 .t .mk{color:var(--warn);font-weight:700}
 .en,.zh{border:1px solid transparent;border-radius:6px;padding:3px 7px;margin:-3px -7px;
         outline:none;white-space:pre-wrap;word-break:break-word;min-height:1.6em}
-.en{color:var(--dim);font-size:14px}
+.en{color:var(--fg);font-size:15px}
 .zh{font-size:16.5px;line-height:1.7}
 .en:hover,.zh:hover{border-color:var(--line)}
 .en:focus,.zh:focus{border-color:var(--acc);background:#11141a}
@@ -71,8 +91,44 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
 .x{background:none;border:0;color:var(--dim);font-size:15px;line-height:1;padding:3px 5px;
    cursor:pointer;opacity:0;border-radius:5px}
 .row:hover .x{opacity:.65}
+@media (hover:none){.x{opacity:.55}}
 .x:hover{opacity:1;color:var(--drop);background:var(--panel)}
 .row.dropped .x{opacity:1;color:var(--drop)}
+
+/* ---------- phone ---------- */
+@media (max-width:760px){
+  body{font-size:15px;overflow-x:hidden}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .legend{display:none}
+  .vidbox.audio{aspect-ratio:auto;height:56px}
+  .vidbox.audio .alabel{display:none}
+  .now,.railfoot{display:none}
+  header{padding:12px 14px 8px}
+  h1{font-size:16px}
+  .bar{top:var(--railh,0px);padding:8px 10px;gap:6px;flex-wrap:nowrap;overflow-x:auto;
+       -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .bar::-webkit-scrollbar{display:none}
+  .bar button{flex:none;padding:8px 11px}
+  .bar .spacer{display:none}
+  .searchrow{display:block;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .searchrow input{width:100%;font-size:16px}
+  #q{display:none}
+  .note{margin:10px 12px;font-size:12.5px}
+  .row{grid-template-columns:1fr;gap:4px;padding:11px 14px 12px}
+  .t{font-size:13px;padding:2px 0}
+  .t::after{content:"  \25B6";font-size:10px;opacity:.6}
+  .x{position:absolute;top:6px;right:8px;font-size:20px;padding:4px 8px}
+  .body{grid-template-columns:1fr;gap:6px}
+  .en{font-size:16.5px;line-height:1.55}
+  .zh{font-size:16px}
+  .chip{font-size:14.5px;padding:8px 11px;width:100%}
+}
+@media (min-width:761px){ .searchrow{display:none} }
+/* on touch screens there is no hover, so make the editable English look like a field */
+@media (hover:none){
+  .en{border-color:#3a414d;background:#1a1d23;margin:2px 0 0;padding:6px 9px}
+  .en:empty::before{content:"tap to type";color:#5d6574}
+}
 
 /* ---------- notes / legend ---------- */
 .note{margin:14px 20px;padding:11px 14px;background:var(--panel);border:1px solid var(--line);
@@ -85,6 +141,7 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
        background:var(--ok);color:#0d1f17;font-weight:600;font-size:13.5px;padding:9px 18px;
        border-radius:8px;opacity:0;transition:.22s;pointer-events:none;z-index:50}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:760px){ .legend{display:none} .note{margin:10px 12px;font-size:12.5px} }
 </style>
 
 <div class="app">
@@ -97,7 +154,7 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
     </div>
     <div class="railfoot">
       <div><b id="pEdit">0</b> lines edited &middot; <b id="pDrop">0</b> dropped &middot; <b id="pRetr">0</b> queued for re-translation</div>
-      <div style="margin-top:6px">Saved in this browser automatically. Press <b>Export</b> when you are done and give me the file.</div>
+      <div style="margin-top:6px">Saved in this browser automatically. Press <b>Send to Claude</b> when you are done.</div>
     </div>
   </div>
 
@@ -110,18 +167,23 @@ input[type=search]{background:var(--panel);color:var(--fg);border:1px solid var(
     <div class="bar">
       <button id="fAll"  aria-pressed="true">All <span class="pill" id="cAll"></span></button>
       <button id="fFlag" aria-pressed="false">Needs a check <span class="pill" id="cFlag"></span></button>
+      <button id="fFix" aria-pressed="false">AI-fixed <span class="pill" id="cFix"></span></button>
       <button id="fEdit" aria-pressed="false">Edited <span class="pill" id="cEdit"></span></button>
       <input type="search" id="q" placeholder="search English or Chinese">
-      <button id="follow" aria-pressed="true" title="Scroll the list to keep up with the video">Follow</button>
+      <button id="follow" aria-pressed="true" title="Scroll the list to keep up with the audio">Follow</button>
+      <button id="trTog" aria-pressed="true" title="Show the Chinese and Farsi">Translations</button>
       <span class="spacer"></span>
       <button id="imp">Import&hellip;</button>
-      <button id="exp" class="primary">Export edits</button>
+      <button id="exp">Download</button>
+      <button id="send" class="primary" hidden>Send to Claude</button>
     </div>
+    <div class="searchrow"><input type="search" id="q2" placeholder="search"></div>
 
     <div class="note">
-      <b>Click a timestamp</b> to jump the video there. <b>Click the English or Chinese text</b> to edit it.
-      Lines marked <span style="color:var(--warn);font-weight:700">?</span> are ones the translator flagged
-      itself, usually where the speech recognition was garbled.
+      <b>Tap a timestamp</b> to play from there. <b>Tap the English</b> (the boxed text) to type a correction.
+      Start with <b>Needs a check</b>: lines where the speech recognition was unsure. Where there are
+      suggestions, tap the one you hear. <span style="color:var(--edit)">Purple</span> lines were
+      already corrected from context; each shows what Whisper heard, with a button to put it back.
       <div class="legend">
         <i><span class="dot" style="background:var(--edit)"></span> English edited &rarr; I re-translate it</i>
         <i><span class="dot" style="background:var(--ok)"></span> Chinese edited &rarr; I use yours as-is</i>
@@ -171,7 +233,7 @@ function save(){
       if (!e.drop && (e.en == null || e.en === r.en) && (e.zh == null || e.zh === r.zh)) delete edits[k];
     }
     try { localStorage.setItem(KEY, JSON.stringify(edits)); } catch (e) {}
-    progress();
+    progress(); sent = false; draftSoon();
   }, 250);
 }
 function touch(id){ return (edits[id] ||= {}); }
@@ -182,29 +244,64 @@ const box = document.getElementById("rows");
 const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 function visible(){
-  const q = document.getElementById("q").value.trim().toLowerCase();
+  const q = (document.getElementById("q").value || document.getElementById("q2").value).trim().toLowerCase();
   return ROWS.filter(r =>
-       (mode === "all" || (mode === "flag" && r.flag)
+       (mode === "all" || (mode === "flag" && r.flag) || (mode === "fix" && r.asr && !r.doubt)
                        || (mode === "edit" && (dirtyEn(r) || dirtyZh(r) || dropped(r))))
-    && (!q || enOf(r).toLowerCase().includes(q) || zhOf(r).includes(q)));
+    && (!q || enOf(r).toLowerCase().includes(q) || zhOf(r).includes(q) || (r.fa || "").includes(q)));
 }
 
 function render(){
   const rows = visible();
-  box.innerHTML = rows.map(r => `
-    <div class="row ${r.flag?'flag':''} ${dropped(r)?'dropped':''}" data-id="${r.id}">
-      <div class="t" data-seek="${r.t}">${r.hhmm}${r.flag?' <span class="mk">?</span>':''}</div>
-      <div class="en ${dirtyEn(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
-           data-f="en" data-id="${r.id}">${esc(enOf(r))}</div>
-      <div class="zh ${dirtyZh(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
-           data-f="zh" data-id="${r.id}">${esc(zhOf(r))}</div>
-      <button class="x" data-drop="${r.id}" title="Drop this line from the subtitles">&times;</button>
-    </div>`).join("");
+  box.innerHTML = rows.map(rowHtml).join("");
   counts(); progress(); mark();
+}
+function rowHtml(r){
+  return `
+    <div class="row ${r.flag?'flag':''} ${r.asr&&!r.doubt?'aifix':''} ${dropped(r)?'dropped':''}" data-id="${r.id}">
+      <div class="t" data-seek="${r.t}">${r.hhmm}${r.flag?' <span class="mk">?</span>':''}</div>
+      <div class="body"><div class="src">
+        <div class="en ${dirtyEn(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
+             data-f="en" data-id="${r.id}">${esc(enOf(r))}</div>
+        ${extras(r)}
+      </div><div class="tr">
+        <div class="zh ${dirtyZh(r)?'dirty':''}" contenteditable="plaintext-only" spellcheck="false"
+             data-f="zh" data-id="${r.id}">${esc(zhOf(r))}</div>
+        ${r.fa ? `<div class="fa" dir="rtl">${esc(r.fa)}</div>` : ''}
+      </div></div>
+      <button class="x" data-drop="${r.id}" title="Drop this line from the subtitles">&times;</button>
+    </div>`;
+}
+function extras(r){
+  let h = "";
+  const cur = enOf(r);
+  if (r.doubt) {
+    h += `<div class="why"><span class="tag">unsure</span>${esc(r.doubt.why || r.note || "")}</div>`;
+    const opts = [r.en, ...(r.doubt.options || [])].filter((o, k, a) => o && a.indexOf(o) === k);
+    if (opts.length > 1) h += `<div class="chips">` + opts.map((o, k) =>
+      `<button class="chip ${o === cur ? 'on' : ''}" data-pick="${r.id}" data-k="${k}">${esc(o)}</button>`).join("") + `</div>`;
+  } else if (r.asr) {
+    h += `<div class="heard"><span class="tag">AI fix</span>${esc(r.fix || "")} &middot; heard <s>${esc(r.asr)}</s>` +
+         (cur === r.asr ? "" : ` <button class="use" data-use="${r.id}">put back</button>`) + `</div>`;
+  } else if (r.flag && r.note) {
+    h += `<div class="why"><span class="tag">check</span>${esc(r.note)}</div>`;
+  }
+  if (r.trnote) h += `<div class="why trw"><span class="tag">translation</span>${esc(r.trnote)}</div>`;
+  return h;
+}
+const optsOf = r => [r.en, ...((r.doubt && r.doubt.options) || [])].filter((o, k, a) => o && a.indexOf(o) === k);
+function setEn(id, val){
+  const r = byId[id], rec = touch(id);
+  if (val === r.en) { delete rec.en; delete rec.en_at; }
+  else { rec.en = val; rec.en_at = Date.now(); }
+  save();
+  const old = box.querySelector(`.row[data-id="${id}"]`);
+  if (old) { const tmp = document.createElement("div"); tmp.innerHTML = rowHtml(r); old.replaceWith(tmp.firstElementChild); mark(); }
 }
 function counts(){
   document.getElementById("cAll").textContent  = ROWS.length;
   document.getElementById("cFlag").textContent = ROWS.filter(r => r.flag).length;
+  document.getElementById("cFix").textContent  = ROWS.filter(r => r.asr && !r.doubt).length;
   document.getElementById("cEdit").textContent =
     ROWS.filter(r => dirtyEn(r) || dirtyZh(r) || dropped(r)).length;
 }
@@ -230,6 +327,10 @@ box.addEventListener("input", e => {
 box.addEventListener("click", e => {
   const seek = e.target.closest("[data-seek]");
   if (seek) { jump(+seek.dataset.seek); return; }
+  const pick = e.target.closest("[data-pick]");
+  if (pick) { const r = byId[+pick.dataset.pick]; setEn(r.id, optsOf(r)[+pick.dataset.k]); return; }
+  const use = e.target.closest("[data-use]");
+  if (use) { const r = byId[+use.dataset.use]; setEn(r.id, r.asr); return; }
   const drop = e.target.closest("[data-drop]");
   if (drop) {
     const id = +drop.dataset.drop, rec = touch(id);
@@ -262,8 +363,9 @@ function localPlayer(src){
     ? "position:absolute;left:0;right:0;bottom:0;width:100%"
     : "position:absolute;inset:0;width:100%;height:100%;background:#000";
   const bx = document.getElementById("vidbox");
+  if (isAudio) bx.classList.add("audio");
   if (isAudio) bx.insertAdjacentHTML("beforeend",
-    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    `<div class="alabel" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
                  color:#4a5261;font-size:13px">audio only &mdash; ${src}</div>`);
   bx.appendChild(el);
 
@@ -387,7 +489,7 @@ function mark(){
 }
 
 /* ---------------- import / export ---------------- */
-document.getElementById("exp").onclick = () => {
+function exportObj(){
   const out = {
     video_id: VIDEO,
     saved_at: new Date().toISOString(),
@@ -402,6 +504,27 @@ document.getElementById("exp").onclick = () => {
     if (needsRetranslate(r)) rec.retranslate = true;
     if (Object.keys(rec).length) { rec.t = r.t; out.edits[r.id] = rec; }
   }
+  return out;
+}
+const TOKEN = new URLSearchParams(location.search).get("k");
+if (TOKEN) document.getElementById("send").hidden = false;
+async function post(draft){
+  const out = exportObj();
+  const res = await fetch(`save?k=${encodeURIComponent(TOKEN)}${draft ? "&draft=1" : ""}`,
+    {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(out)});
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return Object.keys(out.edits).length;
+}
+let draftTimer = null;
+function draftSoon(){ if (!TOKEN) return; clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => post(true).catch(() => {}), 4000); }
+document.getElementById("send").onclick = async () => {
+  try { const n = await post(false); sent = true; toast(`Sent ${n} edited lines to Claude`); }
+  catch (e) { toast("Could not send. Use Download and pass me the file"); }
+};
+let sent = false;
+document.getElementById("exp").onclick = () => {
+  const out = exportObj();
   const blob = new Blob([JSON.stringify(out, null, 2)], {type: "application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -441,23 +564,42 @@ function toast(msg){
 /* ---------------- toolbar ---------------- */
 const setMode = m => {
   mode = m;
-  for (const [k, id] of [["all","fAll"],["flag","fFlag"],["edit","fEdit"]])
+  for (const [k, id] of [["all","fAll"],["flag","fFlag"],["fix","fFix"],["edit","fEdit"]])
     document.getElementById(id).setAttribute("aria-pressed", String(mode === k));
   render();
 };
 document.getElementById("fAll").onclick  = () => setMode("all");
 document.getElementById("fFlag").onclick = () => setMode("flag");
 document.getElementById("fEdit").onclick = () => setMode("edit");
+document.getElementById("fFix").onclick  = () => setMode("fix");
 document.getElementById("q").oninput     = render;
+document.getElementById("q2").oninput    = render;
+
+/* translations: on by default on a wide screen, off on a phone (the job there is the English) */
+const TRKEY = "zhsub:tr";
+let showTr; try { showTr = localStorage.getItem(TRKEY); } catch (e) {}
+showTr = showTr == null ? !matchMedia("(max-width:760px)").matches : showTr === "1";
+const applyTr = () => { document.body.classList.toggle("notr", !showTr);
+  document.getElementById("trTog").setAttribute("aria-pressed", String(showTr)); };
+document.getElementById("trTog").onclick = () => { showTr = !showTr; applyTr();
+  try { localStorage.setItem(TRKEY, showTr ? "1" : "0"); } catch (e) {} };
+applyTr();
+
+/* keep the sticky toolbar below the sticky player on a phone */
+const rail = document.querySelector(".rail");
+new ResizeObserver(() => document.documentElement.style.setProperty("--railh",
+  (matchMedia("(max-width:1000px)").matches ? rail.offsetHeight : 0) + "px")).observe(rail);
 document.getElementById("follow").onclick = e => {
   const on = e.currentTarget.getAttribute("aria-pressed") === "true";
   e.currentTarget.setAttribute("aria-pressed", String(!on));
 };
 window.addEventListener("beforeunload", e => {
-  if (Object.keys(edits).length) { e.preventDefault(); e.returnValue = ""; }
+  if (Object.keys(edits).length && !sent) { e.preventDefault(); e.returnValue = ""; }
 });
 
 render();
+if (location.hash === "#check") setMode("flag");
+if (location.hash === "#fixed") setMode("fix");
 </script>
 <script>if (!MEDIA) { const t = document.createElement("script");
   t.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(t); }</script>

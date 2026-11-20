@@ -34,7 +34,7 @@ church terms. In particular never write `الله`, `حضرت عیسی`, `عیس
 `دعا`), or `مسجد`. Jesus is `عیسی` / `عیسی مسیح`; God is `خدا`; the LORD is
 `خداوند`.
 
-**Quoted Scripture uses the Old Persian Version (ترجمهٔ قدیم) wording.** When the
+**Quoted Scripture uses the New Millennium Version (ترجمهٔ هزارهٔ نو, NMV) wording.** When the
 speaker quotes or closely paraphrases a verse, use the wording an Iranian church
 member recognises, not a fresh translation of the English. If you are not sure of
 the exact wording, write a faithful plain rendering and `flag` it. Never invent

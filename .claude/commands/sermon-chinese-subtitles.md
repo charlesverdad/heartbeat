@@ -125,6 +125,36 @@ the song block gets no subtitle at all. On 2026-10-04 all 9 "song" lines were
 speech: a slow golf story, and the conformed/transformed exegesis. Flip them back to
 `speech` before `make_batches.py`.
 
+### 3b. Clean up the ASR before anyone reads it
+
+The reviewer should only have to fix what a machine can't. Before translating:
+
+```bash
+python asr_suspects.py ../work/<VIDEO_ID> --vocab "<passage>, <names>, <Hebrew/Greek words>"
+```
+
+It takes the lines with a low-confidence word (`asr.py` keeps each word's
+probability) and re-hears them with `whisper-large-v3-mlx` and with turbo, both
+primed with `asr_vocab.txt` plus `--vocab`. That takes about 6 minutes for a
+60-minute sermon. It writes `asr_review.md`: the whole transcript, with suspect
+words marked and the alternative hearings under them.
+
+Then spawn **one Fable agent** (`model: fable`) with `ASR_RESOLVER_BRIEF.md`,
+`asr_vocab.txt`, `asr_review.md`, the speaker and the passage. It writes
+`asr_fixes.json`. Confidence alone catches only about half of what reviewers
+fix: "Harpete Church" and "John Mark Homer" are confidently wrong. So the
+resolver reads every line, not just the flagged ones. Apply its answer:
+
+```bash
+python asr_apply_fixes.py ../work/<VIDEO_ID> ../work/<VIDEO_ID>/asr_fixes.json
+```
+
+`high` fixes are applied, and the editor shows them in purple with what Whisper
+heard and a "put back" button. `low` fixes apply the best guess and give the
+reviewer tap-to-pick options. `unclear` lines are left for them to listen to.
+The raw ASR is kept in `sentences_marked.asr.json`, and re-running starts from it.
+When a reviewer corrects a name, add it to `asr_vocab.txt`.
+
 ### 4. Make the translation batches
 
 ```bash
@@ -248,12 +278,19 @@ receiving campus wants rather than assuming.
 python make_editor.py ../work/<VIDEO_ID> <VIDEO_ID> --title "<SERMON TITLE>" --date "<D Month YYYY>" --fetch --serve
 ```
 
-Opens a page with the sermon playing beside every line. Clicking a timestamp
+Opens a page with the sermon playing beside every line. It works on a phone:
+the player shrinks to a sticky audio bar, translations are hidden by default,
+and AI fixes and choices sit under each line. Clicking a timestamp
 seeks; both columns are editable. `--fetch` pulls a ~29 MB audio copy so seeking
 is instant; `--fetch video` gets the picture instead. `--serve` is required --
 the player needs a real origin and byte-range support.
 
-Hand the URL to a native speaker. They press **Export edits** and give you the JSON:
+Publish it with `tailscale funnel --bg 8777` and send the reviewer
+`https://<host>.ts.net/editor_zh.html?k=<token>` (the token is printed by
+`--serve`; use `NO_BROWSER=1` when running unattended). **Send to Claude**
+POSTs the edits to `edits.<VIDEO_ID>.json` in the work dir, plus a timestamped
+copy. Drafts autosave to `edits.<VIDEO_ID>.draft.json`. Watch for the final
+file with Monitor. Without the token, the page falls back to **Download**:
 
 ```bash
 python apply_edits.py ../work/<VIDEO_ID> <edits.json>

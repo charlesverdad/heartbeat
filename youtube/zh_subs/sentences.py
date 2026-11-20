@@ -14,13 +14,16 @@ def flatten(asr):
     out = []
     for s in asr["segments"]:
         if s.get("words"):
-            out.extend({"w": w["w"], "s": w["s"], "e": w["e"]} for w in s["words"])
+            out.extend({"w": w["w"], "s": w["s"], "e": w["e"],
+                        **({"p": w["p"]} if "p" in w else {})} for w in s["words"])
         else:                      # segment lacked word timings; fall back to its span
             out.append({"w": s["text"], "s": s["start"], "e": s["end"]})
     return out
 
 # Abbreviations whose full stop does not end a sentence.
 ABBREV = re.compile(r"\b(Mr|Mrs|Ms|Dr|St|vs|etc|e\.g|i\.e|Rev|Fr|Jr|Sr)\.$", re.I)
+
+LOW_P = 0.5     # a word Whisper gave less than this is worth a second listen
 
 def sentences(words, max_gap=1.6, max_words=60):
     """Group words into sentences. Also breaks on long pauses so a missing full
@@ -39,8 +42,15 @@ def sentences(words, max_gap=1.6, max_words=60):
     for grp in sents:
         text = re.sub(r"\s+", " ", "".join(w["w"] for w in grp)).strip()
         if text:
-            out.append({"start": grp[0]["s"], "end": grp[-1]["e"], "text": text,
-                        "n_words": len(grp)})
+            sent = {"start": grp[0]["s"], "end": grp[-1]["e"], "text": text,
+                    "n_words": len(grp)}
+            ps = [w["p"] for w in grp if "p" in w]
+            if ps:                 # Whisper's confidence, for asr_suspects.py
+                sent["min_p"] = round(min(ps), 3)
+                sent["mean_p"] = round(sum(ps) / len(ps), 3)
+                sent["low"] = [[k, w["w"].strip(), w["p"]] for k, w in enumerate(grp)
+                               if w.get("p", 1) < LOW_P]
+            out.append(sent)
     return out
 
 if __name__ == "__main__":

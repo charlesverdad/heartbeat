@@ -1,0 +1,36 @@
+# Words Whisper keeps mishearing in Heartbeat sermons. One per line; fed to
+# asr_suspects.py as Whisper's initial_prompt (spelling bias) and to the
+# resolver as known names. Add to it whenever a reviewer corrects a name.
+Heartbeat Church
+Gold Coast
+Sydney
+Melbourne
+Brisbane
+Pastor Josh
+Yoonah
+Deborah
+Jason Lim
+Kevin Shin
+Wonki
+shepherd
+house church
+village
+EMP
+early morning prayer
+Practicing the Way
+John Mark Comer
+Woolies
+Amen
+Joshua Choi
+Jinni
+Hyun
+Skye
+Jung-soo
+Kathy
+Hanq
+Jocelyn
+Mel
+James Hur
+Kevin and Judy
+Steven and Kayla
+KOSTA

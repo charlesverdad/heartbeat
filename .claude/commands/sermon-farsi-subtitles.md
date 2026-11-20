@@ -15,8 +15,10 @@ No translation API.
   matters more than anything else for her.
 - **Farsi: an Iranian viewer** (requested 2026-10-25). Iranian Persian, not Dari.
 - **The house style the user chose (2026-10-25):**
-  - **Stacked at the bottom:** Farsi just above Chinese. The user compared it
-    with Farsi at the top of the frame and kept stacked.
+  - **Split: Farsi at the top of the frame, Chinese at the bottom.** This has
+    been the default since 2026-11-01; the user called it "our new default" on
+    2026-11-20. Stacked at the bottom (the 2026-10-25 choice) is still
+    available with `--layout stacked`.
   - **VLC-style text:** white with a black outline and a soft drop shadow. No
     grey box.
   - **Exactly one line per language per cue.** Two lines of each would cover a
@@ -34,9 +36,9 @@ No translation API.
   which ignores embedded subtitle tracks. Soft subs in an MKV only work in
   VLC/IINA/mpv.
 
-Still open: the **Persian Bible version**. OPV (ترجمهٔ قدیم) is provisional;
-New Millennium (هزارهٔ نو) is the alternative. Ask the Iranian viewer. Farsi
-also needs a native speaker's read before it ships widely.
+**Persian Bible:** New Millennium Version (ترجمهٔ هزارهٔ نو, NMV), chosen by the
+user on 2026-11-03 as the more common modern version; it replaced the Old
+Persian Version. Farsi also needs a native speaker's read before it ships widely.
 
 ## Steps
 
@@ -66,7 +68,7 @@ batch (at most 2 Claude subagents in parallel). Give each one:
 The rules that matter most:
 
 - **Christian, not Islamic, vocabulary.** Never الله, حضرت عیسی, نماز or مسجد.
-- **OPV wording** for quoted verses.
+- **NMV wording** for quoted verses.
 - **Persian ی/ک**, never the Arabic forms.
 - **کشیش is for Pastor Josh only.**
 
@@ -75,6 +77,13 @@ Then:
 ```bash
 python check_batches.py ../work/<ID>/batches --lang fa
 ```
+
+### 1b. After the reviewer's edits
+
+`apply_edits.py` queues corrected English in `batches/retranslate.json`. Translate
+the queue into **both** `zh_retrans.json` and `fa_retrans.json`. Both files sort
+after the numbered batches, so they win. Then build from `sentences_edited.json`
+instead of `sentences_marked.json`.
 
 ### 2. Build the bilingual cues
 
@@ -120,7 +129,8 @@ check these:
 2. Farsi reads right to left, with its punctuation on the left end. A line that
    starts with a Latin word must still lay out right to left.
 3. The Chinese bottom line sits close to the frame's bottom edge (the user's
-   standing preference). The Farsi line sits just above it without touching.
+   standing preference). The Farsi line sits near the top edge (split), or just
+   above the Chinese without touching (stacked).
 4. Both lines are big enough to read at phone size. If you are unsure, render a
    720p clip (step 4) and judge that rather than the full-size frame.
 5. Collisions: a scripture slide's text, burned English captions (on Melbourne
@@ -151,8 +161,11 @@ python bilingual_ass.py ../work/<ID>/sermon.fa-zhHant.cues.json ../work/<ID>/ser
   --out ../work/<ID>/sermon.fa-zhHant.mp4
 ```
 
-- `--layout split` puts Farsi at the top of the frame instead. The user
-  rejected it on 2026-10-25, so use it only if asked.
+- `--layout split` (the default) puts Farsi at the top of the frame;
+  `--layout stacked` puts it just above the Chinese. Pass `--crf 18 --preset medium`
+  for the delivered burn (the 11-01 v2-hq settings).
+- `pair_cues.py` regroups cues into two lines per language for longer on-screen
+  time. It was built on 11-01 but not chosen; use it only if asked.
 - `--zh-size` / `--fa-size` / `--bottom` are pixels at 1080p. This script writes
   its own ASS with `PlayResY 1080`, unlike `bake_subs.py`'s 288-unit script.
 

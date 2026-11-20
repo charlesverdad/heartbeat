@@ -1,0 +1,48 @@
+{
+  "_note": "Korean glossary for the Practicing the Way course subtitles. No Korean edition of the book exists (checked 2026-11-13), so these terms were chosen by Claude Opus 5.5 and still need a Korean reader's OK. Protestant usage: 하나님 (never 하느님), 예수님, 성령님. Scripture: 개역개정 (NKRV).",
+  "core_terms": {
+    "Practicing the Way": "Practicing the Way (keep Latin, it is the course name)",
+    "the Way (capital W, Acts 9:2)": "그 도",
+    "apprentice (noun)": "견습생",
+    "apprentice to Jesus": "예수님의 견습생",
+    "apprenticeship": "견습의 길",
+    "disciple": "제자",
+    "discipleship": "제자도",
+    "spiritual formation": "영성 형성",
+    "formation": "형성",
+    "Rule of Life": "삶의 규칙 (always, also for 'your Rule')",
+    "practice (one of the spiritual practices)": "훈련 (e.g. 고백 훈련); as an ordinary verb translate naturally",
+    "spiritual disciplines": "영적 훈련"
+  },
+  "themes": {
+    "sin": "죄",
+    "sins (acts)": "죄",
+    "sin done by us / to us / around us": "우리가 지은 죄 / 우리가 당한 죄 / 우리 주변의 죄",
+    "gross sins": "드러난 죄",
+    "healing": "치유",
+    "confession": "고백 (confessing sins: 죄를 고백하다)",
+    "repentance": "회개",
+    "forgiveness": "용서",
+    "grace": "은혜",
+    "shame": "수치심",
+    "guilt": "죄책감",
+    "temptation": "유혹",
+    "the kingdom of God": "하나님 나라",
+    "transformation": "변화",
+    "addiction": "중독",
+    "AA / Alcoholics Anonymous": "AA (익명의 알코올 중독자 모임) — first mention may expand, later just AA"
+  },
+  "people": {
+    "God": "하나님",
+    "Jesus": "예수님 (예수 in quoted Scripture)",
+    "Holy Spirit": "성령님",
+    "Father": "아버지",
+    "James (the writer)": "야고보",
+    "Paul": "바울",
+    "John Mark Comer": "존 마크 코머",
+    "Dallas Willard": "달라스 윌라드",
+    "A.W. Tozer": "A. W. 토저",
+    "Robert Mulholland": "로버트 멀홀랜드",
+    "other modern names": "write in Hangul by standard transliteration and flag the first occurrence"
+  }
+}

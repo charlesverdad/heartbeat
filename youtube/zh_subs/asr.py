@@ -45,8 +45,14 @@ def main(a):
     r = transcribe(wav, a.model, None if a.language == "auto" else a.language)
     el = time.time() - t0
 
+    # Keep Whisper's own confidence: per-word probability and the segment's
+    # avg_logprob. asr_suspects.py uses them to find the lines it most likely
+    # misheard, so they can be re-heard and resolved before a human looks.
     segs = [{"start": s["start"], "end": s["end"], "text": s["text"].strip(),
-             "words": [{"w": w["word"], "s": w["start"], "e": w["end"]}
+             "avg_logprob": round(s.get("avg_logprob", 0.0), 3),
+             "no_speech_prob": round(s.get("no_speech_prob", 0.0), 3),
+             "words": [{"w": w["word"], "s": w["start"], "e": w["end"],
+                        "p": round(w.get("probability", 1.0), 3)}
                        for w in s.get("words", [])]}
             for s in r["segments"]]
     nwords = sum(len(s["words"]) for s in segs)
