@@ -135,7 +135,7 @@ if __name__ == "__main__":
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cues")
     ap.add_argument("--frames", metavar="VIDEO", help="full-length source video (full-video time)")
-    ap.add_argument("--layout", choices=["stacked", "split"], default="stacked")
+    ap.add_argument("--layout", choices=["stacked", "split"], default="split")
     ap.add_argument("--even", type=int, default=8, help="evenly spaced frames besides the extremes")
     ap.add_argument("--sync", type=int, default=0, metavar="N", help="spot-check N cues against the audio")
     ap.add_argument("--audio", help="full-length audio (or video) for --sync")
