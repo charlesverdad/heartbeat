@@ -4,7 +4,7 @@
 # (pulse-v2 docs/deploy.md section 10: an infra repo keeps its own wrangler.jsonc).
 #
 # Usage (from the heartbeat repo root, with direnv loaded: .envrc supplies the Cloudflare account and token):
-#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>] [--secrets] [--rotate-hmac]
+#   CONFIRM=yes manifests/pulse-v2/deploy.sh [--release vX.Y.Z | --bundle <tarball> | --ref <git ref>] [--secrets | --vapid] [--rotate-hmac]
 #
 #   --release   download that GitHub release's bundle (charlesverdad/pulse-v2)
 #   --bundle    a local pulse-<version>.tar.gz (checked against its .sha256 next to it)
@@ -12,6 +12,8 @@
 #               worktree (default: origin/main). Use until releases are cut.
 #   --secrets   also upload the secrets from Azure Key Vault (secrets.sh). Needs
 #               ADMIN_EMAILS. Required on the first deploy.
+#   --vapid     upload only VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY from Key Vault (secrets.sh --vapid-only),
+#               leaving every other secret as it is. No ADMIN_EMAILS needed. Use on the first push release.
 #   --rotate-hmac  include a new HMAC_SECRET (first deploy only: it signs everyone out)
 #
 # Reads the D1 id from terraform/pulse-v2's outputs and PUBLIC_ORIGIN from its
@@ -29,12 +31,14 @@ release=""
 bundle_file=""
 ref="origin/main"
 with_secrets=""
+vapid_only=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --release) release="$2"; shift 2 ;;
         --bundle) bundle_file="$2"; shift 2 ;;
         --ref) ref="$2"; shift 2 ;;
         --secrets) with_secrets=yes; shift ;;
+        --vapid) vapid_only=yes; shift ;;
         --rotate-hmac) export ROTATE_HMAC=yes; shift ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
@@ -43,6 +47,10 @@ done
 if [[ "${CONFIRM:-}" != "yes" ]]; then
     echo "Refusing to deploy: this changes production. Re-run with CONFIRM=yes." >&2
     exit 1
+fi
+if [[ -n "$with_secrets" && -n "$vapid_only" ]]; then
+    echo "--secrets already includes the VAPID keys; drop --vapid" >&2
+    exit 2
 fi
 if [[ -n "${ROTATE_HMAC:-}" && -z "$with_secrets" ]]; then
     echo "--rotate-hmac needs --secrets" >&2
@@ -133,6 +141,8 @@ fi
 secrets_json=""
 if [[ -n "$with_secrets" ]]; then
     secrets_json=$("$HERE/secrets.sh")
+elif [[ -n "$vapid_only" ]]; then
+    secrets_json=$("$HERE/secrets.sh" --vapid-only)
 fi
 
 # ── Migrate, then deploy ────────────────────────────────────────────────────
@@ -140,7 +150,7 @@ log "Applying D1 migrations"
 wrangler d1 migrations apply DB --remote --env production
 
 log "Deploying"
-if [[ -n "$with_secrets" ]]; then
+if [[ -n "$secrets_json" ]]; then
     # stdin, not <(...): the wrangler binary re-launches node, which drops other inherited descriptors.
     printf '%s' "$secrets_json" | wrangler deploy --env production --secrets-file /dev/stdin
 else
