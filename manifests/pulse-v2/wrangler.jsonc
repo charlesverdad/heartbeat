@@ -60,9 +60,11 @@
 				// Account emails (Invite, Welcome) go out over Gmail SMTP as v1's sender. Its app password is the
 				// GMAIL_APP_PASSWORD secret, from Key Vault smtp-pass (secrets.sh).
 				"GMAIL_USER": "noreply@heartbeatchurch.com.au",
-				"D1_READ_MODE": "primary"
+				"D1_READ_MODE": "primary",
+				// Web Push (pulse-v2 W48). The keys are secrets from Key Vault pulse-v2-vapid-*; see secrets.sh.
+				"VAPID_SUBJECT": "mailto:admin@heartbeatchurch.com.au"
 			},
-			"secrets": { "required": ["HMAC_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] }
+			"secrets": { "required": ["HMAC_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"] }
 		}
 	}
 }

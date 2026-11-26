@@ -12,8 +12,13 @@
 #   GMAIL_APP_PASSWORD                       <- smtp-pass (v1's Google Workspace app password for GMAIL_USER)
 #   RESEND_API_KEY / RESEND_WEBHOOK_SECRET   <- terraform/pulse-v2 outputs resend_api_key / resend_webhook_secret
 #                                               (send-only key and webhook signing secret; skipped until applied)
+#   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     <- pulse-v2-vapid-public-key / pulse-v2-vapid-private-key (Web Push,
+#                                               base64url raw P-256, generated fresh for v2 on 2026-11-26; not v1's keys)
 #   ADMIN_EMAILS                             <- $ADMIN_EMAILS (comma list of bootstrap admins)
 #   HMAC_SECRET                              <- freshly generated, only with ROTATE_HMAC=yes
+#
+# --vapid-only prints just the two VAPID secrets (no ADMIN_EMAILS needed), for deploy.sh --vapid: wrangler keeps
+# every secret the file does not name.
 #
 # HMAC_SECRET signs sessions and invite links, so a new one signs everyone out
 # and voids open invites. It is needed once, on the first deploy.
@@ -24,7 +29,9 @@ if [[ -t 1 ]]; then
     echo "Refusing to print secrets to a terminal. Use: CONFIRM=yes manifests/pulse-v2/deploy.sh --secrets" >&2
     exit 1
 fi
-: "${ADMIN_EMAILS:?set ADMIN_EMAILS to a comma list of bootstrap admins}"
+vapid_only=""
+[[ "${1:-}" == "--vapid-only" ]] && vapid_only=yes
+[[ -n "$vapid_only" ]] || : "${ADMIN_EMAILS:?set ADMIN_EMAILS to a comma list of bootstrap admins}"
 
 KV=$(az keyvault list --query "[?starts_with(name, 'kv-vm-pulse-prod-')].name | [0]" -o tsv)
 if [[ -z "$KV" ]]; then
@@ -34,6 +41,17 @@ fi
 echo "Reading secrets from Key Vault $KV" >&2
 
 kv() { az keyvault secret show --vault-name "$KV" --name "$1" --query value -o tsv; }
+
+vapid_json() {
+    jq -n --rawfile pub <(kv pulse-v2-vapid-public-key) --rawfile priv <(kv pulse-v2-vapid-private-key) '
+        def need($name): if . == "" then error("missing \($name)") else . end;
+        { VAPID_PUBLIC_KEY: ($pub | rtrimstr("\n") | need("pulse-v2-vapid-public-key")),
+          VAPID_PRIVATE_KEY: ($priv | rtrimstr("\n") | need("pulse-v2-vapid-private-key")) }'
+}
+if [[ -n "$vapid_only" ]]; then
+    vapid_json
+    exit 0
+fi
 # All of terraform/pulse-v2's outputs, held in memory. A failed read (az login expired, backend down) stops here
 # rather than silently leaving an old Resend key in the Worker; an output that is absent or null is skipped below.
 TF_DIR="$(cd "$(dirname "$0")/../../terraform/pulse-v2" && pwd)"
@@ -49,6 +67,7 @@ jq -n \
     --rawfile gmail <(kv smtp-pass) \
     --rawfile hmac <(hmac) \
     --rawfile tf <(printf '%s' "$tf_outputs") \
+    --rawfile vapid <(vapid_json) \
     --arg admins "$ADMIN_EMAILS" '
     def need($name): if . == "" then error("missing \($name)") else . end;
     # try/catch: jq would otherwise print the unparsable input, secrets and all, in its error.
@@ -63,6 +82,7 @@ jq -n \
         GMAIL_APP_PASSWORD: ($gmail | rtrimstr("\n") | need("smtp-pass")),
         ADMIN_EMAILS: $admins
       }
+    + ($vapid | fromjson)
     + (if $hmac == "" then {} else { HMAC_SECRET: ($hmac | gsub("\\s"; "")) } end)
     + (tfval("resend_api_key") as $v | if $v == "" then {} else { RESEND_API_KEY: $v } end)
     + (tfval("resend_webhook_secret") as $v | if $v == "" then {} else { RESEND_WEBHOOK_SECRET: $v } end)'
